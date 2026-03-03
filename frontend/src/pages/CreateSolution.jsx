@@ -38,7 +38,7 @@ const CreateSolution = () => {
     const [showHelp, setShowHelp] = useState(false);
     const [mdDescription, setMdDescription] = useState('');
     const [state, setState] = useState(false);
-    const [submitURL, setSubmitURL] = useState('/solutions');
+    const [submitURL, setSubmitURL] = useState('/submissions');
 
     const handleClosePreview = () => setShowPreview(false);
     const handleShowPreview = () => setShowPreview(true);
@@ -58,23 +58,15 @@ const CreateSolution = () => {
             return;
         }
 
-        const formData = new FormData();
-        files.forEach(file => {
-            formData.append('files[]', file);
-        });
-
         const data = {
-            contestId,
-            freelancerId: user.user.id,
+            contest_id: contestId,
             title: solution.form.title.value,
             annotation: solution.form.annotation.value,
             description: solution.form.description.value
         };
 
-        formData.append('data', JSON.stringify(data));
-
         try {
-            const res = await sendData(submitURL, formData, true);
+            const res = await sendData(submitURL, data);
             solution.resetForm();
             navigate(-1);
             alert(`Решение успешно ${state ? 'изменёно' : 'отправлено'}!`);
@@ -88,13 +80,13 @@ const CreateSolution = () => {
     useEffect(() => {
         if (!number) {
             setState(false);
-            setSubmitURL('/my-solutions');
+            setSubmitURL('/submissions');
             solution.resetForm();
         }
         if (solutionData) {
             console.log(solutionData);
             setState(true);
-            setSubmitURL(`/solution/${solutionData.number}/edit`);
+            setSubmitURL(`/submissions/${solutionData.id}`);
             solution.setFormField('title', solutionData.title);
             solution.setFormField('annotation', solutionData.annotation);
             solution.setFormField('description', solutionData.description);
@@ -230,7 +222,7 @@ const CreateSolution = () => {
                                         <h1>{solution.form.title.value || 'Без названия'}</h1>
                                     </Card.Title>
                                     <h5 className="text-muted mb-2">
-                                        Конкурс «{contest.currentContest?.title || 'Неизвестный конкурс'}» от {user.getById(contest.currentContest?.employerId)?.login || 'Неизвестно'}
+                                        Конкурс «{contest.currentContest?.title || 'Неизвестный конкурс'}» от {user.getById(contest.currentContest?.customer_id)?.login || 'Неизвестно'}
                                     </h5>
                                     <div className="d-inline-block">
                                         <span

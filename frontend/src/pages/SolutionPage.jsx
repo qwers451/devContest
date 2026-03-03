@@ -37,11 +37,11 @@ const SolutionPage = () => {
 
                 setCurrentSolution(sol);
 
-                const fetchedContest = await contest.fetchOneContestById(sol.contestId);
+                const fetchedContest = await contest.fetchOneContestById(sol.contest_id);
                 setCurrentContest(fetchedContest);
 
-                await user.fetchUserById(sol.freelancerId);
-                setFreelancer(user.getById(sol.freelancerId));
+                await user.fetchUserById(sol.executor_id);
+                setFreelancer(user.getById(sol.executor_id));
             } catch (err) {
                 console.error(err);
                 setError(err.message);
@@ -58,10 +58,10 @@ const SolutionPage = () => {
         return <Container>Загрузка...</Container>;
     }
 
-    const isAdmin = user.user?.role === 3;
-    const isOwner = user.user?.id === currentSolution.freelancerId;
-    const isEmployer = user.user?.role === 2;
-    const isCreated = currentSolution.createdAt === currentSolution.updatedAt;
+    const isAdmin = user.user?.role === 'admin';
+    const isOwner = user.user?.id === currentSolution.executor_id;
+    const isEmployer = user.user?.role === 'customer';
+    const isCreated = currentSolution.created_at === currentSolution.updated_at;
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('ru-RU', {
@@ -141,7 +141,7 @@ const SolutionPage = () => {
                             </Card.Title>
                             <h5 className="text-muted mb-2">
                                 Конкурс «{currentContest.title}»
-                                от {user.getById(currentContest.employerId)?.login || "Неизвестно"}
+                                от {user.getById(currentContest.customer_id)?.login || "Неизвестно"}
                             </h5>
                             <div className="d-inline-block">
                                 <span
@@ -181,11 +181,11 @@ const SolutionPage = () => {
                         }}
                     >
                         <h5 className="mb-1">
-                            <strong>Создано:</strong> {formatDate(currentSolution.createdAt)}
+                            <strong>Создано:</strong> {formatDate(currentSolution.created_at)}
                         </h5>
                         {!isCreated && (
                             <h5 className="mb-1">
-                                <strong>Обновлено:</strong> {formatDate(currentSolution.updatedAt)}
+                                <strong>Обновлено:</strong> {formatDate(currentSolution.updated_at)}
                             </h5>
                         )}
                     </div>

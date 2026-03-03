@@ -24,13 +24,13 @@ const SolutionReviews = () => {
                     || await solution.fetchSolutionByNumber(number);
                 if (!sol) throw new Error('Решение не найдено');
 
-                const isOwner    = user.user?.id === sol.freelancerId;
-                const isEmployer = user.user?.role === 2;
+                const isOwner    = user.user?.id === sol.executor_id;
+                const isEmployer = user.user?.role === 'customer';
                 if (!user.isAuth || (!isOwner && !isEmployer)) {
                     throw new Error('Доступ запрещён');
                 }
 
-                const data = await fetchData(`/solutions/${sol.id}/reviews`);
+                const data = await fetchData(`/submissions/${sol.id}/reviews`);
                 setReviews(data);
             } catch (err) {
                 console.error(err);

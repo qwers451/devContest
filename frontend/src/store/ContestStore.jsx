@@ -53,10 +53,10 @@ export default class ContestStore {
     };
 
     status = {
-        1: 'Активный',
-        2: 'На проверке',
-        3: 'Завершённый',
-        4: 'Отменённый',
+        draft: 'Черновик',
+        active: 'Активный',
+        finished: 'Завершённый',
+        cancelled: 'Отменённый',
     };
 
     constructor() {
@@ -278,8 +278,8 @@ export default class ContestStore {
 
     async fetchContests() {
         try {
-            const contests = await fetchData("/contests");
-            this.setContests(contests);
+            const data = await fetchData("/contests");
+            this.setContests(data.items || []);
         } catch (error) {
             console.error("Ошибка при отправке:", error);
         } finally {
@@ -291,9 +291,9 @@ export default class ContestStore {
         console.log('fetchContestsByPage')
         try {
             this.setLoading(true);
-            const data = await fetchData(`/contests/${page}`);
-            this.setContests(data.contests);
-            this.setTotalPages(data.total_pages);
+            const data = await fetchData("/contests", { page });
+            this.setContests(data.items || []);
+            this.setTotalPages(data.pages || 1);
             this.setCurrentPage(page);
         } catch (error) {
             console.error("Ошибка при отправке:", error);
@@ -352,46 +352,36 @@ export default class ContestStore {
     }
 
     async fetchContestsFiltered(page = 1) {
-        const params = this.getFiltersAndParams();
+        const rawParams = this.getFiltersAndParams();
+        // Map old param names to FastAPI query param names
+        const params = { page };
+        if (rawParams.search) params.search = rawParams.search;
+        if (rawParams.statuses) params.status = rawParams.statuses.split(',')[0];
+        if (rawParams.types) params.type_id = Number(rawParams.types.split(',')[0]);
+        if (rawParams.minReward !== 0) params.min_reward = rawParams.minReward;
+        if (rawParams.maxReward !== 9999999) params.max_reward = rawParams.maxReward;
+        if (rawParams.employerId) params.customer_id = rawParams.employerId;
+
         if (!this.hasFiltersChanged(params) && page === this.currentPage && this._contests.length > 0) return;
+
         try {
-            if (!this.hasFiltersChanged(params) && this._contests.length > 0) {
-                try {
-                    this.setLoading(true);
-                    const endpoint = `/contests/filter/${page}`;
-                    const data = await fetchData(endpoint, params);
-                    this.setContests(data.contests);
-                    this.setTotalPages(data.total_pages);
-                    this.setCurrentPage(page);
-                } catch (error) {
-
-                } finally {
-                    this.setLoading(false);
-                }
-                return;
-            }
-
             this.setLoading(true);
-
-            //const endpoint = hasFilters ? "/contests/filter" : "/contests/1";
-            const endpoint = '/contests/filter/1';
             console.log('Fetching contests with params:', params);
-
-            const data = await fetchData(endpoint, params);
-            this.setContests(data.contests);
-            this.setTotalPages(data.total_pages);
-            this.setCurrentPage(1);
+            const data = await fetchData('/contests', params);
+            this.setContests(data.items || []);
+            this.setTotalPages(data.pages || 1);
+            this.setCurrentPage(page);
             this._lastFilterParams = params;
         } catch (error) {
             console.error("Ошибка при отправке:", error);
-        }finally {
+        } finally {
             this.setLoading(false);
         }
     }
 
     async fetchOneContestById(id) {
         try {
-            const contest = await fetchData(`/contest/${id}`);
+            const contest = await fetchData(`/contests/${id}`);
             return contest;
         } catch (error) {
             console.error("Ошибка при загрузке конкурса по ID:", error);
@@ -437,42 +427,7 @@ export default class ContestStore {
     }
 
     async fetchStatistics(xField, yField) {
-        try {
-            const params = {
-                minReward: this._minReward !== undefined && this._minReward !== null && this._minReward !== '' ? this._minReward : 0,
-                maxReward: this._maxReward !== undefined && this._maxReward !== null && this._maxReward !== '' ? this._maxReward : 9999999,
-            };
-
-            if (this._selectedTypes?.length > 0) {
-                params.types = this._selectedTypes.map(t => t.id).join(',');
-            }
-            if (this._selectedStatuses?.length > 0) {
-                params.statuses = this._selectedStatuses.join(',');
-            }
-            if (this._searchQuery) {
-                params.search = this._searchQuery;
-            }
-            if (this._endBy) {
-                params.endBy = this._endBy.toISOString().split('T')[0];
-            }
-            if (this._endAfter) {
-                params.endAfter = this._endAfter.toISOString().split('T')[0];
-            }
-            if (this._employerId) {
-                params.employerId = this._employerId;
-            }
-
-            params.xField = xField;
-            params.yField = yField;
-
-            this.setLoading(true);
-            const dataStats = await fetchData("/contests/stats", params);
-            this.setStatistics(dataStats)
-            this.setLoading(false);
-        } catch (error) {
-            console.error("Ошибка при загрузке статистики:", error);
-        } finally {
-            this.setLoading(false);
-        }
+        // Statistics endpoint not available in current backend
+        console.warn("fetchStatistics: no backend endpoint, skipping");
     }
 }
