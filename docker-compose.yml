@@ -66,17 +66,16 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── AI Model ────────────────────────────────────────────────────────────────
-
-  ollama:
-    image: ollama/ollama:latest
-    expose:
-      - "11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    # Uncomment for GPU (NVIDIA):
-    # devices:
-    #   - nvidia.com/gpu=all
+  # ─── AI Model (disabled for MVP stub mode) ───────────────────────────────────
+  # Uncomment when ready to enable real AI evaluation:
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   expose:
+  #     - "11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   devices:
+  #     - nvidia.com/gpu=all
 
   # ─── Microservices ───────────────────────────────────────────────────────────
 
@@ -151,5 +150,5 @@ volumes:
   contest_db_data:
   evaluation_db_data:
   payment_db_data:
-  ollama_data:
   contest_uploads:
+  # ollama_data:  # uncomment when enabling Ollama
