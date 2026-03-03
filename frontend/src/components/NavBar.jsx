@@ -4,7 +4,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { CONTESTS_ROUTE, ADMIN_ROUTE, LOGIN_ROUTE, MY_SOLUTIONS_ROUTE, MY_CONTESTS_ROUTE, CREATE_CONTEST_ROUTE, PROFILE_ROUTE } from "../utils/consts.js";
 import { Navbar, Nav, Container, Button } from 'react-bootstrap';
 import { observer } from "mobx-react-lite";
-import logo from '../../assets/logo.svg';
+const logo = '/logo.svg';
 
 const NavBar = () => {
     const { user } = useContext(Context);
