@@ -36,14 +36,14 @@ const ReviewPage = () => {
                 if (!sol) throw new Error('Решение не найдено');
 
                 // права
-                const isOwner    = user.user?.id === sol.freelancerId;
-                const isEmployer = user.user?.role === 2;
+                const isOwner    = user.user?.id === sol.executor_id;
+                const isEmployer = user.user?.role === 'customer';
                 if (!user.isAuth || (!isOwner && !isEmployer)) {
                     throw new Error('Доступ запрещён');
                 }
 
                 // 2) Подгрузить ревью с сервера
-                const list = await fetchData(`/solutions/${sol.id}/reviews`);
+                const list = await fetchData(`/submissions/${sol.id}/reviews`);
                 const rv   = list.find(r => String(r.number) === reviewNumber);
                 if (!rv) throw new Error('Отзыв не найден');
 
@@ -51,7 +51,7 @@ const ReviewPage = () => {
                 rv.solutionId = sol.id;
                 setReview(rv);
 
-                const isReviewer = user.user?.id === rv.reviewerId;
+                const isReviewer = user.user?.id === rv.reviewer_id;
                 setIsOwner(isReviewer);
 
                 // подготовка формы
@@ -71,7 +71,7 @@ const ReviewPage = () => {
         try {
             const payload = { score: parseFloat(editScore), commentary: editCommentary.trim() };
             const updated = await updateData(
-                `/solutions/${review.solutionId}/reviews/${review.number}`, payload
+                `/submissions/${review.solutionId}/reviews/${review.number}`, payload
             );
             updated.solutionId = review.solutionId;
             setReview(updated);
@@ -87,7 +87,7 @@ const ReviewPage = () => {
     const handleDelete = async () => {
         if (!window.confirm('Удалить этот отзыв?')) return;
         try {
-            await deleteData(`/solutions/${review.solutionId}/reviews/${review.number}`);
+            await deleteData(`/submissions/${review.solutionId}/reviews/${review.number}`);
             navigate(`/solution/${number}/reviews`, { replace: true });
         } catch (err) {
             console.error(err);

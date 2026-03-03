@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { fetchData, deleteData, updateData } from "../services/apiService";
+import { fetchData, deleteData, patchData } from "../services/apiService";
 
 const baseForm = {
     title: {
@@ -173,37 +173,11 @@ export default class SolutionStore {
 
     async fetchSolutionsFiltered() {
         try {
-            const params = {};
-            params.page = this._page;
-            params.limit = this._limit;
+            const params = { page: this._page, limit: this._limit };
 
-            if (this._searchQuery) {
-                params.search = this._searchQuery;
-            }
-
-            if (this._selectedStatuses?.length > 0) {
-                params.statuses = this._selectedStatuses.join(',');
-            }
-
-            if (this._addedBefore) {
-                params.addedBefore = this._addedBefore.toISOString().split('T')[0];
-            }
-
-            if (this._addedAfter) {
-                params.addedAfter = this._addedAfter.toISOString().split('T')[0];
-            }
-
-            if (this._freelancerId) {
-                params.freelancerId = this._freelancerId;
-            }
-
-            if (this._contestId) {
-                params.contestId = this._contestId;
-            }
-
-            if (this._searchForMySolutions) {
-                params.searchForMySolutions = this._searchForMySolutions;
-            }
+            if (this._freelancerId) params.executor_id = this._freelancerId;
+            if (this._contestId) params.contest_id = this._contestId;
+            if (this._selectedStatuses?.length > 0) params.status = this._selectedStatuses[0];
 
             if (!this.hasFiltersChanged(params) && this._solutions.length > 0) {
                 console.log('Using cached solutions');
@@ -211,13 +185,13 @@ export default class SolutionStore {
                 return;
             }
 
-            this.setLoading(true)
+            this.setLoading(true);
+            console.log('Fetching submissions with params:', params);
 
-            console.log('Fetching solutions with params:', params);
-
-            const response = await fetchData("/solutions/filter", params);
-            this.setSolutions(response.solutions || []);
-            this._totalCount = response.total || 0;
+            const response = await fetchData("/submissions", params);
+            const list = Array.isArray(response) ? response : [];
+            this.setSolutions(list);
+            this._totalCount = list.length;
             this._lastFilterParams = params;
         } catch (error) {
             console.error("Ошибка при отправке:", error);
@@ -292,7 +266,7 @@ export default class SolutionStore {
             if (typeof newStatus !== 'number' || !validStatuses.includes(newStatus)) {
                 throw new Error(`Статус должен быть числом от ${minStatus} до ${maxStatus}`);
             }
-            const response = await updateData(`/solutions/${solutionId}`, {status: newStatus});
+            const response = await patchData(`/submissions/${solutionId}/status`, {}, { status: newStatus });
             this._updateLocalSolution(response);
             return response;
         } catch (error) {
@@ -310,7 +284,7 @@ export default class SolutionStore {
 
     async fetchSolutionByNumber(number) {
         try {
-            const solution = await fetchData(`/solutions/number/${number}`);
+            const solution = await fetchData(`/submissions/number/${number}`);
             this.setCurrentSolution(solution);
             return solution;
         } catch (error) {
@@ -321,7 +295,7 @@ export default class SolutionStore {
 
     async deleteSolutionById(solutionId) {
         try {
-            await deleteData(`/solutions/${solutionId}`);
+            await deleteData(`/submissions/${solutionId}`);
             this.setCurrentSolution(null);
             return true;
         } catch (error) {

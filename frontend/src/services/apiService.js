@@ -72,6 +72,16 @@ export const updateData = async (endpoint, data = {}) => {
     }
 };
 
+export const patchData = async (endpoint, data = {}, params = {}) => {
+    try {
+        const response = await getClient(endpoint).patch(endpoint, data, { params });
+        return response.data;
+    } catch (error) {
+        console.error(`Error patching data at ${endpoint}:`, error);
+        throw error;
+    }
+};
+
 export const deleteData = async (endpoint, config = {}) => {
     try {
         const response = await getClient(endpoint).delete(endpoint, config);

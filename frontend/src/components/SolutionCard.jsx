@@ -20,9 +20,9 @@ const SolutionCard = ({ solution, contestTitle, freelancerLogin, employerLogin, 
         });
     };
 
-    const isCreated = solution.updatedAt === solution.createdAt;
+    const isCreated = solution.updated_at === solution.created_at;
     const dateLabel = isCreated ? "Создано" : "Обновлено";
-    const formattedDate = formatDate(isCreated ? solution.createdAt : solution.updatedAt);
+    const formattedDate = formatDate(isCreated ? solution.created_at : solution.updated_at);
 
     return (<Col
         xs={12}

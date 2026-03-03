@@ -8,3 +8,23 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend:/app:z
+
+  user-service:
+    volumes:
+      - ./backend/user-service:/app:z
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  contest-service:
+    volumes:
+      - ./backend/contest-service:/app:z
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  evaluation-service:
+    volumes:
+      - ./backend/evaluation-service:/app:z
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  payment-service:
+    volumes:
+      - ./backend/payment-service:/app:z
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

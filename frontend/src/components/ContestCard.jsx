@@ -10,21 +10,20 @@ const ContestCard = observer(({contest: item}) => {
     const {contest, user} = useContext(Context);
     const navigate = useNavigate();
 
-    const creator = user.getById(item.employerId);
-    const isOpen = item.status;
-    const statusOptions = [
-        { value: 1, label: 'Активный', colorClass: 'bg-success' },
-        { value: 2, label: 'На проверке', colorClass: 'bg-warning' },
-        { value: 3, label: 'Завершённый', colorClass: 'bg-danger' },
-        { value: 4, label: 'Отменённый', colorClass: 'bg-secondary' }
-    ];
+    const creator = user.getById(item.customer_id);
+    const isOpen = item.status === 'active';
+    const statusOptions = {
+        draft:     { label: 'Черновик',   colorClass: 'bg-secondary' },
+        active:    { label: 'Активный',   colorClass: 'bg-success' },
+        finished:  { label: 'Завершённый', colorClass: 'bg-danger' },
+        cancelled: { label: 'Отменённый', colorClass: 'bg-warning' },
+    };
 
-    const statusOption = statusOptions.find(option => option.value === item.status);
-
+    const statusOption = statusOptions[item.status];
     const statusText = statusOption ? statusOption.label : 'Неизвестный статус';
     const statusColor = statusOption ? statusOption.colorClass : 'bg-light';
 
-    const contestTypeName = contest.getTypeNameById(item.type);
+    const contestTypeName = contest.getTypeNameById(item.type_id);
 
     return (<Col
         xs={12}
@@ -101,7 +100,7 @@ const ContestCard = observer(({contest: item}) => {
                         </span>
                     </div>
                     <span style={{fontSize: '0.9rem', color: '#666'}}>
-                        {isOpen ? "До" : "C"} {new Date(item.endBy).toLocaleDateString('ru-RU', {
+                        {isOpen ? "До" : "C"} {new Date(item.ends_at).toLocaleDateString('ru-RU', {
                             day: '2-digit', month: 'long', year: 'numeric'
                         })}
                     </span>

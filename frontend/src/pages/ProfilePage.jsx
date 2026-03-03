@@ -23,7 +23,7 @@ const ProfilePage = () => {
     useEffect(() => {
         (async () => {
             try {
-                const data = await fetchData(`/profile?userId=${userId}`);
+                const data = await fetchData(`/users/profile`);
                 setForm({
                     email: data.email || '',
                     login: data.login || '',
@@ -54,7 +54,7 @@ const ProfilePage = () => {
         };
 
         try {
-            const updated = await updateData(`/profile`, { id: userId, ...payload });
+            const updated = await updateData(`/users/profile`, payload);
             // Обновляем MobX-стор
             user.setUser(updated);
             alert('Профиль сохранён');

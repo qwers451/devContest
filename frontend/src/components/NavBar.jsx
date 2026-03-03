@@ -28,8 +28,8 @@ const NavBar = () => {
                     <Nav className="ms-auto">
                         {user.isAuth ? (
                             <>
-                                {/* Если пользователь Админ (role: 3) */}
-                                {user.user && user.user.role === 3 && (
+                                {/* Если пользователь Админ */}
+                                {user.user && user.user.role === 'admin' && (
                                     <NavLink
                                         to={ADMIN_ROUTE}
                                         className="nav-link"
@@ -45,8 +45,8 @@ const NavBar = () => {
                                         Админ панель
                                     </NavLink>
                                 )}
-                                {/* Если пользователь Фрилансер (role: 1) */}
-                                {user.user && user.user.role === 1 && (
+                                {/* Если пользователь Фрилансер */}
+                                {user.user && user.user.role === 'executor' && (
                                     <NavLink
                                         to={MY_SOLUTIONS_ROUTE}
                                         className="nav-link"
@@ -62,8 +62,8 @@ const NavBar = () => {
                                         Мои решения
                                     </NavLink>
                                 )}
-                                {/* Если пользователь Организатор (role: 2) */}
-                                {user.user && user.user.role === 2 && (
+                                {/* Если пользователь Организатор */}
+                                {user.user && user.user.role === 'customer' && (
                                     <>
                                         <NavLink
                                             to={MY_CONTESTS_ROUTE}

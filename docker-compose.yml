@@ -3,7 +3,7 @@ services:
   # ─── Databases ───────────────────────────────────────────────────────────────
 
   user-db:
-    image: postgres:16-alpine
+    image: docker.io/library/postgres:16-alpine
     environment:
       POSTGRES_DB: user_db
       POSTGRES_USER: user_svc
@@ -19,7 +19,7 @@ services:
       retries: 5
 
   contest-db:
-    image: postgres:16-alpine
+    image: docker.io/library/postgres:16-alpine
     environment:
       POSTGRES_DB: contest_db
       POSTGRES_USER: contest_svc
@@ -35,7 +35,7 @@ services:
       retries: 5
 
   evaluation-db:
-    image: postgres:16-alpine
+    image: docker.io/library/postgres:16-alpine
     environment:
       POSTGRES_DB: evaluation_db
       POSTGRES_USER: eval_svc
@@ -51,7 +51,7 @@ services:
       retries: 5
 
   payment-db:
-    image: postgres:16-alpine
+    image: docker.io/library/postgres:16-alpine
     environment:
       POSTGRES_DB: payment_db
       POSTGRES_USER: payment_svc

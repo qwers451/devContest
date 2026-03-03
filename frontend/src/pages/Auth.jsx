@@ -15,7 +15,7 @@ const Auth = () => {
     const [email, setEmail] = useState('');
     const [loginInput, setLoginInput] = useState('');
     const [passwordInput, setPasswordInput] = useState('');
-    const [role, setRole] = useState(1); // 1 - Фрилансер, 2 - Организатор
+    const [role, setRole] = useState('executor');
     const [error, setError] = useState(null);
 
     const handleSubmit = async (event) => {
@@ -23,34 +23,23 @@ const Auth = () => {
         setError(null);
 
         try {
-            let endpoint = isLogin ? '/login' : '/users';
-            const data = {
-                login: loginInput,
-                password: passwordInput,
-                // Для регистрации можно добавить и другие данные (например, email) по необходимости
-            };
+            let endpoint = isLogin ? '/auth/login' : '/auth/register';
+            const data = { login: loginInput, password: passwordInput };
 
-            // Для регистрации добавляем email и role
             if (!isLogin) {
                 data.email = email;
-                data.role = parseInt(role, 10);
+                data.role = role;
             }
 
             const response = await sendData(endpoint, data);
 
-            // Если это регистрация, можно сразу залогинить пользователя или перенаправить на страницу входа
-            if (isLogin) {
-                // Обновляем состояние пользователя и делаем редирект, если вход успешен
-                user.setUser(response.user);
-                user.setIsAuth(true);
-                navigate('/');
-            } else {
-                // После успешной регистрации можно перенаправить на страницу входа
-                navigate(LOGIN_ROUTE);
-            }
+            // Сохраняем токен и данные пользователя
+            localStorage.setItem('token', response.access_token);
+            user.setUser(response.user);
+            user.setIsAuth(true);
+            navigate('/');
         } catch (err) {
-            // При ошибках можно показать сообщение
-            setError(err.response?.data?.message || "Что-то пошло не так");
+            setError(err.response?.data?.detail || "Что-то пошло не так");
         }
     };
 
@@ -96,8 +85,8 @@ const Auth = () => {
                                 onChange={(e) => setRole(e.target.value)}
                                 required
                             >
-                                <option value="1">Фрилансер</option>
-                                <option value="2">Организатор</option>
+                                <option value="executor">Фрилансер</option>
+                                <option value="customer">Организатор</option>
                             </Form.Select>
                         </Form.Group>
                     )}

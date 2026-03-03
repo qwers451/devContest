@@ -44,29 +44,20 @@ const CreateContest = () => {
             return;
         }
 
-        const formData = new FormData();
-        files.forEach(file => {
-            formData.append('files[]', file);
-        })
-
         let date = new Date(contest.form.endBy.value)
         date.setUTCHours(23, 59, 59, 999);
 
         const data = {
-            employerId: user.user.id,
             title: contest.form.title.value,
             annotation: contest.form.annotation.value,
             prizepool: parseInt(contest.form.prizepool.value),
             description: contest.form.description.value,
-            endBy: date.toISOString(),
-            type: String(contest.form.type.value), 
-            status: 1
+            ends_at: date.toISOString(),
+            type_id: Number(contest.form.type.value),
         };
 
-        formData.append('data', JSON.stringify(data));
-
         try {
-            const res = await sendData(submitURL, formData, true);
+            const res = await sendData(submitURL, data);
             contest.resetForm();
             navigate(-1);
             alert(`Конкурс успешно ${state ? 'изменён' : 'добавлен'}!`);
@@ -86,13 +77,13 @@ const CreateContest = () => {
         if (contestData) {
             console.log(contestData);
             setState(true);
-            setSubmitURL(`/contest/edit/${contestData.number}`);
+            setSubmitURL(`/contests/${contestData.id}`);
             contest.setFormField('type', contestData.type);
             contest.setFormField('title', contestData.title);
             contest.setFormField('annotation', contestData.annotation);
             contest.setFormField('description', contestData.description);
             contest.setFormField('prizepool', contestData.prizepool);
-            contest.setFormField('endBy', (new Date(contestData.endBy)).toISOString().split('T')[0]);
+            contest.setFormField('endBy', (new Date(contestData.ends_at)).toISOString().split('T')[0]);
         }
     }, [id, contestData]);
 

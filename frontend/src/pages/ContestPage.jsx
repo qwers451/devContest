@@ -42,8 +42,8 @@ const ContestPage = () => {
         return <div>Загрузка...</div>;
     }
 
-    const isFreelancer = user.user && user.user.role === 1;
-    const isAdmin = user.user && user.user.role === 3;
+    const isFreelancer = user.user && user.user.role === 'executor';
+    const isAdmin = user.user && user.user.role === 'admin';
 
     const handleDelete = async () => {
         if (!window.confirm('Вы точно хотите удалить этот конкурс?')) return;
@@ -67,13 +67,13 @@ const ContestPage = () => {
                     </Card.Title>
                     <h2>
                         <Badge bg="secondary" className="">
-                            {contest.getTypeNameById(currentContest.type)}
+                            {contest.getTypeNameById(currentContest.type_id)}
                         </Badge>
-                        <Badge className="ms-2" bg={currentContest.status === 1 ? 'success' : 'danger'}>
+                        <Badge className="ms-2" bg={currentContest.status === 'active' ? 'success' : 'danger'}>
                             {contest.getStatus(currentContest.status)}
                         </Badge>
                     </h2>
-                    <h4 className="mb-1">Дата окончания: {(new Date(currentContest.endBy)).toLocaleDateString('ru-RU', {})}<span className="ms-3">Приз: {currentContest.prizepool} руб.</span></h4>
+                    <h4 className="mb-1">Дата окончания: {(new Date(currentContest.ends_at)).toLocaleDateString('ru-RU', {})}<span className="ms-3">Приз: {currentContest.prizepool} руб.</span></h4>
                 </Card.Header>
                 <Card.Body>
                     <Card.Subtitle className="mb-1"><h2>Описание проекта</h2></Card.Subtitle>
@@ -130,12 +130,12 @@ const ContestPage = () => {
                         </Button>
                     </Card.Footer>
                 }
-                {(isAdmin || user.getCurrentUserId() === currentContest.employerId) &&
+                {(isAdmin || user.getCurrentUserId() === currentContest.customer_id) &&
                     <Card.Footer>
                         <Button variant="primary" onClick={() => navigate(`/contest/${currentContest.number}/solutions`)}>
                             Просмотреть решения
                         </Button>
-                        {user.getCurrentUserId() === currentContest.employerId &&
+                        {user.getCurrentUserId() === currentContest.customer_id &&
                             <Button
                                 variant="primary"
                                 className="ms-2"

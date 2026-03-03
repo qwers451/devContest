@@ -41,7 +41,7 @@ const CreateReview = () => {
     // 2. Проверка прав (только организатор может добавлять отзыв)
     useEffect(() => {
         if (!loadingSolution && !loadError) {
-            if (!user.isAuth || user.user.role !== 2) {
+            if (!user.isAuth || user.user.role !== 'customer') {
                 // нет доступа — возвращаем на страницу решения
                 navigate(`/solution/${number}`, { replace: true });
             }
@@ -62,10 +62,8 @@ const CreateReview = () => {
             const payload = {
                 score: parseFloat(score),
                 commentary: commentary.trim(),
-                reviewerId: user.user.id
             };
-            // POST /api/solutions/{id}/reviews
-            await sendData(`/solutions/${currentSolution.id}/reviews`, payload);
+            await sendData(`/submissions/${currentSolution.id}/reviews`, payload);
             // Возврат на страницу решения
             navigate(`/solution/${number}`);
         } catch (err) {
