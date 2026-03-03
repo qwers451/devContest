@@ -1,12 +1,155 @@
 services:
+
+  # ─── Databases ───────────────────────────────────────────────────────────────
+
+  user-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: user_svc
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_svc -d user_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  contest-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: contest_db
+      POSTGRES_USER: contest_svc
+      POSTGRES_PASSWORD: ${CONTEST_DB_PASSWORD}
+    volumes:
+      - contest_db_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contest_svc -d contest_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  evaluation-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: evaluation_db
+      POSTGRES_USER: eval_svc
+      POSTGRES_PASSWORD: ${EVAL_DB_PASSWORD}
+    volumes:
+      - evaluation_db_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eval_svc -d evaluation_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  payment-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: payment_svc
+      POSTGRES_PASSWORD: ${PAYMENT_DB_PASSWORD}
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_svc -d payment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── AI Model ────────────────────────────────────────────────────────────────
+
+  ollama:
+    image: ollama/ollama:latest
+    expose:
+      - "11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Uncomment for GPU (NVIDIA):
+    # devices:
+    #   - nvidia.com/gpu=all
+
+  # ─── Microservices ───────────────────────────────────────────────────────────
+
+  user-service:
+    build: ./backend/user-service
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user_svc:${USER_DB_PASSWORD}@user-db:5432/user_db
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      user-db:
+        condition: service_healthy
+
+  contest-service:
+    build: ./backend/contest-service
+    ports:
+      - "8002:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://contest_svc:${CONTEST_DB_PASSWORD}@contest-db:5432/contest_db
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      USER_SERVICE_URL: http://user-service:8000
+      PAYMENT_SERVICE_URL: http://payment-service:8000
+      EVALUATION_SERVICE_URL: http://evaluation-service:8000
+    volumes:
+      - contest_uploads:/app/uploads
+    depends_on:
+      contest-db:
+        condition: service_healthy
+
+  evaluation-service:
+    build: ./backend/evaluation-service
+    ports:
+      - "8003:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://eval_svc:${EVAL_DB_PASSWORD}@evaluation-db:5432/evaluation_db
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: llama3.1
+    depends_on:
+      evaluation-db:
+        condition: service_healthy
+
+  payment-service:
+    build: ./backend/payment-service
+    ports:
+      - "8004:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://payment_svc:${PAYMENT_DB_PASSWORD}@payment-db:5432/payment_db
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
+      YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
+    depends_on:
+      payment-db:
+        condition: service_healthy
+
+  # ─── Frontend ────────────────────────────────────────────────────────────────
+
   frontend:
     build: ./frontend
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      - user-service
+      - contest-service
 
-  backend:
-    build: ./backend
-    ports:
-      - "8000:8000"
+volumes:
+  user_db_data:
+  contest_db_data:
+  evaluation_db_data:
+  payment_db_data:
+  ollama_data:
+  contest_uploads:
