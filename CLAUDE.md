@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Structure
 
-The app lives in `frontend/` — a React 19 + TypeScript + Vite project. All development work happens inside that directory.
+```
+frontend/   # React 19 + TypeScript + Vite
+backend/    # Python microservices (each service in its own subdirectory)
+```
 
 ## Commands
 
@@ -17,7 +20,21 @@ npm run lint     # ESLint
 npm run preview  # Preview production build
 ```
 
-## Architecture
+## Docker (Podman)
+
+Run from repo root. Uses `podman-compose`.
+
+```bash
+podman-compose up --build    # Dev mode (default) — HMR on http://localhost:5173
+podman-compose -f docker-compose.yml up --build   # Production — nginx on http://localhost:3000
+```
+
+Dev mode is defined in `docker-compose.override.yml` and picked up automatically.
+
+Inter-container communication uses service names, not localhost:
+- Frontend → backend: `http://backend:8000`
+
+## Frontend Architecture
 
 - Entry point: `frontend/src/main.tsx` — mounts `<App>` in StrictMode
 - Root component: `frontend/src/App.tsx`
@@ -29,6 +46,17 @@ npm run preview  # Preview production build
 Project uses composite TypeScript config:
 - `tsconfig.app.json` — app source
 - `tsconfig.node.json` — Vite config
+
+## Backend
+
+Python microservices in `backend/`. Each service is a separate directory with its own Dockerfile.
+
+When adding a new service or changing an API, document the contract (endpoints, request/response shapes) in the service README.
+
+## Team
+
+- **Frontend** (`frontend/`) — Claude Code
+- **Backend** (`backend/`) — separate developer
 
 ## GitHub Actions
 
