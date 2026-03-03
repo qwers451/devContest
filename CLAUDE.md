@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Structure
 
-The app lives in `my-app/` — a React 19 + TypeScript + Vite project. All development work happens inside that directory.
+The app lives in `frontend/` — a React 19 + TypeScript + Vite project. All development work happens inside that directory.
 
 ## Commands
 
-All commands run from `my-app/`:
+All commands run from `frontend/`:
 
 ```bash
 npm run dev      # Start dev server with HMR
@@ -19,10 +19,10 @@ npm run preview  # Preview production build
 
 ## Architecture
 
-- Entry point: `my-app/src/main.tsx` — mounts `<App>` in StrictMode
-- Root component: `my-app/src/App.tsx`
+- Entry point: `frontend/src/main.tsx` — mounts `<App>` in StrictMode
+- Root component: `frontend/src/App.tsx`
 - Styles: component-level CSS files (`App.css`, `index.css`)
-- Static assets: `my-app/public/`
+- Static assets: `frontend/public/`
 
 ## TypeScript
 
