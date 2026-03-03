@@ -1,17 +1,47 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api';
-const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+const USER_API_URL = 'http://localhost:8001';
+const CONTEST_API_URL = 'http://localhost:8002';
 
-// функция для GET-запросов
+// Endpoints that belong to user-service
+const USER_ENDPOINTS = ['/auth/', '/users', '/profile'];
+
+function isUserEndpoint(endpoint) {
+    return USER_ENDPOINTS.some(prefix => endpoint.startsWith(prefix));
+}
+
+function getBaseUrl(endpoint) {
+    return isUserEndpoint(endpoint) ? USER_API_URL : CONTEST_API_URL;
+}
+
+function createClient(baseURL) {
+    const client = axios.create({
+        baseURL,
+        headers: { 'Content-Type': 'application/json' },
+    });
+
+    // Attach JWT token to every request
+    client.interceptors.request.use(config => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    });
+
+    return client;
+}
+
+const userApi = createClient(USER_API_URL);
+const contestApi = createClient(CONTEST_API_URL);
+
+function getClient(endpoint) {
+    return isUserEndpoint(endpoint) ? userApi : contestApi;
+}
+
 export const fetchData = async (endpoint, params = {}) => {
     try {
-        const response = await api.get(endpoint, { params });
+        const response = await getClient(endpoint).get(endpoint, { params });
         return response.data;
     } catch (error) {
         console.error(`Error fetching data from ${endpoint}:`, error);
@@ -19,16 +49,12 @@ export const fetchData = async (endpoint, params = {}) => {
     }
 };
 
-// функция для POST-запросов
 export const sendData = async (endpoint, data = {}, isFile = false) => {
     try {
-        const config = isFile 
-        ? { 
-            headers: { 'Content-Type': 'multipart/form-data' },
-            } 
-        : {};
-
-        const response = await api.post(endpoint, data, config);
+        const config = isFile
+            ? { headers: { 'Content-Type': 'multipart/form-data' } }
+            : {};
+        const response = await getClient(endpoint).post(endpoint, data, config);
         return response.data;
     } catch (error) {
         console.error(`Error sending data to ${endpoint}:`, error);
@@ -36,10 +62,9 @@ export const sendData = async (endpoint, data = {}, isFile = false) => {
     }
 };
 
-// PUT-запрос
 export const updateData = async (endpoint, data = {}) => {
     try {
-        const response = await api.put(endpoint, data);
+        const response = await getClient(endpoint).put(endpoint, data);
         return response.data;
     } catch (error) {
         console.error(`Error updating data at ${endpoint}:`, error);
@@ -47,10 +72,9 @@ export const updateData = async (endpoint, data = {}) => {
     }
 };
 
-// DELETE-запрос
 export const deleteData = async (endpoint, config = {}) => {
     try {
-        const response = await api.delete(endpoint, config);
+        const response = await getClient(endpoint).delete(endpoint, config);
         return response.data;
     } catch (error) {
         console.error(`Error deleting data at ${endpoint}:`, error);
@@ -58,16 +82,11 @@ export const deleteData = async (endpoint, config = {}) => {
     }
 };
 
-// GET-запрос одного файла или архива со всеми файлами
 export const downloadFileOrZip = async (endpoint, filename) => {
     try {
-        const response = await api.get(endpoint, {
-            responseType: 'blob',
-        });
-
+        const response = await getClient(endpoint).get(endpoint, { responseType: 'blob' });
         const blob = new Blob([response.data], { type: response.headers['content-type'] });
         const url = window.URL.createObjectURL(blob);
-
         const link = document.createElement('a');
         link.href = url;
         link.setAttribute('download', filename);
