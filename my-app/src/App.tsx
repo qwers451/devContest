@@ -1,33 +1,76 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useEffect, useState } from 'react'
 import './App.css'
 
+type RoutePath = '/' | '/about'
+
+function normalizePath(pathname: string): RoutePath {
+  if (pathname === '/about') {
+    return '/about'
+  }
+
+  return '/'
+}
+
+function navigate(path: RoutePath) {
+  if (window.location.pathname !== path) {
+    window.history.pushState({}, '', path)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+}
+
+function HomePage() {
+  return (
+    <section className="card">
+      <h1>Home</h1>
+      <p>Это главная страница базового роутинга без дополнительных библиотек.</p>
+    </section>
+  )
+}
+
+function AboutPage() {
+  return (
+    <section className="card">
+      <h1>About</h1>
+      <p>Этот экран показывает второй маршрут: <code>/about</code>.</p>
+    </section>
+  )
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [path, setPath] = useState<RoutePath>(() => normalizePath(window.location.pathname))
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setPath(normalizePath(window.location.pathname))
+    }
+
+    window.addEventListener('popstate', handleRouteChange)
+
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange)
+    }
+  }, [])
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+      <nav className="nav">
+        <button
+          className={path === '/' ? 'active' : ''}
+          onClick={() => navigate('/')}
+          type="button"
+        >
+          Home
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+        <button
+          className={path === '/about' ? 'active' : ''}
+          onClick={() => navigate('/about')}
+          type="button"
+        >
+          About
+        </button>
+      </nav>
+
+      {path === '/' ? <HomePage /> : <AboutPage />}
     </>
   )
 }
