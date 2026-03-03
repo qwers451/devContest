@@ -81,6 +81,35 @@ LLaMA-based automated pre-evaluation of submissions against the technical specif
 YooKassa integration with escrow and milestone payments.
 - Tables: `payments`, `escrow_accounts`, `transactions`, `payouts`
 
+## MVP Scope
+
+All items below are required for the final submission:
+
+**User Service**
+- Registration and login (JWT)
+- Roles: `customer`, `executor`, `admin`
+
+**Contest Service**
+- Contest creation with technical specification (TZ)
+- Contest templates
+- Contest stages (milestones)
+- Submission upload by executor
+- Winner selection by customer
+
+**Evaluation Service**
+- Automatic AI evaluation of submissions against TZ
+- Runs via Ollama (local, GPU-accelerated) — model: Llama 3.1 8B
+- Ollama runs as a separate container, accessible at `http://ollama:11434`
+- To download model on first run: `podman exec -it devcontest_ollama_1 ollama pull llama3.1`
+
+**Payment Service**
+- YooKassa integration
+- Escrow: funds reserved on contest creation, released to winner on finalization
+- Milestone payments
+- Transaction history
+
+**Not in scope:** arbitration/disputes
+
 ## Key Scenarios
 
 1. **Contest creation**: Customer creates contest → Payment Service reserves funds in escrow → status set to `active`
