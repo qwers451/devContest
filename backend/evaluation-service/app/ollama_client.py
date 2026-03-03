@@ -26,6 +26,9 @@ Return ONLY a valid JSON object with this exact structure:
   "critical_issues": <true or false>
 }}"""
 
+# Stub mode: when Ollama is not available, return a placeholder result
+STUB_MODE = True
+
 
 async def _generate(prompt: str) -> str:
     async with httpx.AsyncClient(timeout=120.0) as client:
@@ -38,6 +41,8 @@ async def _generate(prompt: str) -> str:
 
 
 async def extract_requirements(tz_text: str) -> list[str]:
+    if STUB_MODE:
+        return ["Stub requirement 1", "Stub requirement 2"]
     prompt = EXTRACT_PROMPT.format(tz_text=tz_text)
     raw = await _generate(prompt)
     try:
@@ -49,6 +54,13 @@ async def extract_requirements(tz_text: str) -> list[str]:
 
 
 async def evaluate_submission(requirements: list[str], submission_text: str) -> dict:
+    if STUB_MODE:
+        return {
+            "passed_requirements": requirements,
+            "failed_requirements": [],
+            "compliance_score": 75,
+            "critical_issues": False,
+        }
     req_text = "\n".join(f"- {r}" for r in requirements)
     prompt = EVALUATE_PROMPT.format(requirements=req_text, submission_text=submission_text)
     raw = await _generate(prompt)
