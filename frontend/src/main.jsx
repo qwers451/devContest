@@ -4,6 +4,7 @@ import App from './App.jsx'
 import UserStore from "./store/UserStore.jsx";
 import ContestStore from "./store/ContestStore.jsx";
 import SolutionStore from './store/SolutionStore.jsx';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 
 export const Context = createContext(null);
