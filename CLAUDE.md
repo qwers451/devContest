@@ -92,6 +92,7 @@ PUT  /submissions/{id}/reviews/{num}   body: {score, commentary?}
 DELETE /submissions/{id}/reviews/{num}
 
 GET  /contest-types                    → list[{id, name}]
+GET  /contest-types/{id}               → {id, name}
 POST /contest-types  (admin)           body: {name}
 DELETE /contest-types/{id}  (admin)
 ```
