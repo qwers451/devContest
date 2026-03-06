@@ -9,7 +9,7 @@ Contest-based freelance platform where customers post tasks, executors submit wo
 ## Project Structure
 
 ```
-frontend/   # React 19 + TypeScript + Vite (MobX state management)
+frontend/   # React 19 + JavaScript/JSX + Vite (MobX state management)
 backend/
   user-service/       # Auth, roles, users          → port 8001
   contest-service/    # Core: contests, submissions  → port 8002
@@ -24,7 +24,7 @@ All commands run from `frontend/`:
 
 ```bash
 npm run dev      # Start dev server with HMR
-npm run build    # Type-check + production build (tsc -b && vite build)
+npm run build    # Production build (vite build — no tsc)
 npm run lint     # ESLint
 npm run preview  # Preview production build
 ```
@@ -43,7 +43,7 @@ podman-compose build --no-cache user-service && podman-compose up user-service
 
 Dev mode uses `docker-compose.override.yml` (picked up automatically):
 - Volume mounts source code into containers for hot-reload (`--reload` uvicorn flag)
-- Frontend runs Vite dev server on port 5173
+- Frontend runs Vite dev server on port 5173 (`npm run dev -- --host`)
 
 Inter-container communication uses service names: `http://<service-name>:8000`
 
@@ -51,6 +51,7 @@ Inter-container communication uses service names: `http://<service-name>:8000`
 
 - **Roles**: string enums — `customer`, `executor`, `admin` (never integers)
 - **Contest status**: string enum — `draft`, `active`, `finished`, `cancelled`
+- **Submission status**: integer (default: 1) — not a string enum
 - **Field names**: snake_case — `customer_id`, `executor_id`, `ends_at`, `type_id`, `created_at`, `updated_at`
 - **Auth**: JWT Bearer token in `Authorization` header; issued by user-service, validated locally in each service via shared `JWT_SECRET`
 - **Internal calls**: protected by `X-Internal-Secret` header
@@ -76,13 +77,13 @@ POST /contests  (customer/admin)       body: {title, annotation?, description?, 
 GET  /contests/{id}                    → ContestOut
 GET  /contests/number/{number}         → ContestOut
 DELETE /contests/{id}  (admin)
-POST /contests/{id}/winner?submission_id=&executor_id=  (customer/admin)
+POST /contests/{id}/winner?submission_id=<id>&executor_id=<id>  (customer/admin)
 
 GET  /submissions                      → list[SubmissionOut]
 POST /submissions  (executor)          body: {contest_id, title, annotation?, description?}
 GET  /submissions/{id}
 GET  /submissions/number/{number}
-PATCH /submissions/{id}/status?status=  (customer/admin)
+PATCH /submissions/{id}/status?status=<int>  (customer/admin)
 DELETE /submissions/{id}
 
 POST /submissions/{id}/reviews         body: {score, commentary?}
@@ -100,14 +101,15 @@ DELETE /contest-types/{id}  (admin)
 ```
 POST /escrow/reserve   (internal)  body: {contest_id, customer_id, amount}
 POST /escrow/release   (internal)  body: {contest_id, executor_id}
-GET  /transactions
+GET  /transactions     (auth required)
+GET  /payouts/{executor_id}  (auth required)
 ```
 
 ### Evaluation Service (port 8003) — internal only
 
 ```
-POST /evaluation/evaluate  (internal)
-GET  /evaluation/{submission_id}
+POST /evaluation/evaluate  (internal, X-Internal-Secret required)
+GET  /evaluation/{submission_id}  (auth required)
 ```
 
 ## Known Issues & Fixes Applied
@@ -136,7 +138,7 @@ All services: **Python + FastAPI + PostgreSQL**. Each service has its own databa
 
 ### Evaluation Service
 - LLaMA-based automated pre-evaluation of submissions against TZ
-- Tables: `requirements`, `evaluation_results`
+- Tables: `evaluation_results` (requirements are extracted dynamically via LLM, not stored separately)
 - Runs via Ollama container at `http://ollama:11434`, model: `llama3.1`
 - Evaluation flow: parse TZ → extract requirements → compare submission → return compliance report
 - Does NOT select winners — final decision always belongs to the customer
@@ -154,17 +156,35 @@ All services: **Python + FastAPI + PostgreSQL**. Each service has its own databa
 
 ## Frontend Architecture
 
-- Entry point: `frontend/src/main.tsx`
-- Root: `frontend/src/App.tsx`
-- State: MobX stores in `frontend/src/store/` (ContestStore, SolutionStore, UserStore)
+The frontend is written in **JavaScript/JSX** (not TypeScript). No `tsc` is run at build time.
+
+- Entry point: `frontend/src/main.jsx`
+- Root component: `frontend/src/App.jsx` (note: `App.tsx` also exists but is the empty Vite template)
+- Routes: `frontend/src/routes.jsx`
+- State: MobX stores in `frontend/src/store/` — `ContestStore.jsx`, `SolutionStore.jsx`, `UserStore.jsx`
 - API: `frontend/src/services/apiService.js` — per-service base URLs, JWT Bearer interceptor
+- Components: `frontend/src/components/`
+- Utils/constants: `frontend/src/utils/consts.js`
 - Service base URLs: USER_API=8001, CONTEST_API=8002 (set in apiService.js)
 
-## TypeScript
+### Pages (`frontend/src/pages/`)
 
-Project uses composite TypeScript config:
-- `tsconfig.app.json` — app source
-- `tsconfig.node.json` — Vite config
+| File | Description |
+|------|-------------|
+| `Auth.jsx` | Login / registration |
+| `ProfilePage.jsx` | User profile |
+| `Admin.jsx` | Admin panel |
+| `Contests.jsx` | Contest list |
+| `MyContests.jsx` | Customer's own contests |
+| `ContestPage.jsx` | Contest detail |
+| `CreateContest.jsx` | Create contest form |
+| `Solutions.jsx` | All submissions |
+| `MySolutions.jsx` | Executor's own submissions |
+| `SolutionPage.jsx` | Submission detail + AI evaluation |
+| `CreateSolution.jsx` | Submit solution form |
+| `SolutionReviews.jsx` | Submission reviews list |
+| `ReviewPage.jsx` | Single review detail |
+| `CreateReview.jsx` | Write a review |
 
 ## Seed Data
 
