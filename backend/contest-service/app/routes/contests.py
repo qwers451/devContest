@@ -2,6 +2,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
+from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 from app.database import get_db
 from app.models import Contest, ContestStage, Winner, ContestStatus
@@ -16,6 +17,24 @@ class StageIn(BaseModel):
     description: str | None = None
     deadline: datetime | None = None
     order: int
+
+
+class StageOut(BaseModel):
+    id: int
+    name: str
+    description: str | None
+    deadline: datetime | None
+    order: int
+
+    model_config = {"from_attributes": True}
+
+
+class WinnerOut(BaseModel):
+    submission_id: int
+    executor_id: int
+    selected_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class ContestCreate(BaseModel):
@@ -44,6 +63,9 @@ class ContestOut(BaseModel):
     files: list
     created_at: datetime
     ends_at: datetime
+    current_stage_id: int | None = None
+    stages: list[StageOut] = []
+    winner: WinnerOut | None = None
 
     model_config = {"from_attributes": True}
 
@@ -53,6 +75,10 @@ class ContestListOut(BaseModel):
     total: int
     page: int
     pages: int
+
+
+def _relations():
+    return [selectinload(Contest.stages), selectinload(Contest.winner)]
 
 
 @router.get("", response_model=ContestListOut)
@@ -67,7 +93,6 @@ async def list_contests(
     customer_id: int | None = None,
     db: AsyncSession = Depends(get_db),
 ):
-    q = select(Contest)
     filters = []
     if search:
         filters.append(Contest.title.ilike(f"%{search}%"))
@@ -81,15 +106,17 @@ async def list_contests(
         filters.append(Contest.prizepool <= max_reward)
     if customer_id:
         filters.append(Contest.customer_id == customer_id)
+
+    count_q = select(func.count(Contest.id))
+    if filters:
+        count_q = count_q.where(and_(*filters))
+    total = (await db.execute(count_q)).scalar()
+
+    q = select(Contest).options(*_relations())
     if filters:
         q = q.where(and_(*filters))
-
-    total_result = await db.execute(select(func.count()).select_from(q.subquery()))
-    total = total_result.scalar()
-
     q = q.order_by(Contest.created_at.desc()).offset((page - 1) * limit).limit(limit)
-    result = await db.execute(q)
-    items = result.scalars().all()
+    items = (await db.execute(q)).scalars().all()
 
     return ContestListOut(
         items=items,
@@ -125,16 +152,14 @@ async def create_contest(
     await db.flush()
 
     for stage_data in data.stages:
-        stage = ContestStage(
+        db.add(ContestStage(
             contest_id=contest.id,
             name=stage_data.name,
             description=stage_data.description,
             deadline=stage_data.deadline,
             order=stage_data.order,
-        )
-        db.add(stage)
+        ))
 
-    # Reserve escrow — activate contest only if payment succeeds
     try:
         await reserve_escrow(contest.id, current_user["id"], data.prizepool)
         contest.status = ContestStatus.active
@@ -142,22 +167,28 @@ async def create_contest(
         raise HTTPException(status_code=502, detail="Payment service unavailable")
 
     await db.commit()
-    await db.refresh(contest)
-    return contest
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest.id)
+    )
+    return result.scalar_one()
 
 
-@router.get("/{contest_id}", response_model=ContestOut)
-async def get_contest(contest_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Contest).where(Contest.id == contest_id))
+@router.get("/number/{number}", response_model=ContestOut)
+async def get_contest_by_number(number: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.number == number)
+    )
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
     return contest
 
 
-@router.get("/number/{number}", response_model=ContestOut)
-async def get_contest_by_number(number: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Contest).where(Contest.number == number))
+@router.get("/{contest_id}", response_model=ContestOut)
+async def get_contest(contest_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
@@ -186,23 +217,98 @@ async def select_winner(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("customer", "admin")),
 ):
-    result = await db.execute(select(Contest).where(Contest.id == contest_id))
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    if contest.customer_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not your contest")
+    if contest.status != ContestStatus.active:
+        raise HTTPException(status_code=409, detail="Contest is not active")
+
+    db.add(Winner(
+        contest_id=contest_id,
+        submission_id=submission_id,
+        executor_id=executor_id,
+    ))
+    contest.status = ContestStatus.finished
+
+    await release_escrow(contest_id, executor_id)
+
+    await db.commit()
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    return result.scalar_one()
+
+
+@router.put("/{contest_id}/stages", response_model=ContestOut)
+async def update_stages(
+    contest_id: int,
+    stages: list[StageIn],
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_role("customer", "admin")),
+):
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
     if contest.customer_id != current_user["id"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not your contest")
 
-    winner = Winner(
-        contest_id=contest_id,
-        submission_id=submission_id,
-        executor_id=executor_id,
-    )
-    db.add(winner)
-    contest.status = ContestStatus.finished
+    # Delete existing stages
+    for stage in list(contest.stages):
+        await db.delete(stage)
+    await db.flush()
 
-    await release_escrow(contest_id, executor_id)
+    # Reset current_stage_id since stages were replaced
+    contest.current_stage_id = None
+
+    # Create new stages
+    for stage_data in stages:
+        db.add(ContestStage(
+            contest_id=contest.id,
+            name=stage_data.name,
+            description=stage_data.description,
+            deadline=stage_data.deadline,
+            order=stage_data.order,
+        ))
 
     await db.commit()
-    await db.refresh(contest)
-    return contest
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    return result.scalar_one()
+
+
+@router.patch("/{contest_id}/current-stage", response_model=ContestOut)
+async def set_current_stage(
+    contest_id: int,
+    stage_id: int | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_role("customer", "admin")),
+):
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    if contest.customer_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not your contest")
+
+    if stage_id is not None:
+        stage_ids = {s.id for s in contest.stages}
+        if stage_id not in stage_ids:
+            raise HTTPException(status_code=400, detail="Stage does not belong to this contest")
+
+    contest.current_stage_id = stage_id
+    await db.commit()
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    return result.scalar_one()

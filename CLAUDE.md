@@ -77,6 +77,8 @@ GET  /contests/{id}                    → ContestOut
 GET  /contests/number/{number}         → ContestOut
 DELETE /contests/{id}  (admin)
 POST /contests/{id}/winner?submission_id=&executor_id=  (customer/admin)
+PUT  /contests/{id}/stages  (customer/admin)  body: list[StageIn]  → ContestOut  (replaces all stages, resets current_stage_id)
+PATCH /contests/{id}/current-stage?stage_id=  (customer/admin)    → ContestOut  (stage_id=null clears override → auto-detect)
 
 GET  /submissions                      → list[SubmissionOut]
 POST /submissions  (executor)          body: {contest_id, title, annotation?, description?}
@@ -117,6 +119,12 @@ GET  /evaluation/{submission_id}
 - **pydantic EmailStr**: requires `pydantic[email]` extra (not plain `pydantic`).
 - **CORS**: `allow_origins=["*"]` + `allow_credentials=True` is invalid per CORS spec — use one or the other. All services use `allow_origins=["*"]` without credentials.
 - **Image rebuild**: Python packages are baked into the image. After changing `requirements.txt`, must rebuild with `--no-cache` to re-run `pip install`.
+- **Admin user role**: The seed creates admin via login-first strategy. If the admin user exists in the DB with role `executor`, fix manually:
+  ```sql
+  UPDATE users SET role='admin' WHERE login='admin';
+  ```
+  Run inside: `podman exec -it devcontest_user-db_1 psql -U user_svc -d user_db`
+- **New DB columns**: `create_all` only creates missing tables, not missing columns. Add new columns manually via `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...`.
 
 ## Backend Microservices
 
@@ -130,6 +138,7 @@ All services: **Python + FastAPI + PostgreSQL**. Each service has its own databa
 ### Contest Service
 - Tables: `contest_types`, `contest_templates`, `contests`, `contest_stages`, `submissions`, `reviews`, `winners`
 - `type_id` is a real FK to `contest_types` in the same DB — must exist before creating contests
+- `contests.current_stage_id` — plain Integer (no FK), nullable. Manually set by owner via `PATCH /current-stage`. If null, frontend auto-detects active stage by nearest future deadline.
 - On contest creation: calls Payment Service `/escrow/reserve` → sets status `active`
 - On submission: calls Evaluation Service (non-blocking, failure doesn't block submission)
 - On winner selection: calls Payment Service `/escrow/release`
@@ -159,6 +168,17 @@ All services: **Python + FastAPI + PostgreSQL**. Each service has its own databa
 - State: MobX stores in `frontend/src/store/` (ContestStore, SolutionStore, UserStore)
 - API: `frontend/src/services/apiService.js` — per-service base URLs, JWT Bearer interceptor
 - Service base URLs: USER_API=8001, CONTEST_API=8002 (set in apiService.js)
+
+### Active stage logic (frontend)
+- `ContestOut.current_stage_id` — manually set by owner; `null` means auto-detect mode
+- Auto-detect: first stage (sorted by `order`) whose `deadline >= now`; if none, last stage
+- Badge: `Текущий` (manual) or `Текущий (авто)` (auto-detected)
+- Owner can assign/clear manual stage via buttons on ContestPage; editing stages resets `current_stage_id` to null
+
+### User caching
+- `UserStore._users` is a `{ [id]: user }` map; `getById(id)` reads from cache
+- `ContestsList` fetches all missing `customer_id`s after each contest list load
+- `ContestPage` fetches `customer_id` on mount to show creator name
 
 ## TypeScript
 

@@ -5,13 +5,21 @@ import ContestCard from "./ContestCard.jsx";
 import { observer } from "mobx-react-lite";
 
 const ContestsList = observer(() => {
-    const { contest } = useContext(Context);
+    const { contest, user } = useContext(Context);
 
     const [showLoader, setShowLoader] = useState(false); // Изначально лоадер скрыт
 
     useEffect(() => {
         contest.fetchContestsFiltered(contest.currentPage);
     }, []);
+
+    // Fetch creators for all contests when the list changes
+    useEffect(() => {
+        if (contest.contests.length === 0) return;
+        const missingIds = [...new Set(contest.contests.map(c => c.customer_id))]
+            .filter(id => id && !user.getById(id));
+        missingIds.forEach(id => user.fetchUserById(id));
+    }, [contest.contests]);
 
     const handlePageChange = (pageNumber) => {
         contest.fetchContestsFiltered(pageNumber);

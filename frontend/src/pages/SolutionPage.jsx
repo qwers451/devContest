@@ -17,6 +17,7 @@ const SolutionPage = () => {
     const [error, setError] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
+    const [showWinnerModal, setShowWinnerModal] = useState(false);
 
     const navigate = useNavigate();
 
@@ -24,7 +25,7 @@ const SolutionPage = () => {
         const fetchData = async () => {
             try {
                 let sol;
-    
+
                 if (solution.currentSolution && solution.currentSolution.number == number) {
                     sol = solution.currentSolution;
                 } else {
@@ -40,8 +41,11 @@ const SolutionPage = () => {
                 const fetchedContest = await contest.fetchOneContestById(sol.contest_id);
                 setCurrentContest(fetchedContest);
 
-                await user.fetchUserById(sol.executor_id);
-                setFreelancer(user.getById(sol.executor_id));
+                const [execUser] = await Promise.all([
+                    user.fetchUserById(sol.executor_id),
+                    fetchedContest?.customer_id ? user.fetchUserById(fetchedContest.customer_id) : Promise.resolve(null),
+                ]);
+                setFreelancer(execUser);
             } catch (err) {
                 console.error(err);
                 setError(err.message);
@@ -61,6 +65,8 @@ const SolutionPage = () => {
     const isAdmin = user.user?.role === 'admin';
     const isOwner = user.user?.id === currentSolution.executor_id;
     const isEmployer = user.user?.role === 'customer';
+    const isContestOwner = user.user?.id === currentContest?.customer_id;
+    const isContestActive = currentContest?.status === 'active';
     const isCreated = currentSolution.created_at === currentSolution.updated_at;
 
     const formatDate = (dateString) => {
@@ -84,34 +90,38 @@ const SolutionPage = () => {
 
     const handleStatusChange = async (newStatus) => {
         try {
-            if (solution.currentSolution.status === newStatus) {
-                console.log('Статус не изменился:', newStatus);
-                return;
-            }
-
+            if (solution.currentSolution.status === newStatus) return;
             const updatedSolution = await solution.updateSolutionStatus(currentSolution.id, newStatus);
-            setCurrentSolution(updatedSolution); 
+            setCurrentSolution(updatedSolution);
         } catch (error) {
             console.error('Ошибка изменения статуса:', error);
         }
     };
 
-    const handleGoToContest = () => {
-        if (currentContest?.number) {
+    const handleSelectWinner = async () => {
+        try {
+            await solution.selectWinner(
+                currentContest.id,
+                currentSolution.id,
+                currentSolution.executor_id
+            );
             navigate(`/contest/${currentContest.number}`);
+        } catch (error) {
+            console.error('Ошибка выбора победителя:', error);
+            alert('Не удалось выбрать победителя: ' + (error?.response?.data?.detail || error.message));
         }
     };
-    
-    const handleGoToMySolutions = () => {
-        navigate(`/my-solutions`);
+
+    const handleGoToContest = () => {
+        if (currentContest?.number) navigate(`/contest/${currentContest.number}`);
     };
 
-    const handleGoToSolutions = () => {
-        navigate(`/contest/${currentContest.number}/solutions`);
-    };
+    const handleGoToMySolutions = () => navigate(`/my-solutions`);
+
+    const handleGoToSolutions = () => navigate(`/contest/${currentContest.number}/solutions`);
 
     const handleEditSolution = () => {
-        navigate(`/solution/${currentSolution.number}/edit`, { state: JSON.parse(JSON.stringify(currentSolution)) })
+        navigate(`/solution/${currentSolution.number}/edit`, { state: JSON.parse(JSON.stringify(currentSolution)) });
     };
 
     const handleDownloadArchive = () => {
@@ -121,20 +131,15 @@ const SolutionPage = () => {
         downloadFileOrZip(`/download-folder/${folderPath}`, `solution_${currentSolution.number}`);
     };
 
-    const handleGoToReviews = () => {
-        navigate(`/solution/${currentSolution.number}/reviews`);
-    };
+    const handleGoToReviews = () => navigate(`/solution/${currentSolution.number}/reviews`);
 
-    const handleLeaveReview = () => {
-        navigate(`/solution/${currentSolution.number}/create-review`);
-    };
+    const handleLeaveReview = () => navigate(`/solution/${currentSolution.number}/create-review`);
 
     return (
         <Container>
             <Card className="mb-4 shadow-sm">
                 <Card.Header className="position-relative">
                     <div className="d-flex justify-content-between align-items-start flex-wrap">
-                        {/* Левая часть: Заголовок, конкурс и статус */}
                         <div>
                             <Card.Title className="mb-2">
                                 <h1>{currentSolution.title || "Без названия"}</h1>
@@ -150,7 +155,7 @@ const SolutionPage = () => {
                                         fontSize: '1.4rem',
                                         fontWeight: '700',
                                         lineHeight: '1',
-                                        color: solution.getStatus(solution.currentSolution.status).textColor, // Заменяем currentSolution.status на solution.currentSolution.status
+                                        color: solution.getStatus(solution.currentSolution.status).textColor,
                                         backgroundColor: solution.getStatus(solution.currentSolution.status).color,
                                         padding: '0.35em 0.65em',
                                         borderRadius: '0.375rem',
@@ -162,16 +167,13 @@ const SolutionPage = () => {
                             </div>
                         </div>
 
-                        {/* Правая часть: Фрилансер */}
-                        <div
-                            className="text-end d-flex flex-column justify-content-center align-items-end ms-auto mt-2">
+                        <div className="text-end d-flex flex-column justify-content-center align-items-end ms-auto mt-2">
                             <h5 className="text-muted">
                                 {freelancer?.login || "Неизвестный фрилансер"}
                             </h5>
                         </div>
                     </div>
 
-                    {/* Даты в правом нижнем углу */}
                     <div
                         style={{
                             position: 'absolute',
@@ -192,7 +194,6 @@ const SolutionPage = () => {
                 </Card.Header>
 
                 <Card.Body>
-                    {/* Описание */}
                     <Card.Subtitle className="mb-2">
                         <h2>Описание:</h2>
                     </Card.Subtitle>
@@ -208,7 +209,6 @@ const SolutionPage = () => {
                                 {currentSolution.files.map((filePath, index) => {
                                     const fileName = filePath.split('/').pop();
                                     const relativePath = filePath.replace('/static/', '');
-
                                     return (
                                         <li key={index}>
                                             <Button
@@ -222,10 +222,7 @@ const SolutionPage = () => {
                                     );
                                 })}
                             </ul>
-                            <Button
-                                variant="success"
-                                onClick={handleDownloadArchive}
-                            >
+                            <Button variant="success" onClick={handleDownloadArchive}>
                                 Скачать всё
                             </Button>
                         </>
@@ -236,62 +233,34 @@ const SolutionPage = () => {
                     <div className="d-flex flex-wrap gap-2">
                         {(isOwner || isAdmin) && (
                             <>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={handleGoToContest}
-                                >
+                                <Button variant="secondary" size="sm" onClick={handleGoToContest}>
                                     Перейти к конкурсу
                                 </Button>
-
-                                <Button
-                                    variant="primary"
-                                    size="sm"
-                                    onClick={handleGoToMySolutions}
-                                >
+                                <Button variant="primary" size="sm" onClick={handleGoToMySolutions}>
                                     Перейти к моим решениям
                                 </Button>
                             </>
                         )}
 
                         {isEmployer && (
-                            <>
-                                <Button 
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={handleGoToSolutions}
-                                >
-                                    Вернуться к списку решений
-                                </Button>
-                            </>
+                            <Button variant="secondary" size="sm" onClick={handleGoToSolutions}>
+                                Вернуться к списку решений
+                            </Button>
                         )}
                     </div>
 
                     <div className="d-flex flex-wrap gap-2">
                         {(isOwner || isAdmin) && (
                             <>
-                                <Button
-                                    variant="info"
-                                    className="sm"
-                                    onClick={handleGoToReviews}
-                                >
+                                <Button variant="info" size="sm" onClick={handleGoToReviews}>
                                     Просмотреть отзывы
                                 </Button>
-                                <Button
-                                    variant="success"
-                                    className="sm"
-                                    onClick={handleEditSolution}
-                                >
+                                <Button variant="success" size="sm" onClick={handleEditSolution}>
                                     Редактировать решение
                                 </Button>
-                                <Button
-                                    variant="danger"
-                                    size="sm"
-                                    onClick={() => setShowDeleteModal(true)}
-                                >
+                                <Button variant="danger" size="sm" onClick={() => setShowDeleteModal(true)}>
                                     Удалить решение
                                 </Button>
-
                                 <ConfirmationModal
                                     show={showDeleteModal}
                                     onHide={() => setShowDeleteModal(false)}
@@ -306,35 +275,43 @@ const SolutionPage = () => {
 
                         {isEmployer && (
                             <>
-                                <Button
-                                    variant="info"
-                                    className="sm"
-                                    onClick={handleGoToReviews}
-                                >
+                                <Button variant="info" size="sm" onClick={handleGoToReviews}>
                                     Просмотреть отзывы
                                 </Button>
-                                <Button
-                                    variant="warning"
-                                    size="sm"
-                                    onClick={() => setShowStatusModal(true)}
-                                >
+                                <Button variant="warning" size="sm" onClick={() => setShowStatusModal(true)}>
                                     Изменить статус
                                 </Button>
-
                                 <ChangeSolutionStatusModal
                                     show={showStatusModal}
                                     onHide={() => setShowStatusModal(false)}
                                     currentStatus={solution.currentSolution.status}
                                     onSave={handleStatusChange}
                                 />
-
-                                <Button 
-                                    variant="success"
-                                    size="sm"
-                                    onClick={handleLeaveReview}
-                                >
+                                <Button variant="success" size="sm" onClick={handleLeaveReview}>
                                     Оставить отзыв
                                 </Button>
+
+                                {/* Кнопка финализации — только владелец конкурса, пока он активен */}
+                                {isContestOwner && isContestActive && (
+                                    <>
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
+                                            onClick={() => setShowWinnerModal(true)}
+                                        >
+                                            🏆 Выбрать победителем
+                                        </Button>
+                                        <ConfirmationModal
+                                            show={showWinnerModal}
+                                            onHide={() => setShowWinnerModal(false)}
+                                            onConfirm={handleSelectWinner}
+                                            title="Выбор победителя"
+                                            message={`Вы уверены, что хотите выбрать это решение победителем? Конкурс завершится, а приз (${currentContest.prizepool} руб.) будет начислен исполнителю. Действие необратимо.`}
+                                            confirmText="Выбрать победителем"
+                                            cancelText="Отмена"
+                                        />
+                                    </>
+                                )}
                             </>
                         )}
                     </div>

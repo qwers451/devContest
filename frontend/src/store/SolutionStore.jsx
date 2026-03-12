@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { fetchData, deleteData, patchData } from "../services/apiService";
+import { fetchData, deleteData, patchData, sendData } from "../services/apiService";
 
 const baseForm = {
     title: {
@@ -302,5 +302,11 @@ export default class SolutionStore {
             console.error("Ошибка при удалении решения:", error);
             throw error;
         }
+    }
+
+    async selectWinner(contestId, submissionId, executorId) {
+        const url = `/contests/${contestId}/winner?submission_id=${submissionId}&executor_id=${executorId}`;
+        const contest = await sendData(url, {});
+        return contest;
     }
 }

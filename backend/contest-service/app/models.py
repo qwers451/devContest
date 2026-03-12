@@ -46,6 +46,8 @@ class Contest(Base):
     created_at  = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     ends_at     = Column(DateTime(timezone=True), nullable=False)
 
+    current_stage_id = Column(Integer, nullable=True)
+
     type        = relationship("ContestType")
     template    = relationship("ContestTemplate")
     stages      = relationship("ContestStage", back_populates="contest", cascade="all, delete-orphan")

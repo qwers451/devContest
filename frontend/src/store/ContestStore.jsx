@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { fetchData } from "../services/apiService";
+import { fetchData, updateData, patchData } from "../services/apiService";
 
 const baseForm = {
     type: {
@@ -22,6 +22,11 @@ const baseForm = {
         error: '',
         rules: {min: 100, max: 20000 },
     },
+    tz_text: {
+        value: '',
+        error: '',
+        rules: {},
+    },
     prizepool: {
         value: '',
         error: '',
@@ -41,15 +46,16 @@ const baseForm = {
 
 export default class ContestStore {
     form = baseForm;
+    stages = [];
 
     formErrors = {
         type: 'Тип конкурса обязателен',
-        title: `Название должно быть от ${this.form.title.rules.min} до ${this.form.title.rules.max} символов`,
-        annotation: `Краткое описание от ${this.form.annotation.rules.min} до ${this.form.annotation.rules.max} символов`,
-        description: `Полное описание от ${this.form.description.rules.min} до ${this.form.description.rules.max} символов`,
-        prizepool: `Приз должен быть от ${this.form.prizepool.rules.min} до ${this.form.prizepool.rules.max}`,
-        endBy: `Дата окончания минимум на ${this.form.endBy.rules.minDays} дня позже текущей`,
-        files: `Максимальное количество файлов - ${this.form.files.rules.max}`
+        title: `Название должно быть от ${baseForm.title.rules.min} до ${baseForm.title.rules.max} символов`,
+        annotation: `Краткое описание от ${baseForm.annotation.rules.min} до ${baseForm.annotation.rules.max} символов`,
+        description: `Полное описание от ${baseForm.description.rules.min} до ${baseForm.description.rules.max} символов`,
+        prizepool: `Приз должен быть от ${baseForm.prizepool.rules.min} до ${baseForm.prizepool.rules.max}`,
+        endBy: `Дата окончания минимум на ${baseForm.endBy.rules.minDays} дня позже текущей`,
+        files: `Максимальное количество файлов - ${baseForm.files.rules.max}`
     };
 
     status = {
@@ -95,7 +101,25 @@ export default class ContestStore {
 
     resetForm() {
         this.form = baseForm;
+        this.stages = [];
     }
+
+    // ── Stages management ────────────────────────────────────────────────────
+
+    addStage() {
+        this.stages.push({ name: '', description: '', deadline: '', order: this.stages.length + 1 });
+    }
+
+    removeStage(index) {
+        this.stages.splice(index, 1);
+        this.stages.forEach((s, i) => { s.order = i + 1; });
+    }
+
+    updateStage(index, field, value) {
+        this.stages[index][field] = value;
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
 
     validateField(field) {
         switch (field) {
@@ -288,7 +312,6 @@ export default class ContestStore {
     }
 
     async fetchContestsByPage(page) {
-        console.log('fetchContestsByPage')
         try {
             this.setLoading(true);
             const data = await fetchData("/contests", { page });
@@ -337,23 +360,11 @@ export default class ContestStore {
             params.employerId = this._employerId;
         }
 
-        const hasFilters = (
-            params.minReward !== 0 ||
-            params.maxReward !== 9999999 ||
-            this._selectedTypes?.length > 0 ||
-            this._selectedStatuses?.length > 0 ||
-            this._searchQuery ||
-            this._endBy ||
-            this._endAfter ||
-            this._employerId
-        );
-
         return params;
     }
 
     async fetchContestsFiltered(page = 1) {
         const rawParams = this.getFiltersAndParams();
-        // Map old param names to FastAPI query param names
         const params = { page };
         if (rawParams.search) params.search = rawParams.search;
         if (rawParams.statuses) params.status = rawParams.statuses.split(',')[0];
@@ -366,7 +377,6 @@ export default class ContestStore {
 
         try {
             this.setLoading(true);
-            console.log('Fetching contests with params:', params);
             const data = await fetchData('/contests', params);
             this.setContests(data.items || []);
             this.setTotalPages(data.pages || 1);
@@ -403,7 +413,6 @@ export default class ContestStore {
         try {
             const types = await fetchData("/contest-types");
             this.setTypes(types);
-            console.log("Загрузка типов",types)
         } catch (error) {
             console.error("Ошибка при загрузке типов конкурсов:", error);
         }
@@ -411,7 +420,7 @@ export default class ContestStore {
 
     getTypeNameById(typeId) {
         if (!typeId) return null;
-        const type = this._types.find(t => t.id === typeId || t.id === typeId);
+        const type = this._types.find(t => t.id === typeId);
         return type?.name || "Неизвестный тип";
     }
 
@@ -426,8 +435,20 @@ export default class ContestStore {
         this.fetchContestsFiltered();
     }
 
-    async fetchStatistics(xField, yField) {
-        // Statistics endpoint not available in current backend
+    async updateStages(contestId, stages) {
+        const updated = await updateData(`/contests/${contestId}/stages`, stages);
+        return updated;
+    }
+
+    async setCurrentStage(contestId, stageId) {
+        const url = stageId != null
+            ? `/contests/${contestId}/current-stage?stage_id=${stageId}`
+            : `/contests/${contestId}/current-stage`;
+        const updated = await patchData(url, {});
+        return updated;
+    }
+
+    async fetchStatistics() {
         console.warn("fetchStatistics: no backend endpoint, skipping");
     }
 }

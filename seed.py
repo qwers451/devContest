@@ -36,19 +36,17 @@ def get(url, token=None):
 
 
 def register_or_login(email, login, password, role):
-    """Register user; if login is taken (409) — login instead."""
+    """Try login first; if it fails — register. Safe to re-run."""
+    status, resp = post(f"{USER_API}/auth/login", {"login": login, "password": password})
+    if status == 200:
+        return resp
+    # Login failed — try register
     status, resp = post(f"{USER_API}/auth/register", {
         "email": email, "login": login, "password": password, "role": role,
     })
     if status == 201:
         return resp
-    if status == 409:
-        status2, resp2 = post(f"{USER_API}/auth/login", {"login": login, "password": password})
-        if status2 == 200:
-            return resp2
-        print(f"    login fallback also failed: {status2} {resp2}")
-        return None
-    print(f"    register failed: {status} {resp}")
+    print(f"    login+register failed for {login}: {resp}")
     return None
 
 
@@ -76,25 +74,25 @@ print(f"  executor2 → {'OK id=' + str(executor2_resp['user']['id']) if executo
 
 print("\n=== Creating contest types ===")
 
-if not admin_token:
-    print("  SKIP — no admin token")
-
 type_ids = {}
+
+# First load whatever already exists
+_, existing = get(f"{CONTEST_API}/contest-types")
+if isinstance(existing, list):
+    for t in existing:
+        type_ids[t["name"]] = t["id"]
+
 for name in ["Статья", "Логотип", "Баннер", "Иконка"]:
+    if name in type_ids:
+        print(f"  {name} → already exists id={type_ids[name]}")
+        continue
     if not admin_token:
-        break
+        print(f"  {name} → SKIP (no admin token — log in as admin to create types)")
+        continue
     status, ct = post(f"{CONTEST_API}/contest-types", {"name": name}, admin_token)
     if status == 201:
         type_ids[name] = ct["id"]
         print(f"  {name} → id={ct['id']}")
-    elif status == 409:
-        # already exists — fetch from list
-        _, types_list = get(f"{CONTEST_API}/contest-types")
-        for t in (types_list if isinstance(types_list, list) else []):
-            if t["name"] == name:
-                type_ids[name] = t["id"]
-                print(f"  {name} → already exists id={t['id']}")
-                break
     else:
         print(f"  {name} → FAIL {status} {ct}")
 
