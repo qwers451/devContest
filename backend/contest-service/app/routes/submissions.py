@@ -1,20 +1,36 @@
 import asyncio
 import os
+from datetime import date, datetime, time, timezone
+
 import aiofiles
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, UploadFile, File
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+)
 from fastapi.responses import FileResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
 from pydantic import BaseModel
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.clients import get_user, trigger_evaluation
 from app.database import get_db
-from app.models import Submission, Review, Contest
 from app.dependencies import get_current_user, require_role
-from app.clients import trigger_evaluation, get_user
+from app.models import Contest, Review, Submission
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
 UPLOAD_DIR = "/app/uploads"
+
+
+def _parse_csv_ints(raw: str | None) -> list[int]:
+    if not raw:
+        return []
+    return [int(part) for part in raw.split(",") if part.strip()]
 
 
 class SubmissionCreate(BaseModel):
@@ -57,10 +73,12 @@ async def _enrich_submissions(subs: list, db: AsyncSession) -> list[SubmissionOu
     user_map = {u["id"]: u["login"] for u in user_results if u}
 
     return [
-        SubmissionOut.model_validate(s).model_copy(update={
-            "executor_login": user_map.get(s.executor_id),
-            "contest_title": contest_map.get(s.contest_id),
-        })
+        SubmissionOut.model_validate(s).model_copy(
+            update={
+                "executor_login": user_map.get(s.executor_id),
+                "contest_title": contest_map.get(s.contest_id),
+            }
+        )
         for s in subs
     ]
 
@@ -89,7 +107,9 @@ async def create_submission(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("executor")),
 ):
-    contest_result = await db.execute(select(Contest).where(Contest.id == data.contest_id))
+    contest_result = await db.execute(
+        select(Contest).where(Contest.id == data.contest_id)
+    )
     contest = contest_result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
@@ -126,6 +146,9 @@ async def list_submissions(
     contest_id: int | None = None,
     executor_id: int | None = None,
     status: int | None = None,
+    statuses: str | None = None,
+    addedBefore: date | None = None,
+    addedAfter: date | None = None,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -137,8 +160,21 @@ async def list_submissions(
         filters.append(Submission.contest_id == contest_id)
     if executor_id:
         filters.append(Submission.executor_id == executor_id)
-    if status is not None:
+    status_values = _parse_csv_ints(statuses)
+    if status_values:
+        filters.append(Submission.status.in_(status_values))
+    elif status is not None:
         filters.append(Submission.status == status)
+    if addedBefore is not None:
+        filters.append(
+            Submission.created_at
+            <= datetime.combine(addedBefore, time.max, tzinfo=timezone.utc)
+        )
+    if addedAfter is not None:
+        filters.append(
+            Submission.created_at
+            >= datetime.combine(addedAfter, time.min, tzinfo=timezone.utc)
+        )
     if filters:
         q = q.where(and_(*filters))
     q = q.order_by(Submission.created_at.desc()).offset((page - 1) * limit).limit(limit)
@@ -208,6 +244,7 @@ async def delete_submission(
 
 # ─── Files ───────────────────────────────────────────────────────────────────
 
+
 @router.post("/{submission_id}/files", response_model=SubmissionOut)
 async def upload_files(
     submission_id: int,
@@ -247,7 +284,9 @@ async def download_file(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
-    result = await db.execute(select(Submission.id).where(Submission.id == submission_id))
+    result = await db.execute(
+        select(Submission.id).where(Submission.id == submission_id)
+    )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Submission not found")
     path = f"{UPLOAD_DIR}/{submission_id}/{filename}"
@@ -257,6 +296,7 @@ async def download_file(
 
 
 # ─── Reviews ─────────────────────────────────────────────────────────────────
+
 
 @router.post("/{submission_id}/reviews", response_model=ReviewOut, status_code=201)
 async def add_review(
@@ -294,7 +334,9 @@ async def list_reviews(
     _: dict = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Review).where(Review.submission_id == submission_id).order_by(Review.number)
+        select(Review)
+        .where(Review.submission_id == submission_id)
+        .order_by(Review.number)
     )
     return result.scalars().all()
 

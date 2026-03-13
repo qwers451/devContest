@@ -17,7 +17,7 @@ async def test_register_executor():
     async with httpx.AsyncClient() as c:
         r = await c.post(f"{USER_URL}/auth/register", json={
             "login": login,
-            "email": f"{login}@test.local",
+            "email": f"{login}@test.com",
             "password": "Test1234!",
             "role": "executor",
         })
@@ -34,7 +34,7 @@ async def test_register_customer():
     async with httpx.AsyncClient() as c:
         r = await c.post(f"{USER_URL}/auth/register", json={
             "login": login,
-            "email": f"{login}@test.local",
+            "email": f"{login}@test.com",
             "password": "Test1234!",
             "role": "customer",
         })
@@ -45,7 +45,7 @@ async def test_register_customer():
 @pytest.mark.asyncio
 async def test_register_duplicate_login():
     login = f"dup_{TS}"
-    body = {"login": login, "email": f"{login}@test.local",
+    body = {"login": login, "email": f"{login}@test.com",
             "password": "Test1234!", "role": "executor"}
     async with httpx.AsyncClient() as c:
         await c.post(f"{USER_URL}/auth/register", json=body)

@@ -2,458 +2,504 @@ import { makeAutoObservable } from "mobx";
 import { fetchData, updateData, patchData } from "../services/apiService";
 
 const baseForm = {
-    type: {
-        value: null,
-        error: '',
-        rules: {},
-    },
-    title: {
-        value: '',
-        error: '',
-        rules: {min: 10, max: 100 },
-    },
-    annotation: {
-        value: '',
-        error: '',
-        rules: {min: 30, max: 200 },
-    },
-    description: {
-        value: '',
-        error: '',
-        rules: {min: 100, max: 20000 },
-    },
-    tz_text: {
-        value: '',
-        error: '',
-        rules: {},
-    },
-    prizepool: {
-        value: '',
-        error: '',
-        rules: {min: 0, max: 9999999 },
-    },
-    endBy: {
-        value: '',
-        error: '',
-        rules: { minDays: 3 },
-    },
-    files: {
-        error: '',
-        rules: { max: 20 },
-        allowedTypes: ['application/zip', 'application/x-zip-compressed', 'image/png', 'image/jpeg', 'image/jpg', 'image/gif'],
-    }
+  type: {
+    value: null,
+    error: "",
+    rules: {},
+  },
+  title: {
+    value: "",
+    error: "",
+    rules: { min: 10, max: 100 },
+  },
+  annotation: {
+    value: "",
+    error: "",
+    rules: { min: 30, max: 200 },
+  },
+  description: {
+    value: "",
+    error: "",
+    rules: { min: 100, max: 20000 },
+  },
+  tz_text: {
+    value: "",
+    error: "",
+    rules: {},
+  },
+  prizepool: {
+    value: "",
+    error: "",
+    rules: { min: 0, max: 9999999 },
+  },
+  endBy: {
+    value: "",
+    error: "",
+    rules: { minDays: 3 },
+  },
+  files: {
+    error: "",
+    rules: { max: 20 },
+    allowedTypes: [
+      "application/zip",
+      "application/x-zip-compressed",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/gif",
+    ],
+  },
 };
 
 export default class ContestStore {
-    form = baseForm;
-    stages = [];
+  form = baseForm;
+  stages = [];
 
-    formErrors = {
-        type: 'Тип конкурса обязателен',
-        title: `Название должно быть от ${baseForm.title.rules.min} до ${baseForm.title.rules.max} символов`,
-        annotation: `Краткое описание от ${baseForm.annotation.rules.min} до ${baseForm.annotation.rules.max} символов`,
-        description: `Полное описание от ${baseForm.description.rules.min} до ${baseForm.description.rules.max} символов`,
-        prizepool: `Приз должен быть от ${baseForm.prizepool.rules.min} до ${baseForm.prizepool.rules.max}`,
-        endBy: `Дата окончания минимум на ${baseForm.endBy.rules.minDays} дня позже текущей`,
-        files: `Максимальное количество файлов - ${baseForm.files.rules.max}`
+  formErrors = {
+    type: "Тип конкурса обязателен",
+    title: `Название должно быть от ${baseForm.title.rules.min} до ${baseForm.title.rules.max} символов`,
+    annotation: `Краткое описание от ${baseForm.annotation.rules.min} до ${baseForm.annotation.rules.max} символов`,
+    description: `Полное описание от ${baseForm.description.rules.min} до ${baseForm.description.rules.max} символов`,
+    prizepool: `Приз должен быть от ${baseForm.prizepool.rules.min} до ${baseForm.prizepool.rules.max}`,
+    endBy: `Дата окончания минимум на ${baseForm.endBy.rules.minDays} дня позже текущей`,
+    files: `Максимальное количество файлов - ${baseForm.files.rules.max}`,
+  };
+
+  status = {
+    draft: "Черновик",
+    active: "Активный",
+    finished: "Завершённый",
+    cancelled: "Отменённый",
+  };
+
+  constructor() {
+    this._isAuth = false;
+    this._types = [];
+    this._contests = [];
+    this._currentContest = null;
+    this._selectedTypes = [];
+    this._selectedStatuses = [];
+    this._minReward = 0;
+    this._maxReward = 9999999;
+    this._endBy = null;
+    this._endAfter = null;
+    this._searchQuery = "";
+    this.isLoading = false;
+    this._employerId = null;
+    this._lastFilterParams = null;
+    this._statistics = null;
+    this.currentPage = 1;
+    this.totalPages = 1;
+    makeAutoObservable(this);
+  }
+
+  setStatistics(data) {
+    this._statistics = data;
+  }
+
+  get statistics() {
+    return this._statistics;
+  }
+
+  setFormField(field, value) {
+    this.form[field].value = value;
+    this.validateField(field);
+  }
+
+  resetForm() {
+    this.form = baseForm;
+    this.stages = [];
+  }
+
+  // ── Stages management ────────────────────────────────────────────────────
+
+  addStage() {
+    this.stages.push({
+      name: "",
+      description: "",
+      deadline: "",
+      order: this.stages.length + 1,
+    });
+  }
+
+  removeStage(index) {
+    this.stages.splice(index, 1);
+    this.stages.forEach((s, i) => {
+      s.order = i + 1;
+    });
+  }
+
+  updateStage(index, field, value) {
+    this.stages[index][field] = value;
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+
+  validateField(field) {
+    switch (field) {
+      case "title":
+        this.form.title.error = !(
+          this.form.title.value.length >= this.form.title.rules.min &&
+          this.form.title.value.length <= this.form.title.rules.max
+        )
+          ? this.formErrors.title
+          : "";
+        break;
+      case "annotation":
+        this.form.annotation.error = !(
+          this.form.annotation.value.length >= this.form.annotation.rules.min &&
+          this.form.annotation.value.length <= this.form.annotation.rules.max
+        )
+          ? this.formErrors.annotation
+          : "";
+        break;
+      case "description":
+        this.form.description.error = !(
+          this.form.description.value.length >=
+            this.form.description.rules.min &&
+          this.form.description.value.length <= this.form.description.rules.max
+        )
+          ? this.formErrors.description
+          : "";
+        break;
+      case "prizepool":
+        const value = parseInt(this.form.prizepool.value);
+        this.form.prizepool.error = !(
+          value >= this.form.prizepool.rules.min &&
+          value <= this.form.prizepool.rules.max
+        )
+          ? this.formErrors.prizepool
+          : "";
+        break;
+      case "endBy":
+        let selectedDate = new Date(this.form.endBy.value);
+        if (!this.form.endBy.value) selectedDate = new Date("1970-01-01");
+        let minValidDate = new Date();
+        minValidDate.setDate(minValidDate.getDate() + 3);
+        if (selectedDate < minValidDate) {
+          this.form.endBy.error = this.formErrors.endBy;
+        } else {
+          this.form.endBy.error = "";
+          this.form.endBy.value = selectedDate.toISOString().split("T")[0];
+        }
+        break;
+      case "type":
+        this.form.type.error = this.form.type.value ? "" : this.formErrors.type;
+        break;
+    }
+  }
+
+  validateForm() {
+    Object.keys(this.form).forEach((field) => this.validateField(field));
+    return !Object.values(this.form).some((field) => field.error !== "");
+  }
+
+  setLoading(bool) {
+    this.isLoading = bool;
+  }
+
+  setEmployerId(id) {
+    this._employerId = id;
+  }
+
+  get employerId() {
+    return this._employerId;
+  }
+
+  setIsAuth(bool) {
+    this._isAuth = bool;
+  }
+
+  setTypes(types) {
+    this._types = types;
+  }
+
+  setContests(contest) {
+    this._contests = contest;
+  }
+
+  setTotalPages(totalPages) {
+    this.totalPages = totalPages;
+  }
+
+  setCurrentPage(currentPage) {
+    this.currentPage = currentPage;
+  }
+
+  setCurrentContest(contest) {
+    this._currentContest = contest;
+  }
+
+  setSelectedTypes(types) {
+    this._selectedTypes = types;
+  }
+
+  setSelectedStatuses(statuses) {
+    this._selectedStatuses = statuses;
+  }
+
+  setSearchQuery(query) {
+    this._searchQuery = query;
+  }
+
+  getStatus(number) {
+    return this.status[number];
+  }
+
+  setMinReward(min) {
+    this._minReward = min;
+  }
+
+  setMaxReward(max) {
+    this._maxReward = max;
+  }
+
+  setReward({ min, max }) {
+    this.setMinReward(min);
+    this.setMaxReward(max);
+  }
+
+  setEndBy(date) {
+    if (!date) {
+      this._endBy = null;
+    } else if (typeof date === "string") {
+      this._endBy = new Date(date);
+    } else {
+      this._endBy = date;
+    }
+  }
+
+  setEndAfter(date) {
+    if (!date) {
+      this._endAfter = null;
+    } else if (typeof date === "string") {
+      this._endAfter = new Date(date);
+    } else {
+      this._endAfter = date;
+    }
+  }
+
+  get minReward() {
+    return this._minReward;
+  }
+
+  get maxReward() {
+    return this._maxReward;
+  }
+
+  get isAuth() {
+    return this._isAuth;
+  }
+
+  get types() {
+    return this._types;
+  }
+
+  get contests() {
+    return this._contests;
+  }
+
+  get currentContest() {
+    return this._currentContest;
+  }
+
+  get selectedTypes() {
+    return this._selectedTypes;
+  }
+
+  get selectedStatuses() {
+    return this._selectedStatuses;
+  }
+
+  get searchQuery() {
+    return this._searchQuery;
+  }
+
+  get reward() {
+    return this._reward;
+  }
+
+  get endBy() {
+    return this._endBy;
+  }
+
+  get endAfter() {
+    return this._endAfter;
+  }
+
+  async fetchContests() {
+    try {
+      const data = await fetchData("/contests");
+      this.setContests(data.items || []);
+    } catch (error) {
+      console.error("Ошибка при отправке:", error);
+    } finally {
+      this.setLoading(false);
+    }
+  }
+
+  async fetchContestsByPage(page) {
+    try {
+      this.setLoading(true);
+      const data = await fetchData("/contests", { page });
+      this.setContests(data.items || []);
+      this.setTotalPages(data.pages || 1);
+      this.setCurrentPage(page);
+    } catch (error) {
+      console.error("Ошибка при отправке:", error);
+    } finally {
+      this.setLoading(false);
+    }
+  }
+
+  hasFiltersChanged(params) {
+    if (!this._lastFilterParams) return true;
+    return JSON.stringify(params) !== JSON.stringify(this._lastFilterParams);
+  }
+
+  getFiltersAndParams() {
+    const params = {
+      minReward:
+        this._minReward !== undefined &&
+        this._minReward !== null &&
+        this._minReward !== ""
+          ? this._minReward
+          : 0,
+      maxReward:
+        this._maxReward !== undefined &&
+        this._maxReward !== null &&
+        this._maxReward !== ""
+          ? this._maxReward
+          : 9999999,
     };
 
-    status = {
-        draft: 'Черновик',
-        active: 'Активный',
-        finished: 'Завершённый',
-        cancelled: 'Отменённый',
-    };
-
-    constructor() {
-        this._isAuth = false;
-        this._types = [];
-        this._contests = [];
-        this._currentContest = null;
-        this._selectedTypes = [];
-        this._selectedStatuses = [];
-        this._minReward = 0;
-        this._maxReward = 9999999;
-        this._endBy = null;
-        this._endAfter = null;
-        this._searchQuery = '';
-        this.isLoading = false;
-        this._employerId = null;
-        this._lastFilterParams = null;
-        this._statistics = null;
-        this.currentPage = 1;
-        this.totalPages = 1;
-        makeAutoObservable(this);
+    if (this._selectedTypes?.length > 0) {
+      params.types = this._selectedTypes.map((t) => t.id).join(",");
     }
 
-    setStatistics(data) {
-        this._statistics = data;
+    if (this._selectedStatuses?.length > 0) {
+      params.statuses = this._selectedStatuses.join(",");
     }
 
-    get statistics() {
-        return this._statistics;
+    if (this._searchQuery) {
+      params.search = this._searchQuery;
     }
 
-    setFormField(field, value) {
-        this.form[field].value = value;
-        this.validateField(field);
+    if (this._endBy) {
+      params.endBy = this._endBy.toISOString().split("T")[0];
     }
 
-    resetForm() {
-        this.form = baseForm;
-        this.stages = [];
+    if (this._endAfter) {
+      params.endAfter = this._endAfter.toISOString().split("T")[0];
     }
 
-    // ── Stages management ────────────────────────────────────────────────────
-
-    addStage() {
-        this.stages.push({ name: '', description: '', deadline: '', order: this.stages.length + 1 });
+    if (this._employerId) {
+      params.employerId = this._employerId;
     }
 
-    removeStage(index) {
-        this.stages.splice(index, 1);
-        this.stages.forEach((s, i) => { s.order = i + 1; });
+    return params;
+  }
+
+  async fetchContestsFiltered(page = 1) {
+    const rawParams = this.getFiltersAndParams();
+    const params = { page };
+    if (rawParams.search) params.search = rawParams.search;
+    if (rawParams.statuses) params.statuses = rawParams.statuses;
+    if (rawParams.types) params.types = rawParams.types;
+    if (rawParams.minReward !== 0) params.min_reward = rawParams.minReward;
+    if (rawParams.maxReward !== 9999999)
+      params.max_reward = rawParams.maxReward;
+    if (rawParams.employerId) params.customer_id = rawParams.employerId;
+    if (rawParams.endBy) params.endBy = rawParams.endBy;
+    if (rawParams.endAfter) params.endAfter = rawParams.endAfter;
+
+    if (
+      !this.hasFiltersChanged(params) &&
+      page === this.currentPage &&
+      this._contests.length > 0
+    )
+      return;
+
+    try {
+      this.setLoading(true);
+      const data = await fetchData("/contests", params);
+      this.setContests(data.items || []);
+      this.setTotalPages(data.pages || 1);
+      this.setCurrentPage(page);
+      this._lastFilterParams = params;
+    } catch (error) {
+      console.error("Ошибка при отправке:", error);
+    } finally {
+      this.setLoading(false);
     }
+  }
 
-    updateStage(index, field, value) {
-        this.stages[index][field] = value;
+  async fetchOneContestById(id) {
+    try {
+      const contest = await fetchData(`/contests/${id}`);
+      return contest;
+    } catch (error) {
+      console.error("Ошибка при загрузке конкурса по ID:", error);
+      return null;
     }
+  }
 
-    // ────────────────────────────────────────────────────────────────────────
-
-    validateField(field) {
-        switch (field) {
-            case 'title':
-                this.form.title.error = !(this.form.title.value.length >= this.form.title.rules.min &&
-                    this.form.title.value.length <= this.form.title.rules.max)
-                    ? this.formErrors.title : '';
-                break;
-            case 'annotation':
-                this.form.annotation.error = !(this.form.annotation.value.length >= this.form.annotation.rules.min &&
-                    this.form.annotation.value.length <= this.form.annotation.rules.max)
-                    ? this.formErrors.annotation : '';
-                break;
-            case 'description':
-                this.form.description.error = !(this.form.description.value.length >= this.form.description.rules.min &&
-                    this.form.description.value.length <= this.form.description.rules.max)
-                    ? this.formErrors.description : '';
-                break;
-            case 'prizepool':
-                const value = parseInt(this.form.prizepool.value);
-                this.form.prizepool.error = !(value >= this.form.prizepool.rules.min &&
-                    value <= this.form.prizepool.rules.max)
-                    ? this.formErrors.prizepool : '';
-                break;
-            case 'endBy':
-                let selectedDate = new Date(this.form.endBy.value);
-                if (!this.form.endBy.value) selectedDate = new Date('1970-01-01')
-                let minValidDate = new Date();
-                minValidDate.setDate(minValidDate.getDate() + 3);
-                if (selectedDate < minValidDate) {
-                    this.form.endBy.error = this.formErrors.endBy;
-                } else {
-                    this.form.endBy.error = '';
-                    this.form.endBy.value = selectedDate.toISOString().split('T')[0];
-                }
-                break;
-            case 'type':
-                this.form.type.error = this.form.type.value ? '' : this.formErrors.type;
-                break;
-        }
+  async fetchOneContestByNumber(number) {
+    try {
+      const contest = await fetchData(`/contests/number/${number}`);
+      return contest;
+    } catch (error) {
+      console.error("Ошибка при загрузке конкурса:", error);
+      return null;
     }
+  }
 
-    validateForm() {
-        Object.keys(this.form).forEach(field => this.validateField(field));
-        return !Object.values(this.form).some(field => field.error !== '');
+  async fetchTypes() {
+    try {
+      const types = await fetchData("/contest-types");
+      this.setTypes(types);
+    } catch (error) {
+      console.error("Ошибка при загрузке типов конкурсов:", error);
     }
+  }
 
-    setLoading(bool) {
-        this.isLoading = bool;
+  getTypeNameById(typeId) {
+    if (!typeId) return null;
+    const type = this._types.find((t) => t.id === typeId);
+    return type?.name || "Неизвестный тип";
+  }
+
+  resetFilters() {
+    this._selectedTypes = [];
+    this._selectedStatuses = [];
+    this._minReward = 0;
+    this._maxReward = 9999999;
+    this._endBy = null;
+    this._endAfter = null;
+    this._searchQuery = "";
+    this.fetchContestsFiltered();
+  }
+
+  async updateStages(contestId, stages) {
+    const updated = await updateData(`/contests/${contestId}/stages`, stages);
+    return updated;
+  }
+
+  async setCurrentStage(contestId, stageId) {
+    const url =
+      stageId != null
+        ? `/contests/${contestId}/current-stage?stage_id=${stageId}`
+        : `/contests/${contestId}/current-stage`;
+    const updated = await patchData(url, {});
+    return updated;
+  }
+
+  async fetchStatistics(x = "type", y = "count") {
+    try {
+      const data = await fetchData("/statistics", { x, y });
+      this.setStatistics(data);
+    } catch (error) {
+      console.error("fetchStatistics error:", error);
     }
-
-    setEmployerId(id) {
-        this._employerId = id;
-    }
-
-    get employerId() {
-        return this._employerId;
-    }
-
-    setIsAuth(bool) {
-        this._isAuth = bool;
-    }
-
-    setTypes(types) {
-        this._types = types;
-    }
-
-    setContests(contest) {
-        this._contests = contest;
-    }
-
-    setTotalPages(totalPages) {
-        this.totalPages = totalPages;
-    }
-
-    setCurrentPage(currentPage) {
-        this.currentPage = currentPage;
-    }
-
-    setCurrentContest(contest) {
-        this._currentContest = contest;
-    }
-
-    setSelectedTypes(types) {
-        this._selectedTypes = types;
-    }
-
-    setSelectedStatuses(statuses) {
-        this._selectedStatuses = statuses;
-    }
-
-    setSearchQuery(query) {
-        this._searchQuery = query;
-    }
-
-    getStatus(number) {
-        return this.status[number];
-    }
-
-    setMinReward(min) {
-        this._minReward = min;
-    }
-
-    setMaxReward(max) {
-        this._maxReward = max;
-    }
-
-    setReward({ min, max }) {
-        this.setMinReward(min);
-        this.setMaxReward(max);
-    }
-
-    setEndBy(date) {
-        if (!date) {
-            this._endBy = null;
-        } else if (typeof date === 'string') {
-            this._endBy = new Date(date);
-        } else {
-            this._endBy = date;
-        }
-    }
-
-    setEndAfter(date) {
-        if (!date) {
-            this._endAfter = null;
-        } else if (typeof date === 'string') {
-            this._endAfter = new Date(date);
-        } else {
-            this._endAfter = date;
-        }
-    }
-
-    get minReward() {
-        return this._minReward;
-    }
-
-    get maxReward() {
-        return this._maxReward;
-    }
-
-    get isAuth() {
-        return this._isAuth;
-    }
-
-    get types() {
-        return this._types;
-    }
-
-    get contests() {
-        return this._contests;
-    }
-
-    get currentContest() {
-        return this._currentContest;
-    }
-
-    get selectedTypes() {
-        return this._selectedTypes;
-    }
-
-    get selectedStatuses() {
-        return this._selectedStatuses;
-    }
-
-    get searchQuery() {
-        return this._searchQuery;
-    }
-
-    get reward(){
-        return this._reward;
-    }
-
-    get endBy() {
-        return this._endBy;
-    }
-
-    get endAfter() {
-        return this._endAfter;
-    }
-
-    async fetchContests() {
-        try {
-            const data = await fetchData("/contests");
-            this.setContests(data.items || []);
-        } catch (error) {
-            console.error("Ошибка при отправке:", error);
-        } finally {
-            this.setLoading(false)
-        }
-    }
-
-    async fetchContestsByPage(page) {
-        try {
-            this.setLoading(true);
-            const data = await fetchData("/contests", { page });
-            this.setContests(data.items || []);
-            this.setTotalPages(data.pages || 1);
-            this.setCurrentPage(page);
-        } catch (error) {
-            console.error("Ошибка при отправке:", error);
-        } finally {
-            this.setLoading(false)
-        }
-    }
-
-    hasFiltersChanged(params) {
-        if (!this._lastFilterParams) return true;
-        return JSON.stringify(params) !== JSON.stringify(this._lastFilterParams);
-    }
-
-    getFiltersAndParams() {
-        const params = {
-            minReward: this._minReward !== undefined && this._minReward !== null && this._minReward !== '' ? this._minReward : 0,
-            maxReward: this._maxReward !== undefined && this._maxReward !== null && this._maxReward !== '' ? this._maxReward : 9999999,
-        };
-
-        if (this._selectedTypes?.length > 0) {
-            params.types = this._selectedTypes.map(t => t.id).join(',');
-        }
-
-        if (this._selectedStatuses?.length > 0) {
-            params.statuses = this._selectedStatuses.join(',');
-        }
-
-        if (this._searchQuery) {
-            params.search = this._searchQuery;
-        }
-
-        if (this._endBy) {
-            params.endBy = this._endBy.toISOString().split('T')[0];
-        }
-
-        if (this._endAfter) {
-            params.endAfter = this._endAfter.toISOString().split('T')[0];
-        }
-
-        if (this._employerId) {
-            params.employerId = this._employerId;
-        }
-
-        return params;
-    }
-
-    async fetchContestsFiltered(page = 1) {
-        const rawParams = this.getFiltersAndParams();
-        const params = { page };
-        if (rawParams.search) params.search = rawParams.search;
-        if (rawParams.statuses) params.status = rawParams.statuses.split(',')[0];
-        if (rawParams.types) params.type_id = Number(rawParams.types.split(',')[0]);
-        if (rawParams.minReward !== 0) params.min_reward = rawParams.minReward;
-        if (rawParams.maxReward !== 9999999) params.max_reward = rawParams.maxReward;
-        if (rawParams.employerId) params.customer_id = rawParams.employerId;
-
-        if (!this.hasFiltersChanged(params) && page === this.currentPage && this._contests.length > 0) return;
-
-        try {
-            this.setLoading(true);
-            const data = await fetchData('/contests', params);
-            this.setContests(data.items || []);
-            this.setTotalPages(data.pages || 1);
-            this.setCurrentPage(page);
-            this._lastFilterParams = params;
-        } catch (error) {
-            console.error("Ошибка при отправке:", error);
-        } finally {
-            this.setLoading(false);
-        }
-    }
-
-    async fetchOneContestById(id) {
-        try {
-            const contest = await fetchData(`/contests/${id}`);
-            return contest;
-        } catch (error) {
-            console.error("Ошибка при загрузке конкурса по ID:", error);
-            return null;
-        }
-    }
-
-    async fetchOneContestByNumber(number) {
-        try {
-            const contest = await fetchData(`/contests/number/${number}`);
-            return contest;
-        } catch (error) {
-            console.error("Ошибка при загрузке конкурса:", error);
-            return null;
-        }
-    }
-
-    async fetchTypes() {
-        try {
-            const types = await fetchData("/contest-types");
-            this.setTypes(types);
-        } catch (error) {
-            console.error("Ошибка при загрузке типов конкурсов:", error);
-        }
-    }
-
-    getTypeNameById(typeId) {
-        if (!typeId) return null;
-        const type = this._types.find(t => t.id === typeId);
-        return type?.name || "Неизвестный тип";
-    }
-
-    resetFilters() {
-        this._selectedTypes = [];
-        this._selectedStatuses = [];
-        this._minReward = 0;
-        this._maxReward = 9999999;
-        this._endBy = null;
-        this._endAfter = null;
-        this._searchQuery = '';
-        this.fetchContestsFiltered();
-    }
-
-    async updateStages(contestId, stages) {
-        const updated = await updateData(`/contests/${contestId}/stages`, stages);
-        return updated;
-    }
-
-    async setCurrentStage(contestId, stageId) {
-        const url = stageId != null
-            ? `/contests/${contestId}/current-stage?stage_id=${stageId}`
-            : `/contests/${contestId}/current-stage`;
-        const updated = await patchData(url, {});
-        return updated;
-    }
-
-    async fetchStatistics(x = 'type', y = 'count') {
-        try {
-            const data = await fetchData('/statistics', { x, y });
-            this.setStatistics(data);
-        } catch (error) {
-            console.error('fetchStatistics error:', error);
-        }
-    }
+  }
 }

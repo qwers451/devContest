@@ -1,312 +1,344 @@
 import { makeAutoObservable } from "mobx";
-import { fetchData, deleteData, patchData, sendData } from "../services/apiService";
+import {
+  fetchData,
+  deleteData,
+  patchData,
+  sendData,
+} from "../services/apiService";
 
 const baseForm = {
-    title: {
-        value: '',
-        error: '',
-        rules: {min: 10, max: 100 },
-    },
-    annotation: {
-        value: '',
-        error: '',
-        rules: {min: 30, max: 200 },
-    },
-    description: {
-        value: '',
-        error: '',
-        rules: { min: 100, max: 20000 },
-    },
-    files: {
-        error: '',
-        rules: { max: 20 },
-        allowedTypes: ['application/zip', 'application/x-zip-compressed', 'image/png', 'image/jpeg', 'image/jpg', 'image/gif'],
-    }
+  title: {
+    value: "",
+    error: "",
+    rules: { min: 10, max: 100 },
+  },
+  annotation: {
+    value: "",
+    error: "",
+    rules: { min: 30, max: 200 },
+  },
+  description: {
+    value: "",
+    error: "",
+    rules: { min: 100, max: 20000 },
+  },
+  files: {
+    error: "",
+    rules: { max: 20 },
+    allowedTypes: [
+      "application/zip",
+      "application/x-zip-compressed",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/gif",
+    ],
+  },
 };
 
 export default class SolutionStore {
-    form = baseForm;
+  form = baseForm;
 
-    formErrors = {
-        title: `Название должно быть от ${this.form.title.rules.min} до ${this.form.title.rules.max} символов`,
-        annotation: `Аннотация должна быть от ${this.form.annotation.rules.min} до ${this.form.annotation.rules.max} символов`,
-        description: `Описание должно быть от ${this.form.description.rules.min} до ${this.form.description.rules.max} символов`,
-        files: `Максимальное количество файлов - ${this.form.files.rules.max}`
-    };
+  formErrors = {
+    title: `Название должно быть от ${this.form.title.rules.min} до ${this.form.title.rules.max} символов`,
+    annotation: `Аннотация должна быть от ${this.form.annotation.rules.min} до ${this.form.annotation.rules.max} символов`,
+    description: `Описание должно быть от ${this.form.description.rules.min} до ${this.form.description.rules.max} символов`,
+    files: `Максимальное количество файлов - ${this.form.files.rules.max}`,
+  };
 
-    statusMap = {
-        1: { label: 'Новое', color: '#87cefa', textColor: '#000' },       // Голубой
-        2: { label: 'Просмотрено', color: '#99ff99', textColor: '#000' },  // Салатовый
-        3: { label: 'Победитель', color: '#008000', textColor: '#000' },   // Зеленый
-        4: { label: 'Необходимы правки', color: '#f3a505', textColor: '#000' }, // Желтый
-        5: { label: 'Правки внесены', color: '#87cefa', textColor: '#000' },    // Синий
-    };
+  statusMap = {
+    1: { label: "Новое", color: "#87cefa", textColor: "#000" }, // Голубой
+    2: { label: "Просмотрено", color: "#99ff99", textColor: "#000" }, // Салатовый
+    3: { label: "Победитель", color: "#008000", textColor: "#000" }, // Зеленый
+    4: { label: "Необходимы правки", color: "#f3a505", textColor: "#000" }, // Желтый
+    5: { label: "Правки внесены", color: "#87cefa", textColor: "#000" }, // Синий
+  };
 
-    constructor() {
-        this._solutions = [];
-        this._currentSolution = null;
-        this._searchQuery = '';
-        this._selectedStatuses = [];
-        this._addedBefore = null;
-        this._addedAfter = null;
-        this._freelancerId = null;
-        this._contestId = null;
-        this.isLoading = true;
-        this._lastFilterParams = null;
-        this._searchForMySolutions = null;
-        this._page = 1;
-        this._limit = 2;
-        this._totalCount = 0;
-        makeAutoObservable(this);
+  constructor() {
+    this._solutions = [];
+    this._currentSolution = null;
+    this._searchQuery = "";
+    this._selectedStatuses = [];
+    this._addedBefore = null;
+    this._addedAfter = null;
+    this._freelancerId = null;
+    this._contestId = null;
+    this.isLoading = true;
+    this._lastFilterParams = null;
+    this._searchForMySolutions = null;
+    this._page = 1;
+    this._limit = 2;
+    this._totalCount = 0;
+    makeAutoObservable(this);
+  }
+
+  setSolutions(solutions) {
+    this._solutions = solutions;
+  }
+
+  setCurrentSolution(solution) {
+    this._currentSolution = solution;
+  }
+
+  setSearchQuery(query, searchForMySolutions) {
+    this._searchQuery = query;
+    this._searchForMySolutions = searchForMySolutions;
+  }
+
+  setSelectedStatuses(statuses) {
+    this._selectedStatuses = statuses;
+  }
+
+  setAddedBefore(date) {
+    if (!date) {
+      this._addedBefore = null;
+      return;
     }
+    this._addedBefore = new Date(date);
+  }
 
-    setSolutions(solutions) {
-        this._solutions = solutions;
+  setAddedAfter(date) {
+    if (!date) {
+      this._addedAfter = null;
+      return;
     }
+    this._addedAfter = new Date(date);
+  }
 
-    setCurrentSolution(solution) {
-        this._currentSolution = solution;
+  setFreelancerId(id) {
+    this._freelancerId = id;
+  }
+
+  setContestId(id) {
+    this._contestId = id;
+  }
+
+  setLoading(bool) {
+    this.isLoading = bool;
+  }
+
+  setPage(page) {
+    this._page = page;
+  }
+
+  setLimit(limit) {
+    this._limit = limit;
+  }
+
+  get solutions() {
+    return this._solutions;
+  }
+
+  get currentSolution() {
+    return this._currentSolution;
+  }
+
+  get searchQuery() {
+    return this._searchQuery;
+  }
+
+  get selectedStatuses() {
+    return this._selectedStatuses;
+  }
+
+  get addedBefore() {
+    return this._addedBefore;
+  }
+
+  get addedAfter() {
+    return this._addedAfter;
+  }
+
+  get freelancerId() {
+    return this._freelancerId;
+  }
+
+  get contestId() {
+    return this._contestId;
+  }
+
+  get page() {
+    return this._page;
+  }
+
+  get limit() {
+    return this._limit;
+  }
+
+  get totalCount() {
+    return this._totalCount;
+  }
+
+  get statusOptions() {
+    return Object.entries(this.statusMap).map(([value, data]) => ({
+      value: parseInt(value),
+      label: data.label,
+      color: data.color,
+      textColor: data.textColor,
+    }));
+  }
+
+  hasFiltersChanged(params) {
+    if (!this._lastFilterParams) return true;
+    return JSON.stringify(params) !== JSON.stringify(this._lastFilterParams);
+  }
+
+  async fetchSolutionsFiltered() {
+    try {
+      const params = { page: this._page, limit: this._limit };
+
+      if (this._freelancerId) params.executor_id = this._freelancerId;
+      if (this._contestId) params.contest_id = this._contestId;
+      if (this._selectedStatuses?.length > 0)
+        params.statuses = this._selectedStatuses.join(",");
+      if (this._addedBefore)
+        params.addedBefore = this._addedBefore.toISOString().split("T")[0];
+      if (this._addedAfter)
+        params.addedAfter = this._addedAfter.toISOString().split("T")[0];
+
+      if (!this.hasFiltersChanged(params) && this._solutions.length > 0) {
+        console.log("Using cached solutions");
+        this.setLoading(false);
+        return;
+      }
+
+      this.setLoading(true);
+      console.log("Fetching submissions with params:", params);
+
+      const response = await fetchData("/submissions", params);
+      const list = Array.isArray(response) ? response : [];
+      this.setSolutions(list);
+      this._totalCount = list.length;
+      this._lastFilterParams = params;
+    } catch (error) {
+      console.error("Ошибка при отправке:", error);
+    } finally {
+      this.setLoading(false);
     }
+  }
 
-    setSearchQuery(query, searchForMySolutions) {
-        this._searchQuery = query;
-        this._searchForMySolutions = searchForMySolutions;
+  resetFilters() {
+    this._searchQuery = "";
+    this._searchForMySolutions = null;
+    this._selectedStatuses = [];
+    this._addedBefore = null;
+    this._addedAfter = null;
+    this.fetchSolutionsFiltered();
+  }
+
+  getStatus(number) {
+    return this.statusMap[number] || { label: "Неизвестно", color: "dark" };
+  }
+
+  setFormField(field, value) {
+    this.form[field].value = value;
+    this.validateField(field);
+  }
+
+  resetForm() {
+    this.form = baseForm;
+  }
+
+  validateField(field) {
+    switch (field) {
+      case "title":
+        this.form.title.error = !(
+          this.form.title.value.length >= this.form.title.rules.min &&
+          this.form.title.value.length <= this.form.title.rules.max
+        )
+          ? this.formErrors.title
+          : "";
+        break;
+      case "annotation":
+        this.form.annotation.error = !(
+          this.form.annotation.value.length >= this.form.annotation.rules.min &&
+          this.form.annotation.value.length <= this.form.annotation.rules.max
+        )
+          ? this.formErrors.annotation
+          : "";
+        break;
+      case "description":
+        this.form.description.error = !(
+          this.form.description.value.length >=
+            this.form.description.rules.min &&
+          this.form.description.value.length <= this.form.description.rules.max
+        )
+          ? this.formErrors.description
+          : "";
+        break;
     }
+  }
 
-    setSelectedStatuses(statuses) {
-        this._selectedStatuses = statuses;
+  validateForm() {
+    Object.keys(this.form).forEach((field) => this.validateField(field));
+    return !Object.values(this.form).some((field) => field.error !== "");
+  }
+
+  _updateLocalSolution(updatedSolution) {
+    const index = this._solutions.findIndex((s) => s.id === updatedSolution.id);
+    if (index !== -1) {
+      this._solutions[index] = { ...updatedSolution };
     }
-
-    setAddedBefore(date) {
-        if (!date) {
-            this._addedBefore = null;
-            return;
-        }
-        this._addedBefore = new Date(date);
+    if (this._currentSolution?.id === updatedSolution.id) {
+      this._currentSolution = { ...updatedSolution };
     }
+  }
 
-    setAddedAfter(date) {
-        if (!date) {
-            this._addedAfter = null;
-            return;
-        }
-        this._addedAfter = new Date(date);
+  async updateSolutionStatus(solutionId, newStatus) {
+    try {
+      const validStatuses = Object.keys(this.statusMap).map(Number);
+      const minStatus = Math.min(...validStatuses);
+      const maxStatus = Math.max(...validStatuses);
+      if (typeof newStatus !== "number" || !validStatuses.includes(newStatus)) {
+        throw new Error(
+          `Статус должен быть числом от ${minStatus} до ${maxStatus}`,
+        );
+      }
+      const response = await patchData(
+        `/submissions/${solutionId}/status`,
+        {},
+        { status: newStatus },
+      );
+      this._updateLocalSolution(response);
+      return response;
+    } catch (error) {
+      console.error("Ошибка обновления статуса:", error);
+      throw error;
     }
+  }
 
-    setFreelancerId(id) {
-        this._freelancerId = id;
+  getSolutionIfExists(number) {
+    if (this.currentSolution && this.currentSolution.number == number) {
+      return this.currentSolution;
     }
+    return null;
+  }
 
-    setContestId(id) {
-        this._contestId = id;
+  async fetchSolutionByNumber(number) {
+    try {
+      const solution = await fetchData(`/submissions/number/${number}`);
+      this.setCurrentSolution(solution);
+      return solution;
+    } catch (error) {
+      console.error("Ошибка загрузки решения:", error);
+      return null;
     }
+  }
 
-    setLoading(bool) {
-        this.isLoading = bool;
+  async deleteSolutionById(solutionId) {
+    try {
+      await deleteData(`/submissions/${solutionId}`);
+      this.setCurrentSolution(null);
+      return true;
+    } catch (error) {
+      console.error("Ошибка при удалении решения:", error);
+      throw error;
     }
+  }
 
-    setPage(page) {
-        this._page = page;
-    }
-
-    setLimit(limit) {
-        this._limit = limit;
-    }
-
-    get solutions() {
-        return this._solutions;
-    }
-
-    get currentSolution() {
-        return this._currentSolution;
-    }
-
-    get searchQuery() {
-        return this._searchQuery;
-    }
-
-    get selectedStatuses() {
-        return this._selectedStatuses;
-    }
-
-    get addedBefore() {
-        return this._addedBefore;
-    }
-
-    get addedAfter() {
-        return this._addedAfter;
-    }
-
-    get freelancerId() {
-        return this._freelancerId;
-    }
-
-    get contestId() {
-        return this._contestId;
-    }
-
-    get page() {
-        return this._page;
-    }
-
-    get limit() {
-        return this._limit;
-    }
-
-    get totalCount() {
-        return this._totalCount;
-    }
-
-    get statusOptions() {
-        return Object.entries(this.statusMap).map(([value, data]) => ({
-            value: parseInt(value),
-            label: data.label,
-            color: data.color,
-            textColor: data.textColor
-        }));
-    }
-
-    hasFiltersChanged(params) {
-        if (!this._lastFilterParams) return true;
-        return JSON.stringify(params) !== JSON.stringify(this._lastFilterParams);
-    }
-
-    async fetchSolutionsFiltered() {
-        try {
-            const params = { page: this._page, limit: this._limit };
-
-            if (this._freelancerId) params.executor_id = this._freelancerId;
-            if (this._contestId) params.contest_id = this._contestId;
-            if (this._selectedStatuses?.length > 0) params.status = this._selectedStatuses[0];
-
-            if (!this.hasFiltersChanged(params) && this._solutions.length > 0) {
-                console.log('Using cached solutions');
-                this.setLoading(false);
-                return;
-            }
-
-            this.setLoading(true);
-            console.log('Fetching submissions with params:', params);
-
-            const response = await fetchData("/submissions", params);
-            const list = Array.isArray(response) ? response : [];
-            this.setSolutions(list);
-            this._totalCount = list.length;
-            this._lastFilterParams = params;
-        } catch (error) {
-            console.error("Ошибка при отправке:", error);
-        } finally {
-            this.setLoading(false);
-        }
-    }
-
-    resetFilters() {
-        this._searchQuery = '';
-        this._searchForMySolutions = null;
-        this._selectedStatuses = [];
-        this._addedBefore = null;
-        this._addedAfter = null;
-        this.fetchSolutionsFiltered();
-    }
-
-    getStatus(number) {
-        return this.statusMap[number] || { label: 'Неизвестно', color: 'dark' };
-    }
-
-    setFormField(field, value) {
-        this.form[field].value = value;
-        this.validateField(field);
-    }
-
-    resetForm() {
-        this.form = baseForm;
-    }
-
-    validateField(field) {
-        switch (field) {
-            case 'title':
-                this.form.title.error = !(this.form.title.value.length >= this.form.title.rules.min &&
-                    this.form.title.value.length <= this.form.title.rules.max)
-                    ? this.formErrors.title : '';
-                break;
-            case 'annotation':
-                this.form.annotation.error = !(this.form.annotation.value.length >= this.form.annotation.rules.min &&
-                    this.form.annotation.value.length <= this.form.annotation.rules.max)
-                    ? this.formErrors.annotation : '';
-                break;
-            case 'description':
-                this.form.description.error = !(
-                    this.form.description.value.length >= this.form.description.rules.min &&
-                    this.form.description.value.length <= this.form.description.rules.max
-                ) ? this.formErrors.description : '';
-                break;
-        }
-    }
-
-    validateForm() {
-        Object.keys(this.form).forEach(field => this.validateField(field));
-        return !Object.values(this.form).some(field => field.error !== '');
-    }
-
-    _updateLocalSolution(updatedSolution) {
-        const index = this._solutions.findIndex(s => s.id === updatedSolution.id);
-        if (index !== -1) {
-            this._solutions[index] = { ...updatedSolution };
-        }
-        if (this._currentSolution?.id === updatedSolution.id) {
-            this._currentSolution = { ...updatedSolution };
-        }
-    }
-
-    async updateSolutionStatus(solutionId, newStatus) {
-        try {
-            const validStatuses = Object.keys(this.statusMap).map(Number);
-            const minStatus = Math.min(...validStatuses);
-            const maxStatus = Math.max(...validStatuses);
-            if (typeof newStatus !== 'number' || !validStatuses.includes(newStatus)) {
-                throw new Error(`Статус должен быть числом от ${minStatus} до ${maxStatus}`);
-            }
-            const response = await patchData(`/submissions/${solutionId}/status`, {}, { status: newStatus });
-            this._updateLocalSolution(response);
-            return response;
-        } catch (error) {
-            console.error('Ошибка обновления статуса:', error);
-            throw error;
-        }
-    }
-
-    getSolutionIfExists(number) {
-        if (this.currentSolution && this.currentSolution.number == number) {
-            return this.currentSolution;
-        }
-        return null;
-    }
-
-    async fetchSolutionByNumber(number) {
-        try {
-            const solution = await fetchData(`/submissions/number/${number}`);
-            this.setCurrentSolution(solution);
-            return solution;
-        } catch (error) {
-            console.error("Ошибка загрузки решения:", error);
-            return null;
-        }
-    }
-
-    async deleteSolutionById(solutionId) {
-        try {
-            await deleteData(`/submissions/${solutionId}`);
-            this.setCurrentSolution(null);
-            return true;
-        } catch (error) {
-            console.error("Ошибка при удалении решения:", error);
-            throw error;
-        }
-    }
-
-    async selectWinner(contestId, submissionId, executorId) {
-        const url = `/contests/${contestId}/winner?submission_id=${submissionId}&executor_id=${executorId}`;
-        const contest = await sendData(url, {});
-        return contest;
-    }
+  async selectWinner(contestId, submissionId, executorId) {
+    const url = `/contests/${contestId}/winner?submission_id=${submissionId}&executor_id=${executorId}`;
+    const contest = await sendData(url, {});
+    return contest;
+  }
 }

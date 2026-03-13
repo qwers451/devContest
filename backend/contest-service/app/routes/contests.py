@@ -1,13 +1,15 @@
-from datetime import datetime
+from datetime import date, datetime, time, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, cast, String, case
-from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
+from sqlalchemy import String, and_, case, cast, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.clients import release_escrow, reserve_escrow
 from app.database import get_db
-from app.models import Contest, ContestStage, Winner, ContestStatus
 from app.dependencies import get_current_user, require_role
-from app.clients import reserve_escrow, release_escrow
+from app.models import Contest, ContestStage, ContestStatus, Winner
 
 router = APIRouter(prefix="/contests", tags=["contests"])
 
@@ -81,24 +83,46 @@ def _relations():
     return [selectinload(Contest.stages), selectinload(Contest.winner)]
 
 
+def _parse_csv_ints(raw: str | None) -> list[int]:
+    if not raw:
+        return []
+    return [int(part) for part in raw.split(",") if part.strip()]
+
+
+def _parse_csv_strings(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
 @router.get("", response_model=ContestListOut)
 async def list_contests(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     search: str | None = None,
     status: str | None = None,
+    statuses: str | None = None,
     type_id: int | None = None,
+    types: str | None = None,
     min_reward: int | None = None,
     max_reward: int | None = None,
     customer_id: int | None = None,
+    endBy: date | None = None,
+    endAfter: date | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     filters = []
     if search:
         filters.append(Contest.title.ilike(f"%{search}%"))
-    if status:
+    status_values = _parse_csv_strings(statuses)
+    if status_values:
+        filters.append(Contest.status.in_(status_values))
+    elif status:
         filters.append(Contest.status == status)
-    if type_id:
+    type_ids = _parse_csv_ints(types)
+    if type_ids:
+        filters.append(Contest.type_id.in_(type_ids))
+    elif type_id:
         filters.append(Contest.type_id == type_id)
     if min_reward is not None:
         filters.append(Contest.prizepool >= min_reward)
@@ -106,6 +130,14 @@ async def list_contests(
         filters.append(Contest.prizepool <= max_reward)
     if customer_id:
         filters.append(Contest.customer_id == customer_id)
+    if endBy is not None:
+        filters.append(
+            Contest.ends_at <= datetime.combine(endBy, time.max, tzinfo=timezone.utc)
+        )
+    if endAfter is not None:
+        filters.append(
+            Contest.ends_at >= datetime.combine(endAfter, time.min, tzinfo=timezone.utc)
+        )
 
     count_q = select(func.count(Contest.id))
     if filters:
@@ -152,13 +184,15 @@ async def create_contest(
     await db.flush()
 
     for stage_data in data.stages:
-        db.add(ContestStage(
-            contest_id=contest.id,
-            name=stage_data.name,
-            description=stage_data.description,
-            deadline=stage_data.deadline,
-            order=stage_data.order,
-        ))
+        db.add(
+            ContestStage(
+                contest_id=contest.id,
+                name=stage_data.name,
+                description=stage_data.description,
+                deadline=stage_data.deadline,
+                order=stage_data.order,
+            )
+        )
 
     try:
         await reserve_escrow(contest.id, current_user["id"], data.prizepool)
@@ -269,16 +303,19 @@ async def select_winner(
     if contest.status != ContestStatus.active:
         raise HTTPException(status_code=409, detail="Contest is not active")
 
-    db.add(Winner(
-        contest_id=contest_id,
-        submission_id=submission_id,
-        executor_id=executor_id,
-    ))
+    db.add(
+        Winner(
+            contest_id=contest_id,
+            submission_id=submission_id,
+            executor_id=executor_id,
+        )
+    )
     contest.status = ContestStatus.finished
 
     await release_escrow(contest_id, executor_id)
 
     await db.commit()
+    db.expire_all()
     result = await db.execute(
         select(Contest).options(*_relations()).where(Contest.id == contest_id)
     )
@@ -311,15 +348,18 @@ async def update_stages(
 
     # Create new stages
     for stage_data in stages:
-        db.add(ContestStage(
-            contest_id=contest.id,
-            name=stage_data.name,
-            description=stage_data.description,
-            deadline=stage_data.deadline,
-            order=stage_data.order,
-        ))
+        db.add(
+            ContestStage(
+                contest_id=contest.id,
+                name=stage_data.name,
+                description=stage_data.description,
+                deadline=stage_data.deadline,
+                order=stage_data.order,
+            )
+        )
 
     await db.commit()
+    db.expire_all()
     result = await db.execute(
         select(Contest).options(*_relations()).where(Contest.id == contest_id)
     )
@@ -345,7 +385,9 @@ async def set_current_stage(
     if stage_id is not None:
         stage_ids = {s.id for s in contest.stages}
         if stage_id not in stage_ids:
-            raise HTTPException(status_code=400, detail="Stage does not belong to this contest")
+            raise HTTPException(
+                status_code=400, detail="Stage does not belong to this contest"
+            )
 
     contest.current_stage_id = stage_id
     await db.commit()

@@ -5,6 +5,7 @@ from app.database import create_tables
 from app.routes.contest_types import router as types_router
 from app.routes.contests import router as contests_router
 from app.routes.submissions import router as submissions_router
+from app.routes.statistics import router as statistics_router
 
 
 @asynccontextmanager
@@ -25,3 +26,4 @@ app.add_middleware(
 app.include_router(types_router)
 app.include_router(contests_router)
 app.include_router(submissions_router)
+app.include_router(statistics_router)
