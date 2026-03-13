@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.clients import release_escrow, reserve_escrow
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
-from app.models import Contest, ContestStage, ContestStatus, Winner
+from app.models import Contest, ContestStage, ContestStatus, Submission, Winner
 
 router = APIRouter(prefix="/contests", tags=["contests"])
 
@@ -311,6 +311,12 @@ async def select_winner(
         )
     )
     contest.status = ContestStatus.finished
+
+    # Update submission status to Winner (3)
+    result = await db.execute(select(Submission).where(Submission.id == submission_id))
+    submission = result.scalar_one_or_none()
+    if submission:
+        submission.status = 3
 
     await release_escrow(contest_id, executor_id)
 
