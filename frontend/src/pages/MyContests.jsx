@@ -1,6 +1,6 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { Context } from "../main.jsx";
-import ContestListWithFilters from "../components/ContestListWithFilters.jsx";
+import React, { useContext, useEffect } from 'react';
+import { Context } from '../main.jsx';
+import ContestListWithFilters from '../components/ContestListWithFilters.jsx';
 
 const MyContests = () => {
     const { contest, user } = useContext(Context);
@@ -8,14 +8,13 @@ const MyContests = () => {
     useEffect(() => {
         if (user.user.id) {
             contest.setEmployerId(user.user.id);
-            // contest.setLoading(true);
         }
     }, [user]);
 
     return (
-        <>
+        <div className="min-h-screen bg-gray-50">
             <ContestListWithFilters />
-        </>
+        </div>
     );
 };
 

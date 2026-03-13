@@ -1,10 +1,9 @@
 import React, { useState, useContext } from 'react';
-import {Card, Container, Form, Row, Button, Alert} from 'react-bootstrap';
-import {NavLink, useLocation, useNavigate} from "react-router-dom";
-import {LOGIN_ROUTE, REGISTRATION_ROUTE} from "../utils/consts.js";
-import { sendData } from "../services/apiService.js";
-import { Context } from "../main.jsx";
-import { observer } from "mobx-react-lite";
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { LOGIN_ROUTE, REGISTRATION_ROUTE } from '../utils/consts.js';
+import { sendData } from '../services/apiService.js';
+import { Context } from '../main.jsx';
+import { observer } from 'mobx-react-lite';
 
 const Auth = () => {
     const location = useLocation();
@@ -32,81 +31,105 @@ const Auth = () => {
             }
 
             const response = await sendData(endpoint, data);
-
-            // Сохраняем токен и данные пользователя
             localStorage.setItem('token', response.access_token);
             user.setUser(response.user);
             user.setIsAuth(true);
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.detail || "Что-то пошло не так");
+            setError(err.response?.data?.detail || 'Что-то пошло не так');
         }
     };
 
+    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white';
+
     return (
-        <Container style={{ maxWidth: '400px', marginTop: '50px' }}>
-            <Card className="p-4">
-                <h2 className="mb-4">{isLogin ? 'Авторизация' : 'Регистрация'}</h2>
-                {error && <Alert variant="danger">{error}</Alert>}
-                <Form onSubmit={handleSubmit}>
+        <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-fade-in">
+                {/* Logo */}
+                <div className="flex items-center justify-center gap-2 mb-6">
+                    <span className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center text-base font-black">C</span>
+                    <span className="font-bold text-xl text-violet-700">devContest</span>
+                </div>
+
+                <h2 className="text-2xl font-bold text-gray-900 text-center mb-1">
+                    {isLogin ? 'Добро пожаловать!' : 'Создать аккаунт'}
+                </h2>
+                <p className="text-sm text-gray-500 text-center mb-6">
+                    {isLogin ? 'Войдите в свой аккаунт' : 'Заполните форму для регистрации'}
+                </p>
+
+                {error && (
+                    <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                     {!isLogin && (
-                        <Form.Group controlId="formBasicEmail" className="mb-3">
-                            <Form.Control
-                                type="email"
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </Form.Group>
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            required
+                            className={inputCls}
+                        />
                     )}
-                    <Form.Group controlId="formBasicLogin" className="mb-3">
-                        <Form.Control
-                            type="text"
-                            placeholder="Логин"
-                            value={loginInput}
-                            onChange={(e) => setLoginInput(e.target.value)}
-                            required
-                        />
-                    </Form.Group>
-                    <Form.Group controlId="formBasicPassword" className="mb-3">
-                        <Form.Control
-                            type="password"
-                            placeholder="Пароль"
-                            value={passwordInput}
-                            onChange={(e) => setPasswordInput(e.target.value)}
-                            required
-                        />
-                    </Form.Group>
+                    <input
+                        type="text"
+                        placeholder="Логин"
+                        value={loginInput}
+                        onChange={e => setLoginInput(e.target.value)}
+                        required
+                        className={inputCls}
+                    />
+                    <input
+                        type="password"
+                        placeholder="Пароль"
+                        value={passwordInput}
+                        onChange={e => setPasswordInput(e.target.value)}
+                        required
+                        className={inputCls}
+                    />
                     {!isLogin && (
-                        <Form.Group controlId="formBasicRole" className="mb-3">
-                            <Form.Select
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                required
-                            >
-                                <option value="executor">Фрилансер</option>
-                                <option value="customer">Организатор</option>
-                            </Form.Select>
-                        </Form.Group>
+                        <select
+                            value={role}
+                            onChange={e => setRole(e.target.value)}
+                            required
+                            className={inputCls}
+                        >
+                            <option value="executor">Фрилансер</option>
+                            <option value="customer">Организатор</option>
+                        </select>
                     )}
-                    <Button style ={ {backgroundColor: '#543787' } } variant="primary" type="submit" className="w-100 mb-3">
+
+                    <button
+                        type="submit"
+                        className="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors shadow-sm mt-1"
+                    >
                         {isLogin ? 'Войти' : 'Зарегистрироваться'}
-                    </Button>
-                </Form>
-                <Row>
+                    </button>
+                </form>
+
+                <p className="text-sm text-gray-500 text-center mt-5">
                     {isLogin ? (
-                        <div>
-                            Нет аккаунта? <NavLink color='#543787' style={{color:'#543787'}} to={REGISTRATION_ROUTE}>Зарегистрируйтесь!</NavLink>
-                        </div>
+                        <>
+                            Нет аккаунта?{' '}
+                            <NavLink to={REGISTRATION_ROUTE} className="text-violet-600 font-semibold hover:text-violet-700">
+                                Зарегистрируйтесь!
+                            </NavLink>
+                        </>
                     ) : (
-                        <div>
-                            Уже есть аккаунт? <NavLink style={{color:'#543787'}} to={LOGIN_ROUTE}>Войдите!</NavLink>
-                        </div>
+                        <>
+                            Уже есть аккаунт?{' '}
+                            <NavLink to={LOGIN_ROUTE} className="text-violet-600 font-semibold hover:text-violet-700">
+                                Войдите!
+                            </NavLink>
+                        </>
                     )}
-                </Row>
-            </Card>
-        </Container>
+                </p>
+            </div>
+        </div>
     );
 };
 

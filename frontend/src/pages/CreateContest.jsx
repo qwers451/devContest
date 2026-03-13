@@ -1,10 +1,9 @@
 import React, { useEffect, useContext, useState, useCallback } from 'react';
-import { Container, Form, Button, Dropdown, Modal, Card, Badge } from 'react-bootstrap';
 import { Context } from '../main.jsx';
 import { sendData } from '../services/apiService.js';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { observer } from "mobx-react-lite";
-import Markdown from 'markdown-to-jsx'
+import { observer } from 'mobx-react-lite';
+import Markdown from 'markdown-to-jsx';
 
 const CreateContest = () => {
     const { contest, user } = useContext(Context);
@@ -20,11 +19,9 @@ const CreateContest = () => {
     const [mdDescription, setMdDescription] = useState('');
     const [state, setState] = useState(false);
     const [submitURL, setSubmitURL] = useState('/contests');
+    const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
 
-    const handleClosePreview = () => setShowPreview(false);
-    const handleShowPreview = () => setShowPreview(true);
-    const handleCloseHelp = () => setShowHelp(false);
-    const handleShowHelp = () => setShowHelp(true);
+    const regex = /(!\[[^\]]*\])\(([^)]+)\)/g;
 
     useEffect(() => {
         contest.fetchTypes();
@@ -32,18 +29,14 @@ const CreateContest = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-
-        if (!contest.validateForm()) {
-            return;
-        }
-
+        if (!contest.validateForm()) return;
         if (!user.isAuth || !user.user?.id) {
             alert('Для создания конкурса необходимо войти в систему');
             navigate('/login');
             return;
         }
 
-        let date = new Date(contest.form.endBy.value)
+        let date = new Date(contest.form.endBy.value);
         date.setUTCHours(23, 59, 59, 999);
 
         const stages = contest.stages
@@ -71,9 +64,8 @@ const CreateContest = () => {
             contest.resetForm();
             navigate(-1);
             alert(`Конкурс успешно ${state ? 'изменён' : 'добавлен'}!`);
-            console.log('Ответ сервера:', res);
         } catch (error) {
-            console.error("Ошибка при отправке:", error);
+            console.error('Ошибка при отправке:', error);
             alert(`Ошибка при ${state ? 'редактировании' : 'создании'} конкурса`);
         }
     };
@@ -120,9 +112,7 @@ const CreateContest = () => {
     }, [imagesMap, contest]);
 
     useEffect(() => {
-        return () => {
-            Object.values(imagesMap).forEach(URL.revokeObjectURL);
-        };
+        return () => { Object.values(imagesMap).forEach(URL.revokeObjectURL); };
     }, [imagesMap]);
 
     useEffect(() => {
@@ -133,313 +123,346 @@ const CreateContest = () => {
     }, [contest.form.description.value, imagesMap]);
 
     useEffect(() => {
-        return () => {
-            contest.resetForm();
-        };
+        return () => { contest.resetForm(); };
     }, []);
 
-    const regex = /(!\[[^\]]*\])\(([^)]+)\)/g;
+    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white';
+    const inputErrCls = 'w-full px-4 py-2.5 rounded-xl border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-800 text-sm transition-all duration-200 bg-white';
+    const labelCls = 'block text-sm font-semibold text-gray-700 mb-1';
 
     return (
-        <Container className="mt-4">
-            <h1 className="mb-4">{state ? 'Редактировать конкурс' : 'Добавить конкурс'}</h1>
-            <Form noValidate onSubmit={handleSubmit}>
+        <div className="min-h-screen bg-gray-50 py-6">
+            <div className="max-w-3xl mx-auto px-4">
+                <h1 className="text-2xl font-bold text-gray-900 mb-6">
+                    {state ? 'Редактировать конкурс' : 'Добавить конкурс'}
+                </h1>
 
-                {/* Тип конкурса */}
-                <Form.Group className="mb-3">
-                    <Dropdown>
-                        <Dropdown.Toggle
-                            variant={contest.form.type.error ? 'danger' : contest.form.type.value ? 'success' : 'primary'}
-                        >
-                            {contest.form.type.value ? contest.getTypeNameById(contest.form.type.value) : "Выберите тип"}
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu>
-                            {contest.types.map((t) => (
-                                <Dropdown.Item key={t.id} onClick={() => contest.setFormField('type', t.id)}>
-                                    {t.name}
-                                </Dropdown.Item>
-                            ))}
-                        </Dropdown.Menu>
-                    </Dropdown>
-                    {contest.form.type.error && (
-                        <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>
-                            {contest.form.type.error}
-                        </Form.Control.Feedback>
-                    )}
-                </Form.Group>
-
-                {/* Название */}
-                <Form.Group className="mb-3">
-                    <Form.Control
-                        placeholder="Название"
-                        value={contest.form.title.value}
-                        onChange={(e) => contest.setFormField('title', e.target.value)}
-                        isInvalid={contest.form.title.error.length > 0}
-                        isValid={contest.form.title.error === '' && !!contest.form.title.value}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                        {contest.form.title.error}
-                    </Form.Control.Feedback>
-                </Form.Group>
-
-                {/* Краткое описание */}
-                <Form.Group className="mb-3">
-                    <Form.Control
-                        placeholder="Краткое описание"
-                        value={contest.form.annotation.value}
-                        onChange={e => contest.setFormField('annotation', e.target.value)}
-                        isInvalid={contest.form.annotation.error.length > 0}
-                        isValid={contest.form.annotation.error === '' && !!contest.form.annotation.value}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                        {contest.form.annotation.error}
-                    </Form.Control.Feedback>
-                </Form.Group>
-
-                {/* Полное описание */}
-                <Form.Group className="mb-3">
-                    <Form.Control
-                        as="textarea"
-                        rows={10}
-                        placeholder="Полное описание"
-                        value={contest.form.description.value}
-                        onChange={e => contest.setFormField('description', e.target.value)}
-                        isInvalid={contest.form.description.error.length > 0}
-                        isValid={contest.form.description.error === '' && !!contest.form.description.value}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                        {contest.form.description.error}
-                    </Form.Control.Feedback>
-                </Form.Group>
-
-                {/* Техническое задание */}
-                <Form.Group className="mb-3">
-                    <Form.Label className="fw-semibold">Техническое задание</Form.Label>
-                    <Form.Control
-                        as="textarea"
-                        rows={6}
-                        placeholder="Опишите требования к работе — ИИ использует их для автоматической оценки решений"
-                        value={contest.form.tz_text.value}
-                        onChange={e => contest.setFormField('tz_text', e.target.value)}
-                    />
-                    <Form.Text className="text-muted">
-                        Необязательно. Используется для автоматической оценки решений с помощью LLaMA.
-                    </Form.Text>
-                </Form.Group>
-
-                {/* Приз */}
-                <Form.Group className='mb-3'>
-                    <Form.Control
-                        placeholder="Приз"
-                        type="number"
-                        value={contest.form.prizepool.value}
-                        onChange={e => contest.setFormField('prizepool', e.target.value)}
-                        isInvalid={contest.form.prizepool.error.length > 0}
-                        isValid={contest.form.prizepool.error === '' && !!contest.form.prizepool.value}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                        {contest.form.prizepool.error}
-                    </Form.Control.Feedback>
-                </Form.Group>
-
-                {/* Дата окончания */}
-                <Form.Group className="mb-3">
-                    <Form.Control
-                        type="date"
-                        value={contest.form.endBy.value}
-                        onChange={e => contest.setFormField('endBy', e.target.value)}
-                        isInvalid={contest.form.endBy.error.length > 0}
-                        isValid={contest.form.endBy.error === '' && !!contest.form.endBy.value}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                        {contest.form.endBy.error}
-                    </Form.Control.Feedback>
-                </Form.Group>
-
-                {/* Этапы конкурса */}
-                <div className="mb-4">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                        <h5 className="mb-0">Этапы конкурса</h5>
-                        <Button variant="outline-primary" size="sm" onClick={() => contest.addStage()}>
-                            + Добавить этап
-                        </Button>
-                    </div>
-                    {contest.stages.length === 0 && (
-                        <p className="text-muted small mb-0">Необязательно. Разбейте работу на части с отдельными дедлайнами.</p>
-                    )}
-                    {contest.stages.map((stage, index) => (
-                        <Card key={index} className="mb-2">
-                            <Card.Body className="p-2">
-                                <div className="d-flex gap-2 align-items-start">
-                                    <Badge bg="secondary" className="mt-2 flex-shrink-0">{stage.order}</Badge>
-                                    <div className="flex-grow-1">
-                                        <Form.Control
-                                            className="mb-1"
-                                            placeholder="Название этапа *"
-                                            value={stage.name}
-                                            onChange={e => contest.updateStage(index, 'name', e.target.value)}
-                                        />
-                                        <Form.Control
-                                            className="mb-1"
-                                            placeholder="Описание этапа (необязательно)"
-                                            value={stage.description}
-                                            onChange={e => contest.updateStage(index, 'description', e.target.value)}
-                                        />
-                                        <Form.Control
-                                            type="date"
-                                            value={stage.deadline}
-                                            onChange={e => contest.updateStage(index, 'deadline', e.target.value)}
-                                        />
-                                    </div>
-                                    <Button
-                                        variant="outline-danger"
-                                        size="sm"
-                                        className="flex-shrink-0"
-                                        onClick={() => contest.removeStage(index)}
-                                    >
-                                        ✕
-                                    </Button>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Файлы */}
-                <Form.Group className="mb-3">
-                    <Form.Control
-                        type="file"
-                        multiple
-                        onChange={e => handleFilesChange(e.target.files)}
-                        isInvalid={contest.form.files.error.length > 0}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                        {contest.form.files.error}
-                    </Form.Control.Feedback>
-                    <Form.Text className="text-muted">
-                        Поддерживаемые форматы: .zip, .png, .jpg, .jpeg, .gif. Не более {contest.form.files.rules.max} файлов.
-                    </Form.Text>
-                </Form.Group>
-
-                <Button className="me-3" type="submit">Опубликовать</Button>
-                <Button className="me-3" onClick={handleShowPreview}>Предпросмотр</Button>
-                <Button className="me-3" onClick={handleShowHelp}>Справка</Button>
-                {state &&
-                    <Button className="me-3" onClick={() => navigate(-1)}>
-                        Отменить редактирование
-                    </Button>
-                }
-            </Form>
-
-            {/* Preview modal */}
-            <Modal show={showPreview} onHide={handleClosePreview} size='xl' centered scrollable>
-                <Modal.Body style={{ overflowY: 'auto' }}>
-                    <Card className="mb-4 shadow-sm">
-                        <Card.Header>
-                            <Card.Title>
-                                <h1>{contest.form.title.value}</h1>
-                            </Card.Title>
-                            <h2>
-                                <Badge bg="secondary">
-                                    {contest.form.type.value ? contest.getTypeNameById(contest.form.type.value) : 'Тип'}
-                                </Badge>
-                                <Badge className="ms-2" bg={'success'}>
-                                    {contest.getStatus('active')}
-                                </Badge>
-                            </h2>
-                            <h4 className="mb-1">
-                                Дата окончания: {(new Date(contest.form.endBy.value)).toLocaleDateString('ru-RU', {})}
-                                <span className="ms-3">Приз: {contest.form.prizepool.value} руб.</span>
-                            </h4>
-                        </Card.Header>
-                        <Card.Body>
-                            <Card.Subtitle className="mb-1"><h2>Описание проекта</h2></Card.Subtitle>
-                            <Markdown options={{ disableParsingRawHTML: true }}>
-                                {mdDescription}
-                            </Markdown>
-
-                            {contest.form.tz_text.value && (
-                                <>
-                                    <hr />
-                                    <h4>Техническое задание</h4>
-                                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
-                                        {contest.form.tz_text.value}
-                                    </pre>
-                                </>
-                            )}
-
-                            {contest.stages.length > 0 && (
-                                <>
-                                    <hr />
-                                    <h4>Этапы</h4>
-                                    {contest.stages.map((stage, i) => (
-                                        <div key={i} className="d-flex align-items-start mb-2">
-                                            <Badge bg="secondary" className="me-2 flex-shrink-0">{stage.order}</Badge>
-                                            <div>
-                                                <strong>{stage.name || '(без названия)'}</strong>
-                                                {stage.deadline && (
-                                                    <span className="ms-2 text-muted small">
-                                                        до {new Date(stage.deadline).toLocaleDateString('ru-RU')}
-                                                    </span>
-                                                )}
-                                                {stage.description && <div className="text-muted small">{stage.description}</div>}
-                                            </div>
-                                        </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Type */}
+                    <div>
+                        <label className={labelCls}>Тип конкурса</label>
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setTypeDropdownOpen(o => !o)}
+                                className={`${contest.form.type.error ? inputErrCls : inputCls} text-left flex justify-between items-center`}
+                            >
+                                <span className={contest.form.type.value ? 'text-gray-800' : 'text-gray-400'}>
+                                    {contest.form.type.value ? contest.getTypeNameById(contest.form.type.value) : 'Выберите тип'}
+                                </span>
+                                <span className="text-gray-400">{typeDropdownOpen ? '▲' : '▼'}</span>
+                            </button>
+                            {typeDropdownOpen && (
+                                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                                    {contest.types.map(t => (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            onClick={() => { contest.setFormField('type', t.id); setTypeDropdownOpen(false); }}
+                                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+                                        >
+                                            {t.name}
+                                        </button>
                                     ))}
-                                </>
+                                </div>
                             )}
-
-                            {files.length > 0 && (
-                                <>
-                                    <hr />
-                                    <h4>Файлы:</h4>
-                                    <ul>
-                                        {files.map((file, idx) => (
-                                            <li key={idx}>
-                                                <Button variant="link" className="me-2 p-0">{file.name}</Button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <Button variant="success" disabled>Скачать всё</Button>
-                                </>
-                            )}
-                        </Card.Body>
-                        <Card.Footer>
-                            <Button variant="primary">Добавить решение</Button>
-                        </Card.Footer>
-                    </Card>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant='primary' onClick={handleClosePreview}>Закрыть предпросмотр</Button>
-                </Modal.Footer>
-            </Modal>
-
-            {/* Help modal */}
-            <Modal show={showHelp} onHide={handleCloseHelp} size='lg' centered>
-                <Modal.Header>
-                    <Modal.Title>Справка</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <div style={{ whiteSpace: 'pre-line' }}>
-                        Для создания конкурса распишите подробно всю информацию в поле "Полное описание" в формате Markdown.
-                        <br /><br />
-                        Справка:{" "}
-                        <a href="https://www.markdownguide.org/cheat-sheet/" target="_blank" rel="noopener noreferrer">
-                            https://www.markdownguide.org/cheat-sheet/
-                        </a>
-                        <br /><br />
-                        Чтобы отобразить изображения загруженных файлов, укажите вместо ссылки название файла — ![Image](image.png)
-                        <br /><br />
-                        <strong>Техническое задание</strong> — структурированные требования к работе. ИИ (LLaMA) автоматически оценит каждое решение по этим критериям.
-                        <br /><br />
-                        <strong>Этапы</strong> — разбейте работу на части с отдельными дедлайнами. Необязательно.
+                        </div>
+                        {contest.form.type.error && (
+                            <p className="text-red-500 text-xs mt-1">{contest.form.type.error}</p>
+                        )}
                     </div>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant='primary' onClick={handleCloseHelp}>Закрыть справку</Button>
-                </Modal.Footer>
-            </Modal>
-        </Container>
+
+                    {/* Title */}
+                    <div>
+                        <label className={labelCls}>Название</label>
+                        <input
+                            type="text"
+                            placeholder="Название конкурса"
+                            value={contest.form.title.value}
+                            onChange={e => contest.setFormField('title', e.target.value)}
+                            className={contest.form.title.error.length > 0 ? inputErrCls : inputCls}
+                        />
+                        {contest.form.title.error && (
+                            <p className="text-red-500 text-xs mt-1">{contest.form.title.error}</p>
+                        )}
+                    </div>
+
+                    {/* Annotation */}
+                    <div>
+                        <label className={labelCls}>Краткое описание</label>
+                        <input
+                            type="text"
+                            placeholder="Краткое описание"
+                            value={contest.form.annotation.value}
+                            onChange={e => contest.setFormField('annotation', e.target.value)}
+                            className={contest.form.annotation.error.length > 0 ? inputErrCls : inputCls}
+                        />
+                        {contest.form.annotation.error && (
+                            <p className="text-red-500 text-xs mt-1">{contest.form.annotation.error}</p>
+                        )}
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                        <label className={labelCls}>Полное описание</label>
+                        <textarea
+                            rows={10}
+                            placeholder="Полное описание (поддерживается Markdown)"
+                            value={contest.form.description.value}
+                            onChange={e => contest.setFormField('description', e.target.value)}
+                            className={contest.form.description.error.length > 0 ? inputErrCls : inputCls}
+                        />
+                        {contest.form.description.error && (
+                            <p className="text-red-500 text-xs mt-1">{contest.form.description.error}</p>
+                        )}
+                    </div>
+
+                    {/* TZ text */}
+                    <div>
+                        <label className={labelCls}>Техническое задание</label>
+                        <textarea
+                            rows={6}
+                            placeholder="Опишите требования к работе — ИИ использует их для автоматической оценки решений"
+                            value={contest.form.tz_text.value}
+                            onChange={e => contest.setFormField('tz_text', e.target.value)}
+                            className={inputCls}
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            Необязательно. Используется для автоматической оценки решений с помощью LLaMA.
+                        </p>
+                    </div>
+
+                    {/* Prizepool */}
+                    <div>
+                        <label className={labelCls}>Призовой фонд (₽)</label>
+                        <input
+                            type="number"
+                            placeholder="Например: 5000"
+                            value={contest.form.prizepool.value}
+                            onChange={e => contest.setFormField('prizepool', e.target.value)}
+                            className={contest.form.prizepool.error.length > 0 ? inputErrCls : inputCls}
+                        />
+                        {contest.form.prizepool.error && (
+                            <p className="text-red-500 text-xs mt-1">{contest.form.prizepool.error}</p>
+                        )}
+                    </div>
+
+                    {/* End date */}
+                    <div>
+                        <label className={labelCls}>Дата окончания</label>
+                        <input
+                            type="date"
+                            value={contest.form.endBy.value}
+                            onChange={e => contest.setFormField('endBy', e.target.value)}
+                            className={contest.form.endBy.error.length > 0 ? inputErrCls : inputCls}
+                        />
+                        {contest.form.endBy.error && (
+                            <p className="text-red-500 text-xs mt-1">{contest.form.endBy.error}</p>
+                        )}
+                    </div>
+
+                    {/* Stages */}
+                    <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-base font-bold text-gray-800">Этапы конкурса</h3>
+                            <button
+                                type="button"
+                                onClick={() => contest.addStage()}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-violet-200 text-violet-600 hover:bg-violet-50 text-xs font-medium transition-colors"
+                            >
+                                + Добавить этап
+                            </button>
+                        </div>
+                        {contest.stages.length === 0 && (
+                            <p className="text-sm text-gray-400">Необязательно. Разбейте работу на части с отдельными дедлайнами.</p>
+                        )}
+                        <div className="space-y-2">
+                            {contest.stages.map((stage, index) => (
+                                <div key={index} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                                    <div className="flex items-start gap-2">
+                                        <span className="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                            {stage.order}
+                                        </span>
+                                        <div className="flex-1 space-y-2">
+                                            <input
+                                                placeholder="Название этапа *"
+                                                value={stage.name}
+                                                onChange={e => contest.updateStage(index, 'name', e.target.value)}
+                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white"
+                                            />
+                                            <input
+                                                placeholder="Описание этапа (необязательно)"
+                                                value={stage.description}
+                                                onChange={e => contest.updateStage(index, 'description', e.target.value)}
+                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white"
+                                            />
+                                            <input
+                                                type="date"
+                                                value={stage.deadline}
+                                                onChange={e => contest.updateStage(index, 'deadline', e.target.value)}
+                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white"
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => contest.removeStage(index)}
+                                            className="p-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 text-xs transition-colors flex-shrink-0"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Files */}
+                    <div>
+                        <label className={labelCls}>Файлы</label>
+                        <input
+                            type="file"
+                            multiple
+                            onChange={e => handleFilesChange(e.target.files)}
+                            className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                        />
+                        {contest.form.files.error && (
+                            <p className="text-red-500 text-xs mt-1">{contest.form.files.error}</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">
+                            Поддерживаемые форматы: .zip, .png, .jpg, .jpeg, .gif. Не более {contest.form.files.rules.max} файлов.
+                        </p>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-3 flex-wrap pt-2">
+                        <button
+                            type="submit"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-all duration-200 shadow-sm"
+                        >
+                            Опубликовать
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowPreview(true)}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all duration-200"
+                        >
+                            Предпросмотр
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowHelp(true)}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all duration-200"
+                        >
+                            Справка
+                        </button>
+                        {state && (
+                            <button
+                                type="button"
+                                onClick={() => navigate(-1)}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-semibold text-sm transition-all duration-200"
+                            >
+                                Отменить редактирование
+                            </button>
+                        )}
+                    </div>
+                </form>
+            </div>
+
+            {/* Preview Modal */}
+            {showPreview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowPreview(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in" onClick={e => e.stopPropagation()}>
+                        <div className="p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-gray-900">Предпросмотр</h2>
+                                <button onClick={() => setShowPreview(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                            </div>
+                            <div className="bg-gray-50 rounded-xl p-5">
+                                <h1 className="text-2xl font-bold text-gray-900 mb-2">{contest.form.title.value || 'Без названия'}</h1>
+                                <div className="flex gap-2 mb-3">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                        {contest.form.type.value ? contest.getTypeNameById(contest.form.type.value) : 'Тип'}
+                                    </span>
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                                        Активный
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-500 mb-1">
+                                    До: {new Date(contest.form.endBy.value).toLocaleDateString('ru-RU')} &nbsp;|&nbsp;
+                                    Приз: {contest.form.prizepool.value} руб.
+                                </p>
+                                <hr className="my-4 border-gray-200" />
+                                <h3 className="text-base font-bold text-gray-800 mb-2">Описание проекта</h3>
+                                <div className="prose prose-sm max-w-none">
+                                    <Markdown options={{ disableParsingRawHTML: true }}>{mdDescription}</Markdown>
+                                </div>
+                                {contest.form.tz_text.value && (
+                                    <>
+                                        <hr className="my-4 border-gray-200" />
+                                        <h4 className="font-bold text-gray-800 mb-2">Техническое задание</h4>
+                                        <pre className="whitespace-pre-wrap text-sm bg-white p-3 rounded-xl border border-gray-100">
+                                            {contest.form.tz_text.value}
+                                        </pre>
+                                    </>
+                                )}
+                                {contest.stages.length > 0 && (
+                                    <>
+                                        <hr className="my-4 border-gray-200" />
+                                        <h4 className="font-bold text-gray-800 mb-2">Этапы</h4>
+                                        {contest.stages.map((stage, i) => (
+                                            <div key={i} className="flex items-start gap-2 mb-2">
+                                                <span className="w-5 h-5 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-xs font-bold flex-shrink-0">{stage.order}</span>
+                                                <div>
+                                                    <strong className="text-sm">{stage.name || '(без названия)'}</strong>
+                                                    {stage.deadline && <span className="ml-2 text-xs text-gray-400">до {new Date(stage.deadline).toLocaleDateString('ru-RU')}</span>}
+                                                    {stage.description && <div className="text-xs text-gray-500">{stage.description}</div>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 border-t border-gray-100">
+                            <button onClick={() => setShowPreview(false)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors">
+                                Закрыть предпросмотр
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Help Modal */}
+            {showHelp && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowHelp(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-fade-in" onClick={e => e.stopPropagation()}>
+                        <div className="p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-gray-900">Справка</h2>
+                                <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                            </div>
+                            <div className="text-sm text-gray-700 space-y-3">
+                                <p>Для создания конкурса распишите подробно всю информацию в поле "Полное описание" в формате Markdown.</p>
+                                <p>
+                                    Справка:{' '}
+                                    <a href="https://www.markdownguide.org/cheat-sheet/" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">
+                                        markdownguide.org
+                                    </a>
+                                </p>
+                                <p>Чтобы отобразить изображения загруженных файлов, укажите вместо ссылки название файла — <code className="bg-gray-100 px-1 rounded">![Image](image.png)</code></p>
+                                <p><strong>Техническое задание</strong> — структурированные требования к работе. ИИ (LLaMA) автоматически оценит каждое решение по этим критериям.</p>
+                                <p><strong>Этапы</strong> — разбейте работу на части с отдельными дедлайнами. Необязательно.</p>
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 border-t border-gray-100">
+                            <button onClick={() => setShowHelp(false)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors">
+                                Закрыть справку
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

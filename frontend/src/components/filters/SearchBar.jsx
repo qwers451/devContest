@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Context } from '../../main.jsx';
-import { Form } from 'react-bootstrap';
 import { BsSearch } from 'react-icons/bs';
 
 const SearchBar = () => {
@@ -19,24 +18,18 @@ const SearchBar = () => {
     };
 
     return (
-        <div style={{ width: '100%' }} className="mt-2">
-            <div className="mt-2 mb-2">
-                <BsSearch color="#543787" />
-                <span color="#543787" className="mx-1">Поиск</span>
-            </div>
-            <Form>
-                <Form.Group controlId="searchQuery">
-                    <Form.Control
-                        type="text"
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                        placeholder="Поиск по названию, создателю или описанию..."
-                        style={{
-                            fontSize: '0.8rem',
-                        }}
-                    />
-                </Form.Group>
-            </Form>
+        <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <BsSearch className="inline mr-1 text-violet-600" />
+                Поиск
+            </label>
+            <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                placeholder="Поиск по названию, создателю или описанию..."
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white"
+            />
         </div>
     );
 };

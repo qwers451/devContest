@@ -1,12 +1,10 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Context } from '../../main.jsx';
-import { Form } from 'react-bootstrap';
-import {BsTrophy} from 'react-icons/bs';
+import { BsTrophy } from 'react-icons/bs';
 
 const RewardsBar = () => {
     const { contest } = useContext(Context);
-
     const [minReward, setMinReward] = useState(contest.minReward);
     const [maxReward, setMaxReward] = useState(contest.maxReward);
 
@@ -21,49 +19,30 @@ const RewardsBar = () => {
         contest.setReward({ min, max });
     }, [minReward, maxReward, contest]);
 
-    const handleMinRewardChange = (e) => {
-        setMinReward(e.target.value);
-    };
-
-    const handleMaxRewardChange = (e) => {
-        setMaxReward(e.target.value);
-    };
-
     return (
-        <div style={{ width: '100%' }} className="mt-2">
-            <div className="mt-2 mb-2">
-                <BsTrophy color="#543787" />
-                <span color="#543787" className="mx-1">Приз</span>
+        <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <BsTrophy className="inline mr-1 text-violet-600" />
+                Приз
+            </label>
+            <div className="flex gap-2">
+                <input
+                    type="number"
+                    value={minReward}
+                    onChange={e => setMinReward(e.target.value)}
+                    min="0"
+                    placeholder="от 200"
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white"
+                />
+                <input
+                    type="number"
+                    value={maxReward}
+                    onChange={e => setMaxReward(e.target.value)}
+                    min="0"
+                    placeholder="до 999999"
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white"
+                />
             </div>
-            <Form>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Form.Group controlId="minReward" style={{ flex: 1 }}>
-                        <Form.Control
-                            type="number"
-                            value={minReward}
-                            onChange={handleMinRewardChange}
-                            min="0"
-                            placeholder="от 200"
-                            style={{
-                                fontSize: '0.8rem',
-                            }}
-                        />
-                    </Form.Group>
-
-                    <Form.Group controlId="maxReward" style={{ flex: 1 }}>
-                        <Form.Control
-                            type="number"
-                            value={maxReward}
-                            onChange={handleMaxRewardChange}
-                            min="0"
-                            placeholder="До 999999"
-                            style={{
-                                fontSize: '0.8rem',
-                            }}
-                        />
-                    </Form.Group>
-                </div>
-            </Form>
         </div>
     );
 };

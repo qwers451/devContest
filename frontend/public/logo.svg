@@ -1,7 +1,6 @@
 <svg width="302" height="302" viewBox="0 0 302 302" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <circle cx="151" cy="151" r="151" fill="url(#paint0_linear_258_2)"/>
 <rect x="25" y="34" width="252" height="252" fill="url(#pattern0_258_2)"/>
-<circle cx="151" cy="151" r="131" stroke="white" stroke-width="40"/>
 <defs>
 <pattern id="pattern0_258_2" patternContentUnits="objectBoundingBox" width="1" height="1">
 <use xlink:href="#image0_258_2" transform="scale(0.00195312)"/>

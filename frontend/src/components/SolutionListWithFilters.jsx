@@ -1,27 +1,13 @@
-import {useContext, useState} from 'react';
-import { Row, Col, Container, Button, Collapse, Card, Pagination } from "react-bootstrap";
-import { BsFilter } from 'react-icons/bs';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
-import { Context } from "../main.jsx";
+import { Context } from '../main.jsx';
 import SolutionsFiltersBar from './SolutionsFiltersBar.jsx';
 import SolutionsList from './SolutionsList.jsx';
 
-const SolutionListWithFilters = ({ title, showContestTitle, showFreelancerLogin, isMySolutions }) => {
+const SolutionListWithFilters = observer(({ title, showContestTitle, showFreelancerLogin, isMySolutions }) => {
     const { contest, solution } = useContext(Context);
-    const [open, setOpen] = useState(false);
-
     const navigate = useNavigate();
-
-    const handleResetFilters = () => {
-        solution.resetFilters();
-    };
-
-    const handleGoToContest = () => {
-        if (solution.contestId) {
-            navigate(`/contest/${contest.currentContest.number}`);
-        }
-    };
 
     const handlePageChange = (newPage) => {
         solution.setPage(newPage);
@@ -31,118 +17,108 @@ const SolutionListWithFilters = ({ title, showContestTitle, showFreelancerLogin,
     const totalPages = Math.ceil(solution.totalCount / solution.limit);
 
     return (
-        <Container className="py-3">
-            {title && (
-                <h2 className="mb-3" style={{ fontWeight: '600' }}>{title}</h2>
-            )}
-
-            <div className="d-flex mb-2 gap-2">
-                <Button
-                    onClick={() => setOpen(!open)}
-                    aria-controls="filters-collapse"
-                    aria-expanded={open}
-                    style={{
-                        backgroundColor: '#543787',
-                        borderColor: '#543787',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontWeight: '500',
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        fontSize: '16px',
-                        height: '35px',
-                        lineHeight: '1'
-                    }}
-                    size="sm"
-                >
-                    <BsFilter size={14} />
-                    {open ? 'Скрыть' : 'Фильтры'}
-                </Button>
-
-                <Button
-                    onClick={handleResetFilters}
-                    variant="outline-secondary"
-                    size="sm"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontWeight: '500',
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        fontSize: '14px',
-                        height: '35px',
-                        lineHeight: '1',
-                    }}
-                >
-                    Сбросить фильтры
-                </Button>
-
-                {!isMySolutions && (
-                    <Button
-                        onClick={handleGoToContest}
-                        variant="outline-primary"
-                        size="sm"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            fontWeight: '500',
-                            padding: '4px 12px',
-                            borderRadius: '20px',
-                            fontSize: '14px',
-                            height: '35px',
-                            lineHeight: '1',
-                        }}
-                    >
-                        К конкурсу
-                    </Button>
-                )}
+        <div className="min-h-screen bg-gray-50">
+            {/* Page header */}
+            <div className="bg-white border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-1">
+                        {title || 'Решения'}
+                    </h1>
+                    {!isMySolutions && contest.currentContest && (
+                        <button
+                            onClick={() => navigate(`/contest/${contest.currentContest.number}`)}
+                            className="text-sm text-violet-600 hover:text-violet-800 font-medium transition-colors"
+                        >
+                            ← К конкурсу «{contest.currentContest.title}»
+                        </button>
+                    )}
+                    {isMySolutions && (
+                        <p className="text-gray-500 text-sm">Ваши отправленные работы</p>
+                    )}
+                </div>
             </div>
 
-            <Collapse in={open}>
-                <div id="filters-collapse">
-                    <Card className="mb-3 shadow-sm border-0">
-                        <Card.Body className="py-3 px-3">
-                            <SolutionsFiltersBar
-                                isMySolutions={isMySolutions}
-                            />
-                        </Card.Body>
-                    </Card>
+            <div className="max-w-7xl mx-auto px-4 py-6">
+                <div className="flex gap-6 items-start">
+                    {/* Sidebar */}
+                    <aside className="w-60 flex-shrink-0 sticky top-16">
+                        <SolutionsFiltersBar isMySolutions={isMySolutions} />
+                    </aside>
+
+                    {/* Main content */}
+                    <main className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-sm text-gray-500">
+                                {solution.solutions.length > 0 && totalPages > 1
+                                    ? `Страница ${solution.page} из ${totalPages}`
+                                    : ''}
+                            </span>
+                            <button
+                                onClick={() => solution.resetFilters()}
+                                className="text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors"
+                            >
+                                Сбросить фильтры
+                            </button>
+                        </div>
+
+                        <SolutionsList
+                            showContestTitle={showContestTitle}
+                            showFreelancerLogin={showFreelancerLogin}
+                        />
+
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-1 my-6">
+                                <button
+                                    onClick={() => handlePageChange(1)}
+                                    disabled={solution.page === 1}
+                                    className="px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    «
+                                </button>
+                                <button
+                                    onClick={() => handlePageChange(solution.page - 1)}
+                                    disabled={solution.page === 1}
+                                    className="px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    ‹
+                                </button>
+                                {[...Array(totalPages)].map((_, index) => {
+                                    const pageNum = index + 1;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => handlePageChange(pageNum)}
+                                            className={`w-9 h-9 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                                solution.page === pageNum
+                                                    ? 'bg-violet-600 text-white shadow-sm'
+                                                    : 'text-gray-600 hover:bg-violet-50 hover:text-violet-600'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    onClick={() => handlePageChange(solution.page + 1)}
+                                    disabled={solution.page === totalPages}
+                                    className="px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    ›
+                                </button>
+                                <button
+                                    onClick={() => handlePageChange(totalPages)}
+                                    disabled={solution.page === totalPages}
+                                    className="px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    »
+                                </button>
+                            </div>
+                        )}
+                    </main>
                 </div>
-            </Collapse>
-
-            <Row>
-                <Col>
-                    <SolutionsList
-                        showContestTitle={showContestTitle}
-                        showFreelancerLogin={showFreelancerLogin}
-                    />
-                    {totalPages > 1 && (
-                        <Pagination className="justify-content-center mt-3">
-                            <Pagination.First disabled={solution.page === 1} onClick={() => handlePageChange(1)} />
-                            <Pagination.Prev disabled={solution.page === 1} onClick={() => handlePageChange(solution.page - 1)} />
-                            {[...Array(totalPages)].map((_, index) => {
-                                const pageNum = index + 1;
-                                return (
-                                    <Pagination.Item
-                                        key={pageNum}
-                                        active={solution.page === pageNum}
-                                        onClick={() => handlePageChange(pageNum)}
-                                    >
-                                        {pageNum}
-                                    </Pagination.Item>
-                                );
-                            })}
-                            <Pagination.Next disabled={solution.page === totalPages} onClick={() => handlePageChange(solution.page + 1)} />
-                            <Pagination.Last disabled={solution.page === totalPages} onClick={() => handlePageChange(totalPages)} />
-                        </Pagination>
-                    )}
-                </Col>
-            </Row>
-        </Container>
+            </div>
+        </div>
     );
-};
+});
 
-export default observer(SolutionListWithFilters);
+export default SolutionListWithFilters;

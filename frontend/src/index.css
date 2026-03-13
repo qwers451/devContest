@@ -1,3 +1,134 @@
-body {
-    font-family: 'Roboto', sans-serif;
+@import "tailwindcss";
+
+@theme {
+  --color-primary:       #7c3aed;
+  --color-primary-dark:  #6d28d9;
+  --color-primary-light: #8b5cf6;
+  --color-surface:       #ffffff;
+  --color-bg:            #f9fafb;
+  --color-border:        #e5e7eb;
 }
+
+/* ── Base ─────────────────────────────────────────── */
+html { font-family: Inter, system-ui, sans-serif; }
+
+body {
+  background: #f9fafb;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Animations ───────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInFast {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-in    { animation: fadeIn 0.3s ease both; }
+.animate-fade-fast  { animation: fadeInFast 0.15s ease both; }
+.animate-slide-down { animation: slideDown 0.2s ease both; }
+
+/* ── Prose (markdown) ─────────────────────────────── */
+.prose { line-height: 1.7; color: #374151; }
+.prose h1, .prose h2, .prose h3 { color: #111827; font-weight: 700; margin: 1.25em 0 0.5em; }
+.prose h1 { font-size: 1.5rem; }
+.prose h2 { font-size: 1.25rem; }
+.prose h3 { font-size: 1.1rem; }
+.prose p  { margin-bottom: 0.9em; }
+.prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.9em; }
+.prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.9em; }
+.prose code { background: #f3f4f6; padding: 2px 5px; border-radius: 4px; font-size: 0.875em; }
+.prose pre  { background: #f3f4f6; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+.prose blockquote { border-left: 3px solid #e5e7eb; padding-left: 1rem; color: #6b7280; }
+.prose a { color: #7c3aed; text-decoration: underline; }
+
+/* ── Scrollbar ────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+/* ── Dark Mode ─────────────────────────────────────── */
+/* Unlayered rules override Tailwind's @layer utilities */
+
+.dark body {
+  background: #0d1117;
+  color: #e6edf3;
+}
+
+/* Backgrounds — GitHub dark palette */
+.dark .bg-white     { background-color: #161b22; }
+.dark .bg-gray-50   { background-color: #0d1117; }
+.dark .bg-gray-100  { background-color: #21262d; }
+
+/* Borders */
+.dark .border-gray-200 { border-color: #30363d; }
+.dark .border-gray-100 { border-color: #21262d; }
+
+/* Text */
+.dark .text-gray-900 { color: #e6edf3; }
+.dark .text-gray-800 { color: #cdd9e5; }
+.dark .text-gray-700 { color: #adbac7; }
+.dark .text-gray-600 { color: #8b949e; }
+.dark .text-gray-500 { color: #6e7681; }
+.dark .text-gray-400 { color: #484f58; }
+.dark .text-gray-300 { color: #30363d; }
+
+/* Violet accents — slightly brighter in dark */
+.dark .text-violet-600  { color: #a78bfa; }
+.dark .text-violet-700  { color: #8b5cf6; }
+.dark .bg-violet-50     { background-color: rgba(167,139,250,0.08); }
+.dark .bg-violet-100    { background-color: rgba(167,139,250,0.14); }
+.dark .bg-amber-50      { background-color: rgba(251,191,36,0.08); }
+
+/* Hover states */
+.dark .hover\:bg-gray-50:hover  { background-color: #21262d; }
+.dark .hover\:bg-gray-100:hover { background-color: #30363d; }
+.dark .hover\:text-violet-600:hover { color: #a78bfa; }
+.dark .hover\:text-violet-700:hover { color: #a78bfa; }
+.dark .hover\:text-violet-800:hover { color: #8b5cf6; }
+.dark .hover\:border-violet-300:hover { border-color: #6d28d9; }
+.dark .hover\:bg-red-50:hover   { background-color: rgba(239,68,68,0.08); }
+
+/* Input fields */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #0d1117;
+  border-color: #30363d;
+  color: #e6edf3;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #484f58; }
+.dark input:focus,
+.dark textarea:focus { border-color: #7c3aed; }
+
+/* Dark prose */
+.dark .prose { color: #8b949e; }
+.dark .prose h1, .dark .prose h2, .dark .prose h3 { color: #e6edf3; }
+.dark .prose code { background: #21262d; }
+.dark .prose pre  { background: #161b22; border: 1px solid #30363d; }
+.dark .prose blockquote { border-color: #30363d; color: #6e7681; }
+.dark .prose a { color: #a78bfa; }
+
+/* Scrollbar dark */
+.dark ::-webkit-scrollbar-thumb { background: #30363d; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* Shadows — softer in dark */
+.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.dark .hover\:shadow-md:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.7); }

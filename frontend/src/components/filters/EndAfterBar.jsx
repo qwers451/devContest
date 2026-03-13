@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Context } from '../../main.jsx';
-import { Form } from 'react-bootstrap';
 import { BsCalendarEvent } from 'react-icons/bs';
 
 const EndAfterBar = () => {
@@ -16,47 +15,31 @@ const EndAfterBar = () => {
 
     const [endAfter, setEndAfter] = useState(formatDateForInput(contest.endAfter));
 
-    // Синхронизируем состояние с contest.endAfter, если оно изменилось извне
     useEffect(() => {
         setEndAfter(formatDateForInput(contest.endAfter));
     }, [contest.endAfter]);
 
-    // При изменении endAfter обновляем contest
     useEffect(() => {
         if (endAfter) {
             const date = new Date(endAfter);
-            if (!isNaN(date.getTime())) {
-                contest.setEndAfter(date);
-            }
+            if (!isNaN(date.getTime())) contest.setEndAfter(date);
         } else {
             contest.setEndAfter(null);
         }
     }, [endAfter, contest]);
 
-    const handleEndDateChange = (e) => {
-        setEndAfter(e.target.value);
-    };
-
     return (
-        <div className="mt-2">
-            <div className="mt-2 mb-2">
-                <BsCalendarEvent color="#543787"/>
-                <span color='#543787' className="mx-1">Дата окончания после</span>
-            </div>
-            <Form className="mt-2">
-                <Form.Group controlId="endAfterDate">
-                    <Form.Control
-                        type="date"
-                        value={endAfter}
-                        onChange={handleEndDateChange}
-                        style={{
-                            fontSize: '0.8rem',
-                            border: '1px solid #ced4da',
-                            borderRadius: '0.375rem',
-                        }}
-                    />
-                </Form.Group>
-            </Form>
+        <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <BsCalendarEvent className="inline mr-1 text-violet-600" />
+                Дата окончания после
+            </label>
+            <input
+                type="date"
+                value={endAfter}
+                onChange={e => setEndAfter(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white"
+            />
         </div>
     );
 };

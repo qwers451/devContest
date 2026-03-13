@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
-import {Button, Card} from "react-bootstrap";
 import { Bar } from 'react-chartjs-2';
 import { observer } from 'mobx-react-lite';
-import { Context } from "../../main.jsx";
+import { Context } from '../../main.jsx';
 import { Chart } from 'chart.js';
 import {
     BarController, BarElement, CategoryScale, LinearScale,
     Tooltip, Legend
 } from 'chart.js';
-import FiltersBar from "../FiltersBar.jsx";
+import FiltersBar from '../FiltersBar.jsx';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -44,15 +43,14 @@ const StatisticsPanel = observer(() => {
     ];
 
     const { statistics } = contest;
+
+    const selectCls = 'px-3 py-1.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm text-gray-700 bg-white';
+
     if (!statistics || !statistics.x_labels) {
         return (
             <div>
-                <Card className="shadow-sm">
-                    <Card.Body>
-                        <h2 style={{ color: "#543787" }}>Статистика</h2>
-                        <p className="text-muted">Загрузка...</p>
-                    </Card.Body>
-                </Card>
+                <h2 className="text-xl font-bold text-violet-700 mb-2">Статистика</h2>
+                <p className="text-gray-400 text-sm">Загрузка...</p>
             </div>
         );
     }
@@ -75,70 +73,52 @@ const StatisticsPanel = observer(() => {
         datasets = datasets.map(ds => ({ ...ds, label: statusMap[ds.label] || ds.label }));
     }
 
-    const colors = ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#4bc0c0'];
+    const colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
     datasets = datasets.map((ds, index) => ({
         ...ds,
         backgroundColor: colors[index % colors.length]
     }));
 
-    const chartData = {
-        labels,
-        datasets
-    };
-
+    const chartData = { labels, datasets };
     const chartOptions = {
-        scales: {
-            y: {
-                ticks: {
-                    precision: 0
-                },
-                beginAtZero: true
-            }
-        }
+        scales: { y: { ticks: { precision: 0 }, beginAtZero: true } }
     };
 
     return (
         <div>
-            <Card className="shadow-sm">
-                <Card.Body>
-                    <h2 style={{ color: "#543787" }}>Статистика</h2>
-                    <FiltersBar />
-                    <div className='mt-3' style={{ marginBottom: '20px' }}>
-                        <label style={{ marginRight: '10px' }}>Ось X: </label>
-                        <select value={selectedX} onChange={e => setSelectedX(e.target.value)}>
-                            {xOptions.map(option => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                            ))}
-                        </select>
-                        <label className='ms-2' style={{ marginRight: '10px' }}>Ось Y: </label>
-                        <select value={selectedY} onChange={e => setSelectedY(e.target.value)}>
-                            {yOptions.map(option => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                            ))}
-                        </select>
-                        <Button onClick={() => setUpdateCounter(prev => prev + 1)} className="ms-3">Применить фильтры</Button>
-                        <Button
-                            onClick={handleResetFilters}
-                            variant="outline-secondary"
-                            size="sm"
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontWeight: '500',
-                                padding: '4px 10px',
-                                borderRadius: '20px',
-                                fontSize: '14px',
-                                height: '35px',
-                                lineHeight: '1',
-                            }}
-                        >
-                            Сбросить фильтры
-                        </Button>
-                    </div>
-                    <Bar data={chartData} options={chartOptions} />
-                </Card.Body>
-            </Card>
+            <h2 className="text-xl font-bold text-violet-700 mb-4">Статистика</h2>
+            <FiltersBar />
+            <div className="flex items-center gap-4 flex-wrap mt-4 mb-5">
+                <div className="flex items-center gap-2">
+                    <label className="text-sm font-semibold text-gray-700">Ось X:</label>
+                    <select value={selectedX} onChange={e => setSelectedX(e.target.value)} className={selectCls}>
+                        {xOptions.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex items-center gap-2">
+                    <label className="text-sm font-semibold text-gray-700">Ось Y:</label>
+                    <select value={selectedY} onChange={e => setSelectedY(e.target.value)} className={selectCls}>
+                        {yOptions.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+                </div>
+                <button
+                    onClick={() => setUpdateCounter(prev => prev + 1)}
+                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
+                >
+                    Применить
+                </button>
+                <button
+                    onClick={handleResetFilters}
+                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-semibold text-sm transition-colors"
+                >
+                    Сбросить фильтры
+                </button>
+            </div>
+            <Bar data={chartData} options={chartOptions} />
         </div>
     );
 });

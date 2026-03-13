@@ -1,19 +1,16 @@
 import React, { useEffect, useContext, useState } from 'react';
-import { Context } from "../main.jsx";
-import { Row, Spinner, Pagination } from "react-bootstrap";
-import ContestCard from "./ContestCard.jsx";
-import { observer } from "mobx-react-lite";
+import { Context } from '../main.jsx';
+import ContestCard from './ContestCard.jsx';
+import { observer } from 'mobx-react-lite';
 
 const ContestsList = observer(() => {
     const { contest, user } = useContext(Context);
-
-    const [showLoader, setShowLoader] = useState(false); // Изначально лоадер скрыт
+    const [showLoader, setShowLoader] = useState(false);
 
     useEffect(() => {
         contest.fetchContestsFiltered(contest.currentPage);
     }, []);
 
-    // Fetch creators for all contests when the list changes
     useEffect(() => {
         if (contest.contests.length === 0) return;
         const missingIds = [...new Set(contest.contests.map(c => c.customer_id))]
@@ -23,31 +20,28 @@ const ContestsList = observer(() => {
 
     const handlePageChange = (pageNumber) => {
         contest.fetchContestsFiltered(pageNumber);
-    }
+    };
 
     useEffect(() => {
         if (contest.isLoading) {
             setShowLoader(true);
         } else {
-            // Плавное скрытие лоадера с минимальной задержкой
-            const timer = setTimeout(() => {
-                setShowLoader(false);
-            }, 100); // Минимальная задержка 100 мс для плавности
+            const timer = setTimeout(() => setShowLoader(false), 100);
             return () => clearTimeout(timer);
         }
     }, [contest.isLoading]);
 
     if (showLoader) {
         return (
-            <div className="d-flex justify-content-center my-5">
-                <Spinner animation="border" style={{ color: '#543787' }} />
+            <div className="flex justify-center items-center my-10">
+                <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
             </div>
         );
     }
 
     if (contest.contests.length === 0) {
         return (
-            <div className="text-center my-5">
+            <div className="text-center my-10 text-gray-500">
                 Нет конкурсов по выбранным фильтрам
             </div>
         );
@@ -55,7 +49,7 @@ const ContestsList = observer(() => {
 
     return (
         <>
-            <Row className="d-flex justify-content-center">
+            <div className="grid grid-cols-1 gap-3">
                 {contest.contests.map((contestItem) => (
                     <ContestCard
                         key={contestItem.id}
@@ -63,18 +57,26 @@ const ContestsList = observer(() => {
                         type={contest.getTypeNameById(contestItem.type)}
                     />
                 ))}
-            </Row>
-            <Pagination className="justify-content-center my-4">
-                {[...Array(contest.totalPages)].map((_, idx) => (
-                    <Pagination.Item
-                        key={idx + 1}
-                        active={contest.currentPage === idx + 1}
-                        onClick={() => handlePageChange(idx + 1)}
-                    >
-                        {idx + 1}
-                    </Pagination.Item>
-                ))}
-            </Pagination>
+            </div>
+
+            {/* Pagination */}
+            {contest.totalPages > 1 && (
+                <div className="flex justify-center items-center gap-1 my-6">
+                    {[...Array(contest.totalPages)].map((_, idx) => (
+                        <button
+                            key={idx + 1}
+                            onClick={() => handlePageChange(idx + 1)}
+                            className={`w-9 h-9 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                contest.currentPage === idx + 1
+                                    ? 'bg-violet-600 text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-violet-50 hover:text-violet-600'
+                            }`}
+                        >
+                            {idx + 1}
+                        </button>
+                    ))}
+                </div>
+            )}
         </>
     );
 });

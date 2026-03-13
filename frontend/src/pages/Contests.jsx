@@ -1,6 +1,6 @@
 import { useContext, useEffect } from 'react';
-import { Context } from "../main.jsx";
-import ContestListWithFilters from "../components/ContestListWithFilters.jsx"; // Иконка фильтра
+import { Context } from '../main.jsx';
+import ContestListWithFilters from '../components/ContestListWithFilters.jsx';
 
 const Contests = () => {
     const { contest, user } = useContext(Context);
@@ -12,9 +12,9 @@ const Contests = () => {
     }, [user]);
 
     return (
-        <>
+        <div className="min-h-screen bg-gray-50">
             <ContestListWithFilters />
-        </>
+        </div>
     );
 };
 

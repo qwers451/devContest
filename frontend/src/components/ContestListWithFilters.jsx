@@ -1,83 +1,50 @@
-import React, {useContext, useEffect, useState} from 'react';
-import { Row, Col, Container, Button, Collapse, Card } from "react-bootstrap";
-import ContestsList from "./ContestsList.jsx";
-import { Context } from "../main.jsx";
-import FiltersBar from "./FiltersBar.jsx";
-import { BsFilter } from 'react-icons/bs';
-import { observer } from 'mobx-react-lite'; // не забудь, чтобы работать с mobx
+import React, { useContext } from 'react';
+import ContestsList from './ContestsList.jsx';
+import { Context } from '../main.jsx';
+import FiltersBar from './FiltersBar.jsx';
+import { observer } from 'mobx-react-lite';
 
-const ContestListWithFilters = () => {
+const ContestListWithFilters = observer(() => {
     const { contest } = useContext(Context);
-    const [open, setOpen] = useState(false);
-
-    const handleResetFilters = () => {
-        contest.resetFilters();
-    };
 
     return (
-        <Container className="py-3">
-            <div className="d-flex mb-2 gap-2">
-                <Button
-                    onClick={() => setOpen(!open)}
-                    aria-controls="filters-collapse"
-                    aria-expanded={open}
-                    style={{
-                        backgroundColor: '#543787',
-                        borderColor: '#543787',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontWeight: '500',
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        fontSize: '16px',
-                        height: '35px',
-                        lineHeight: '1'
-                    }}
-                    size="sm"
-                >
-                    <BsFilter size={14} />
-                    {open ? 'Скрыть' : 'Фильтры'}
-                </Button>
-
-                <Button
-                    onClick={handleResetFilters}
-                    variant="outline-secondary"
-                    size="sm"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontWeight: '500',
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        fontSize: '14px',
-                        height: '35px',
-                        lineHeight: '1',
-                    }}
-                >
-                    Сбросить фильтры
-                </Button>
+        <div className="min-h-screen bg-gray-50">
+            {/* Page header */}
+            <div className="bg-white border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-1">Конкурсы</h1>
+                    <p className="text-gray-500 text-sm">Найдите задачи, предложите лучшее решение и выиграйте приз</p>
+                </div>
             </div>
 
-            <Collapse in={open}>
-                <div id="filters-collapse">
-                    <Card className="mb-3 shadow-sm border-0">
-                        <Card.Body className="py-3 px-3">
-                            <FiltersBar />
-                        </Card.Body>
-                    </Card>
+            <div className="max-w-7xl mx-auto px-4 py-6">
+                <div className="flex gap-6 items-start">
+                    {/* Sidebar */}
+                    <aside className="w-60 flex-shrink-0 sticky top-16">
+                        <FiltersBar />
+                    </aside>
+
+                    {/* Main content */}
+                    <main className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-sm text-gray-500">
+                                {contest.contests.length > 0
+                                    ? `Страница ${contest.currentPage} из ${contest.totalPages}`
+                                    : ''}
+                            </span>
+                            <button
+                                onClick={() => contest.resetFilters()}
+                                className="text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors"
+                            >
+                                Сбросить фильтры
+                            </button>
+                        </div>
+                        <ContestsList />
+                    </main>
                 </div>
-            </Collapse>
-
-            <Row>
-                <Col>
-                    <ContestsList />
-                </Col>
-            </Row>
-        </Container>
+            </div>
+        </div>
     );
-};
+});
 
-export default observer(ContestListWithFilters); //
+export default ContestListWithFilters;

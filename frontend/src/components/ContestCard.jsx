@@ -1,114 +1,99 @@
-import React, {useContext} from 'react';
-import {Card, Col} from "react-bootstrap";
-import {useNavigate} from 'react-router-dom';
-import {observer} from 'mobx-react-lite';
-import {Context} from "../main.jsx";
-import {CONTEST_ROUTE} from "../utils/consts.js";
-import {BsStarFill, BsTrophy} from 'react-icons/bs';
+import React, { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { observer } from 'mobx-react-lite';
+import { Context } from '../main.jsx';
+import { CONTEST_ROUTE } from '../utils/consts.js';
 
-const ContestCard = observer(({contest: item}) => {
-    const {contest, user} = useContext(Context);
+const statusConfig = {
+    draft:     { label: 'Черновик',    dot: 'bg-gray-400' },
+    active:    { label: 'Активный',    dot: 'bg-emerald-500' },
+    finished:  { label: 'Завершённый', dot: 'bg-violet-500' },
+    cancelled: { label: 'Отменённый', dot: 'bg-red-400' },
+};
+
+function daysLeft(endsAt) {
+    const diff = Math.ceil((new Date(endsAt) - Date.now()) / 86400000);
+    if (diff < 0) return null;
+    if (diff === 0) return 'последний день';
+    return `${diff} ${diff === 1 ? 'день' : diff < 5 ? 'дня' : 'дней'}`;
+}
+
+const ContestCard = observer(({ contest: item }) => {
+    const { contest, user } = useContext(Context);
     const navigate = useNavigate();
 
     const creator = user.getById(item.customer_id);
-    const isOpen = item.status === 'active';
-    const statusOptions = {
-        draft:     { label: 'Черновик',   colorClass: 'bg-secondary' },
-        active:    { label: 'Активный',   colorClass: 'bg-success' },
-        finished:  { label: 'Завершённый', colorClass: 'bg-danger' },
-        cancelled: { label: 'Отменённый', colorClass: 'bg-warning' },
-    };
+    const status = statusConfig[item.status] || statusConfig.draft;
+    const typeName = contest.getTypeNameById(item.type_id);
+    const remaining = item.status === 'active' ? daysLeft(item.ends_at) : null;
 
-    const statusOption = statusOptions[item.status];
-    const statusText = statusOption ? statusOption.label : 'Неизвестный статус';
-    const statusColor = statusOption ? statusOption.colorClass : 'bg-light';
-
-    const contestTypeName = contest.getTypeNameById(item.type_id);
-
-    return (<Col
-        xs={12}
-        className="my-2"
-        onClick={(e) => {
-            const selection = window.getSelection();
-            if (selection && selection.toString().length > 0) return;
-
-            contest.setCurrentContest(item);
-            navigate(CONTEST_ROUTE + '/' + item.number);
-        }}
-    >
-        <Card
-            border="light"
-            className="shadow-lg rounded-lg"
-            style={{
-                cursor: 'pointer', minHeight: '270px',
+    return (
+        <div
+            onClick={() => {
+                if (window.getSelection()?.toString().length > 0) return;
+                contest.setCurrentContest(item);
+                navigate(CONTEST_ROUTE + '/' + item.number);
             }}
+            className="group bg-white rounded-xl border border-gray-200 hover:border-violet-300 hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden animate-fade-in"
         >
-            <Card.Body>
-                {/* Название */}
-                <div className="d-flex justify-content-between align-items-center">
-                    <Card.Title className="text-truncate" style={{
-                        fontSize: '1.5rem', fontWeight: 'bold', color: '#333',
-                    }}>
-                        {item.title}
-                    </Card.Title>
-                    <div className="d-flex justify-content-between align-items-center">
-                        <BsStarFill color="gold" size={22} className="me-1"/>
-                        <span style={{fontSize: '1rem', color: '#666'}}>{item.rating || '4.8'}</span>
-                    </div>
-                </div>
-                {/* Описание */}
-                <div style={{height: '80px'}}>
-                    <Card.Text className="mt-2" style={{fontSize: '1rem', color: '#555', lineHeight: '1.4'}}>
-                        {item.annotation}
-                    </Card.Text>
-                </div>
-            </Card.Body>
-            <Card.Body>
-                {/* Компания и приз */}
-                <div className="d-flex justify-content-between align-items-center">
-                        <span style={{color: '#543787', fontWeight: '600'}}>
-                            {creator ? creator.login : 'Неизвестный создатель'}
-                        </span>
-                    <div>
-                        <BsTrophy color="green" size={20} className="me-1"/>
-                        <span style={{fontSize: '1rem', fontWeight: 'bold', color: 'green'}}>
-                                {item.prizepool} ₽.
+            <div className="flex items-stretch">
+                {/* Left: main content */}
+                <div className="flex-1 px-5 py-4 min-w-0">
+                    {/* Status + type */}
+                    <div className="flex items-center gap-2 mb-2.5">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${status.dot}`} />
+                        <span className="text-xs text-gray-500 font-medium">{status.label}</span>
+                        {typeName && (
+                            <>
+                                <span className="text-gray-300">·</span>
+                                <span className="text-xs text-gray-400">{typeName}</span>
+                            </>
+                        )}
+                        {remaining && (
+                            <span className="ml-auto text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full flex-shrink-0">
+                                {remaining}
                             </span>
+                        )}
                     </div>
-                </div>
-                {/* Индикатор статуса */}
-                <div className="d-flex justify-content-between align-items-center mt-2">
-                    <div className="d-flex align-items-center">
-                        <span
-                            className={`badge ${statusColor} me-2`}
-                            style={{fontSize: '0.9rem', fontWeight: '500'}}
-                        >
-                            {statusText}
-                        </span>
 
-                        <span
-                            style={{
-                                fontSize: '0.9rem',
-                                color: '#543787',
-                                fontWeight: '500',
-                                background: '#f1f1f9',
-                                padding: '4px 8px',
-                                borderRadius: '8px'
-                            }}
-                        >
-                            {contestTypeName}
-                        </span>
-                    </div>
-                    <span style={{fontSize: '0.9rem', color: '#666'}}>
-                        {isOpen ? "До" : "C"} {new Date(item.ends_at).toLocaleDateString('ru-RU', {
-                            day: '2-digit', month: 'long', year: 'numeric'
-                        })}
-                    </span>
+                    {/* Title */}
+                    <h3 className="font-bold text-gray-900 text-base leading-snug line-clamp-1 mb-1.5 group-hover:text-violet-700 transition-colors">
+                        {item.title}
+                    </h3>
+
+                    {/* Annotation */}
+                    {item.annotation && (
+                        <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">
+                            {item.annotation}
+                        </p>
+                    )}
                 </div>
 
-            </Card.Body>
-        </Card>
-    </Col>);
+                {/* Right: prize + meta */}
+                <div className="flex-shrink-0 w-40 border-l border-gray-100 px-4 py-4 flex flex-col items-end justify-between">
+                    <div className="text-right">
+                        <div>
+                            <span className="text-2xl font-black text-gray-900">
+                                {Number(item.prizepool).toLocaleString('ru')}
+                            </span>
+                            <span className="text-sm font-semibold text-gray-500 ml-0.5">₽</span>
+                        </div>
+                        <span className="text-xs text-gray-400">призовой фонд</span>
+                    </div>
+                    <div className="text-right">
+                        {creator && (
+                            <div className="text-xs text-violet-600 font-medium mb-1 truncate max-w-[140px]">
+                                @{creator.login}
+                            </div>
+                        )}
+                        <div className="text-xs text-gray-400">
+                            {new Date(item.ends_at).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 });
 
 export default ContestCard;

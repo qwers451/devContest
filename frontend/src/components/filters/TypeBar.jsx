@@ -1,12 +1,21 @@
-import React, { useContext } from 'react';
-import { observer } from "mobx-react-lite";
-import { Context } from "../../main.jsx";
-import { Dropdown, Form } from "react-bootstrap";
+import React, { useContext, useState, useRef, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
+import { Context } from '../../main.jsx';
 import { BsTags } from 'react-icons/bs';
 
 const TypeBar = () => {
     const { contest } = useContext(Context);
     const selectedTypes = contest.selectedTypes || [];
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
 
     const handleTypeSelect = (type) => {
         let updatedTypes;
@@ -19,55 +28,42 @@ const TypeBar = () => {
     };
 
     return (
-        <Dropdown style={{width: '100%'}}>
-            <div className="mt-2 mb-2">
-                <BsTags color='#543787' />
-                <span className="mx-1" style={{ color: '#543787' }}>Тип конкурса</span>
+        <div ref={ref}>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <BsTags className="inline mr-1 text-violet-600" />
+                Тип конкурса
+            </label>
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => setOpen(o => !o)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 text-sm bg-white text-left flex justify-between items-center transition-all duration-200"
+                >
+                    <span className="text-gray-600">
+                        {selectedTypes.length === 0 ? 'Все' : `Выбрано типов: ${selectedTypes.length}`}
+                    </span>
+                    <span className="text-gray-400">{open ? '▲' : '▼'}</span>
+                </button>
+                {open && (
+                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                        {contest?.types?.map((type) => (
+                            <label
+                                key={type.id}
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-violet-50 cursor-pointer text-sm text-gray-700"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedTypes.some(t => t.id === type.id)}
+                                    onChange={() => handleTypeSelect(type)}
+                                    className="accent-violet-600"
+                                />
+                                {type.name}
+                            </label>
+                        ))}
+                    </div>
+                )}
             </div>
-            <Dropdown.Toggle
-                as="div"
-                id="dropdown-custom"
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    width: '100%',
-                    border: '1px solid #ced4da',
-                    borderRadius: '0.375rem',
-                    backgroundColor: '#fff',
-                    cursor: 'pointer',
-                    padding: '0.375rem 0.75rem',
-                    userSelect: 'none'
-                }}
-            >
-                <div style={{flex: 1}}>
-                    {selectedTypes.length === 0 ? "Все" : `Выбрано типов: ${selectedTypes.length}`}
-                </div>
-            </Dropdown.Toggle>
-
-            <Dropdown.Menu style={{width: '100%', cursor: 'pointer'}}>
-                {contest?.types?.map((type) => (
-                    <Dropdown.Item
-                        key={type.id}
-                        as="div"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleTypeSelect(type);
-                        }}
-                    >
-                        <Form.Check
-                            type="checkbox"
-                            label={type.name}
-                            checked={selectedTypes.some(t => t.id === type.id)}
-                            onChange={() => handleTypeSelect(type)}
-                            style={{
-                                userSelect: 'none',
-                                cursor: 'pointer'
-                            }}
-                        />
-                    </Dropdown.Item>
-                ))}
-            </Dropdown.Menu>
-        </Dropdown>
+        </div>
     );
 };
 

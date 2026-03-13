@@ -1,7 +1,7 @@
 import React, { useContext, useEffect } from 'react';
-import { observer } from "mobx-react-lite";
-import { Context } from "../main.jsx";
-import SolutionListWithFilters from "../components/SolutionListWithFilters.jsx"
+import { observer } from 'mobx-react-lite';
+import { Context } from '../main.jsx';
+import SolutionListWithFilters from '../components/SolutionListWithFilters.jsx';
 
 const MySolutions = () => {
     const { solution, user } = useContext(Context);
@@ -14,14 +14,14 @@ const MySolutions = () => {
     }, [user]);
 
     return (
-        <>
+        <div className="min-h-screen bg-gray-50">
             <SolutionListWithFilters
-                title={"Мои решения"}
+                title="Мои решения"
                 showContestTitle={true}
                 showFreelancerLogin={false}
                 isMySolutions={true}
             />
-        </>
+        </div>
     );
 };
 

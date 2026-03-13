@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Form } from 'react-bootstrap';
-import {BsCalendarEvent} from 'react-icons/bs';
+import { BsCalendarEvent } from 'react-icons/bs';
 import { Context } from '../../main.jsx';
 
 const AddedBeforeBar = () => {
@@ -23,38 +22,24 @@ const AddedBeforeBar = () => {
     useEffect(() => {
         if (addedBefore) {
             const date = new Date(addedBefore);
-            if (!isNaN(date.getTime())) {
-                solution.setAddedBefore(date);
-            }
+            if (!isNaN(date.getTime())) solution.setAddedBefore(date);
         } else {
             solution.setAddedBefore(null);
         }
     }, [addedBefore, solution]);
 
-    const handleAddedBeforeDate = (e) => {
-        setAddedBefore(e.target.value);
-    };
-
     return (
-        <div className="mt-2">
-            <div className="mt-2 mb-2">
-                <BsCalendarEvent color="#543787"/>
-                <span color='#543787' className="mx-1">Добавлено до</span>
-            </div>
-            <Form className="mt-2">
-                <Form.Group controlId="addedBeforeDate">
-                    <Form.Control
-                        type="date"
-                        value={addedBefore}
-                        onChange={handleAddedBeforeDate}
-                        style={{
-                            fontSize: '0.8rem',
-                            border: '1px solid #ced4da',
-                            borderRadius: '0.375rem',
-                        }}
-                    />
-                </Form.Group>
-            </Form>
+        <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <BsCalendarEvent className="inline mr-1 text-violet-600" />
+                Добавлено до
+            </label>
+            <input
+                type="date"
+                value={addedBefore}
+                onChange={e => setAddedBefore(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white"
+            />
         </div>
     );
 };

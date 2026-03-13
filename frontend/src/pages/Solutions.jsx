@@ -1,13 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { observer } from "mobx-react-lite";
+import { observer } from 'mobx-react-lite';
 import { useParams } from 'react-router-dom';
-import { Context } from "../main.jsx";
-import SolutionListWithFilters from "../components/SolutionListWithFilters.jsx"
+import { Context } from '../main.jsx';
+import SolutionListWithFilters from '../components/SolutionListWithFilters.jsx';
 
 const Solutions = () => {
     const { contest, solution, user } = useContext(Context);
     const { number } = useParams();
-
     const [contestTitle, setContestTitle] = useState('');
 
     useEffect(() => {
@@ -27,19 +26,18 @@ const Solutions = () => {
                 }
             }
         };
-
         init();
     }, [user]);
 
     return (
-        <>
+        <div className="min-h-screen bg-gray-50">
             <SolutionListWithFilters
                 title={`Решения конкурса «${contestTitle}»`}
                 showContestTitle={false}
                 showFreelancerLogin={true}
                 isMySolutions={false}
             />
-        </>
+        </div>
     );
 };
 
