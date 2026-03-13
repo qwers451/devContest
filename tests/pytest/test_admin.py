@@ -2,10 +2,12 @@
 Сценарии 38–42: Администрирование
 """
 
+import datetime
 import time
 
 import httpx
 import pytest
+import pytz
 from conftest import CONTEST_URL, USER_URL, auth_headers
 
 TS = int(time.time())
@@ -152,29 +154,63 @@ async def test_statistics_non_admin_forbidden(customer_token):
 
 
 @pytest.mark.asyncio
-async def test_select_winner(customer_token, contest, submission, executor_token):
+async def test_select_winner(
+    admin_token, customer_token, contest_type_id, executor_token
+):
     """
-    Selects winner — contest transitions to 'finished'.
-    Run last since it closes the shared contest fixture.
-    This test is intentionally skipped if contest is already finished.
+    Uses dedicated contest/submission so shared session fixtures stay immutable.
     """
-    async with httpx.AsyncClient() as c:
-        cr = await c.get(
-            f"{CONTEST_URL}/contests/{contest['id']}",
-            headers=auth_headers(customer_token),
-        )
-        if cr.json()["status"] != "active":
-            pytest.skip("Contest already finished")
+    ends_at = (
+        datetime.datetime.now(pytz.utc) + datetime.timedelta(days=30)
+    ).isoformat()
 
-        r = await c.post(
-            f"{CONTEST_URL}/contests/{contest['id']}/winner",
-            params={
-                "submission_id": submission["id"],
-                "executor_id": submission["executor_id"],
+    async with httpx.AsyncClient() as c:
+        contest_response = await c.post(
+            f"{CONTEST_URL}/contests",
+            json={
+                "title": f"Winner Contest {TS}",
+                "annotation": "A" * 30,
+                "description": "D" * 100,
+                "tz_text": "TZ text",
+                "prizepool": 5000,
+                "ends_at": ends_at,
+                "type_id": contest_type_id,
+                "stages": [{"name": "Этап 1", "order": 1}],
             },
             headers=auth_headers(customer_token),
         )
-    assert r.status_code == 200
-    data = r.json()
-    assert data["status"] == "finished"
-    assert data["winner"]["submission_id"] == submission["id"]
+        assert contest_response.status_code == 201
+        contest = contest_response.json()
+
+        submission_response = await c.post(
+            f"{CONTEST_URL}/submissions",
+            json={
+                "contest_id": contest["id"],
+                "title": f"Winner Submission {TS}",
+                "annotation": "A" * 30,
+                "description": "D" * 100,
+            },
+            headers=auth_headers(executor_token),
+        )
+        assert submission_response.status_code == 201
+        submission = submission_response.json()
+
+        try:
+            r = await c.post(
+                f"{CONTEST_URL}/contests/{contest['id']}/winner",
+                params={
+                    "submission_id": submission["id"],
+                    "executor_id": submission["executor_id"],
+                },
+                headers=auth_headers(customer_token),
+            )
+            assert r.status_code == 200
+            data = r.json()
+            assert data["status"] == "finished"
+            assert data["winner"]["submission_id"] == submission["id"]
+        finally:
+            cleanup = await c.delete(
+                f"{CONTEST_URL}/contests/{contest['id']}",
+                headers=auth_headers(admin_token),
+            )
+            assert cleanup.status_code == 204

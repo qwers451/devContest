@@ -9,7 +9,7 @@ import httpx
 import pytest
 import pytest_asyncio
 import pytz
-from conftest import CONTEST_URL, auth_headers
+from conftest import CONTEST_URL, USER_URL, auth_headers
 
 # ── 22. Список своих решений (executor) ───────────────────────────────────────
 
@@ -18,7 +18,7 @@ from conftest import CONTEST_URL, auth_headers
 async def test_list_own_submissions(executor_token, submission):
     async with httpx.AsyncClient() as c:
         profile = await c.get(
-            "http://localhost:8001/users/profile", headers=auth_headers(executor_token)
+            f"{USER_URL}/users/profile", headers=auth_headers(executor_token)
         )
         executor_id = profile.json()["id"]
         r = await c.get(
@@ -63,11 +63,13 @@ async def test_filter_submissions_by_status(customer_token, contest):
 
 
 @pytest.mark.asyncio
-async def test_filter_submissions_by_multiple_statuses(customer_token, submission):
+async def test_filter_submissions_by_multiple_statuses(
+    customer_token, contest, submission
+):
     async with httpx.AsyncClient() as c:
         r = await c.get(
             f"{CONTEST_URL}/submissions",
-            params={"statuses": "1,2"},
+            params={"contest_id": contest["id"], "statuses": "1,2"},
             headers=auth_headers(customer_token),
         )
     assert r.status_code == 200

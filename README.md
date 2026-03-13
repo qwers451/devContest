@@ -1,4 +1,4 @@
-# devContest
+z [jxe # devContest
 
 ## О проекте
 
@@ -21,6 +21,16 @@
 - `contest-service` (`:8002`) — конкурсы, типы конкурсов, решения;
 - `payment-service` — escrow/платежные операции (в текущей версии со stub-логикой);
 - `evaluation-service` — сервис автоматической оценки решений.
+
+### Адресация сервисов
+
+В проекте используются два режима адресации:
+- из браузера и с хоста: `http://localhost:8001`, `http://localhost:8002`;
+- между контейнерами в compose-сети: `http://user-service:8000`, `http://contest-service:8000`.
+
+Все публичные URL вынесены в переменные окружения:
+- frontend: `VITE_USER_API_URL`, `VITE_CONTEST_API_URL`, `VITE_IMPORT_EXPORT_API_URL`;
+- pytest: `PYTEST_USER_URL`, `PYTEST_CONTEST_URL`.
 
 ## Сценарии использования
 
@@ -132,16 +142,19 @@
 ### 2. Бэкенд-тесты (Pytest)
 Интеграционные тесты, проверяющие работу всех микросервисов вместе.
 - **Путь:** `tests/pytest/`
-- **Требования:** Запущенный стек контейнеров (`podman-compose up`).
-- **Запуск:**
+- **Рекомендуемый запуск:** внутри compose-сети, чтобы тесты ходили к сервисам по DNS-именам контейнеров.
   ```bash
-  # Установите зависимости (если еще не установлены)
+  podman-compose --profile tests up --build tests
+  ```
+- **Альтернативный запуск с хоста:** после старта сервисов.
+  ```bash
+  podman-compose up -d --build
   pip install -r tests/pytest/requirements.txt
-  
-  # Запустите тесты
+  PYTEST_USER_URL=http://localhost:8001 \
+  PYTEST_CONTEST_URL=http://localhost:8002 \
   python3 -m pytest
   ```
-  *Примечание: Тесты автоматически создают временных пользователей и данные для каждой сессии.*
+  *Примечание: фикстуры ждут готовности `user-service` и `contest-service` перед стартом тестов.*
 
 ### 3. API-тесты (Postman / Newman)
 Коллекция запросов для проверки всех эндпоинтов API.
@@ -180,12 +193,19 @@
   - `http://localhost:8001` (users/auth),
   - `http://localhost:8002` (contests/submissions).
 
+### Переменные окружения
+
+- Скопируйте корневой [.env.example](/home/mikhail/Документы/devContest/.env.example) в `.env`.
+- Для локального frontend без контейнера можно использовать [frontend/.env.example](/home/mikhail/Документы/devContest/frontend/.env.example).
+
 ### Как запустить
 
 Из корня проекта:
 ```bash
 python3 seed.py
 ```
+
+При необходимости адреса API можно переопределить через `SEED_USER_URL` и `SEED_CONTEST_URL`.
 
 ### Какие пользователи создаются для теста
 

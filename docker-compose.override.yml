@@ -4,6 +4,10 @@ services:
       context: ./frontend
       target: builder
     command: sh -c "npm install && npm run dev -- --host"
+    environment:
+      VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8001}
+      VITE_CONTEST_API_URL: ${VITE_CONTEST_API_URL:-http://localhost:8002}
+      VITE_IMPORT_EXPORT_API_URL: ${VITE_IMPORT_EXPORT_API_URL:-http://localhost:8002}
     ports:
       - "5173:5173"
     volumes:

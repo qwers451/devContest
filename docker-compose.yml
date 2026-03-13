@@ -1,5 +1,4 @@
 services:
-
   # ─── Databases ───────────────────────────────────────────────────────────────
 
   user-db:
@@ -86,6 +85,17 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://user_svc:${USER_DB_PASSWORD}@user-db:5432/user_db
       JWT_SECRET: ${JWT_SECRET}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     depends_on:
       user-db:
         condition: service_healthy
@@ -103,8 +113,25 @@ services:
       EVALUATION_SERVICE_URL: http://evaluation-service:8000
     volumes:
       - contest_uploads:/app/uploads
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     depends_on:
       contest-db:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      evaluation-service:
         condition: service_healthy
 
   evaluation-service:
@@ -117,6 +144,17 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: llama3.1
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     depends_on:
       evaluation-db:
         condition: service_healthy
@@ -131,6 +169,17 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     depends_on:
       payment-db:
         condition: service_healthy
@@ -138,12 +187,39 @@ services:
   # ─── Frontend ────────────────────────────────────────────────────────────────
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8001}
+        VITE_CONTEST_API_URL: ${VITE_CONTEST_API_URL:-http://localhost:8002}
+        VITE_IMPORT_EXPORT_API_URL: ${VITE_IMPORT_EXPORT_API_URL:-http://localhost:8002}
     ports:
       - "3000:80"
     depends_on:
-      - user-service
-      - contest-service
+      user-service:
+        condition: service_healthy
+      contest-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+
+  tests:
+    image: python:3.12-slim
+    profiles: ["tests"]
+    working_dir: /workspace
+    environment:
+      PYTEST_USER_URL: http://user-service:8000
+      PYTEST_CONTEST_URL: http://contest-service:8000
+      PYTEST_SERVICE_STARTUP_TIMEOUT: ${PYTEST_SERVICE_STARTUP_TIMEOUT:-45}
+      PYTEST_SERVICE_POLL_INTERVAL: ${PYTEST_SERVICE_POLL_INTERVAL:-1}
+    volumes:
+      - .:/workspace:z
+    command: sh /workspace/tests/pytest/run-tests.sh
+    depends_on:
+      user-service:
+        condition: service_healthy
+      contest-service:
+        condition: service_healthy
 
 volumes:
   user_db_data:

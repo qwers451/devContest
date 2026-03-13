@@ -3,14 +3,18 @@ Shared fixtures for devContest integration tests.
 Run against a live stack: podman-compose up --build
 """
 
+import asyncio
+import os
 import time
 
 import httpx
 import pytest
 import pytest_asyncio
 
-USER_URL = "http://localhost:8001"
-CONTEST_URL = "http://localhost:8002"
+USER_URL = os.getenv("PYTEST_USER_URL", "http://localhost:8001")
+CONTEST_URL = os.getenv("PYTEST_CONTEST_URL", "http://localhost:8002")
+SERVICE_STARTUP_TIMEOUT = float(os.getenv("PYTEST_SERVICE_STARTUP_TIMEOUT", "30"))
+SERVICE_POLL_INTERVAL = float(os.getenv("PYTEST_SERVICE_POLL_INTERVAL", "1"))
 
 # Unique suffix so repeated runs don't collide
 TS = int(time.time())
@@ -23,6 +27,33 @@ def auth_headers(token: str) -> dict:
 async def delete_if_exists(client: httpx.AsyncClient, url: str, token: str) -> None:
     response = await client.delete(url, headers=auth_headers(token))
     assert response.status_code in (204, 404), response.text
+
+
+async def wait_for_service(base_url: str) -> None:
+    deadline = time.monotonic() + SERVICE_STARTUP_TIMEOUT
+    last_error = None
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        while time.monotonic() < deadline:
+            try:
+                response = await client.get(f"{base_url}/docs")
+                if response.status_code == 200:
+                    return
+                last_error = (
+                    f"Unexpected status {response.status_code} from {base_url}/docs"
+                )
+            except httpx.HTTPError as exc:
+                last_error = str(exc)
+
+            await asyncio.sleep(SERVICE_POLL_INTERVAL)
+
+    raise RuntimeError(f"Service {base_url} did not become ready: {last_error}")
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def wait_for_stack():
+    await wait_for_service(USER_URL)
+    await wait_for_service(CONTEST_URL)
 
 
 # ── Token fixtures ────────────────────────────────────────────────────────────

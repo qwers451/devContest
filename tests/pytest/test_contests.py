@@ -7,7 +7,7 @@ import datetime
 import httpx
 import pytest
 import pytz
-from conftest import CONTEST_URL, auth_headers
+from conftest import CONTEST_URL, USER_URL, auth_headers
 
 
 def future_date(days: int = 30) -> str:
@@ -249,7 +249,7 @@ async def test_edit_contest(customer_token, contest):
 async def test_list_own_contests(customer_token, contest):
     async with httpx.AsyncClient() as c:
         profile = await c.get(
-            f"http://localhost:8001/users/profile", headers=auth_headers(customer_token)
+            f"{USER_URL}/users/profile", headers=auth_headers(customer_token)
         )
         customer_id = profile.json()["id"]
         r = await c.get(

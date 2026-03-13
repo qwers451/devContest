@@ -1,5 +1,18 @@
-
-/nosql1h25-freelance-main
+# Local environment
 .env
-/.claude
-.claude/settings.local.json
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Local tooling
+.claude/
