@@ -1,0 +1,518 @@
+{
+  "info": {
+    "name": "devContest API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Integration tests for all 42 use case scenarios"
+  },
+  "variable": [
+    { "key": "USER_URL",    "value": "http://localhost:8001" },
+    { "key": "CONTEST_URL", "value": "http://localhost:8002" },
+    { "key": "admin_token",    "value": "" },
+    { "key": "customer_token", "value": "" },
+    { "key": "executor_token", "value": "" },
+    { "key": "contest_id",     "value": "" },
+    { "key": "contest_number", "value": "" },
+    { "key": "submission_id",  "value": "" },
+    { "key": "submission_number", "value": "" },
+    { "key": "contest_type_id", "value": "" },
+    { "key": "review_number",  "value": "" },
+    { "key": "stage_id",       "value": "" }
+  ],
+  "item": [
+
+    {
+      "name": "0. Setup — Get Tokens",
+      "item": [
+        {
+          "name": "Login as admin",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('admin_token', pm.response.json().access_token);"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{USER_URL}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"login\":\"admin\",\"password\":\"admin123\"}" }
+          }
+        },
+        {
+          "name": "Login as customer1",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('customer_token', pm.response.json().access_token);"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{USER_URL}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"login\":\"customer1\",\"password\":\"test1234\"}" }
+          }
+        },
+        {
+          "name": "Login as executor1",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('executor_token', pm.response.json().access_token);"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{USER_URL}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"login\":\"executor1\",\"password\":\"test1234\"}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "1–5. Аутентификация",
+      "item": [
+        {
+          "name": "1. Регистрация executor",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200/201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+            "pm.test('Есть access_token', () => pm.expect(pm.response.json()).to.have.property('access_token'));",
+            "pm.test('Роль executor', () => pm.expect(pm.response.json().user.role).to.eql('executor'));"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{USER_URL}}/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"login\":\"pm_exec_{{$timestamp}}\",\"email\":\"pm_exec_{{$timestamp}}@test.local\",\"password\":\"Test1234!\",\"role\":\"executor\"}" }
+          }
+        },
+        {
+          "name": "2. Вход",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Есть токен', () => pm.expect(pm.response.json()).to.have.property('access_token'));"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{USER_URL}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"login\":\"admin\",\"password\":\"admin123\"}" }
+          }
+        },
+        {
+          "name": "2b. Неверный пароль → 401",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 401', () => pm.response.to.have.status(401));"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{USER_URL}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"login\":\"admin\",\"password\":\"wrong\"}" }
+          }
+        },
+        {
+          "name": "4. Просмотр профиля",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Есть login', () => pm.expect(pm.response.json()).to.have.property('login'));"
+          ]}}],
+          "request": {
+            "method": "GET", "url": "{{USER_URL}}/users/profile",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "5. Редактирование профиля",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "PUT", "url": "{{USER_URL}}/users/profile",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"login\":\"customer1\"}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "6–14. Конкурсы — просмотр и фильтры",
+      "item": [
+        {
+          "name": "6. Список конкурсов",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Есть items', () => pm.expect(pm.response.json()).to.have.property('items'));",
+            "pm.test('Есть total', () => pm.expect(pm.response.json()).to.have.property('total'));"
+          ]}}],
+          "request": {
+            "method": "GET", "url": "{{CONTEST_URL}}/contests",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "7. Фильтр по статусу active",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Все active', () => { pm.response.json().items.forEach(i => pm.expect(i.status).to.eql('active')); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{CONTEST_URL}}/contests?status=active", "query": [{ "key": "status", "value": "active" }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "9. Фильтр по призовому фонду",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{CONTEST_URL}}/contests?min_reward=1000&max_reward=100000", "query": [
+              { "key": "min_reward", "value": "1000" }, { "key": "max_reward", "value": "100000" }
+            ]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "11. Поиск по названию",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{CONTEST_URL}}/contests?search=Лого", "query": [{ "key": "search", "value": "Лого" }]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "13. Просмотр конкурса по номеру",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const d = pm.response.json();",
+            "pm.test('Есть stages', () => pm.expect(d).to.have.property('stages'));",
+            "pm.collectionVariables.set('contest_id', d.id);",
+            "pm.collectionVariables.set('contest_number', d.number);",
+            "if (d.stages.length > 0) pm.collectionVariables.set('stage_id', d.stages[0].id);"
+          ]}}],
+          "request": {
+            "method": "GET", "url": "{{CONTEST_URL}}/contests/number/1",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "14. Пагинация (page=1, limit=2)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('page=1', () => pm.expect(pm.response.json().page).to.eql(1));",
+            "pm.test('max 2 items', () => pm.expect(pm.response.json().items.length).to.be.at.most(2));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{CONTEST_URL}}/contests?page=1&limit=2", "query": [
+              { "key": "page", "value": "1" }, { "key": "limit", "value": "2" }
+            ]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "15–21. Конкурсы — управление",
+      "item": [
+        {
+          "name": "15. Создание конкурса",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('status=active', () => pm.expect(pm.response.json().status).to.eql('active'));",
+            "pm.collectionVariables.set('contest_id', pm.response.json().id);",
+            "if (pm.response.json().stages.length > 0) pm.collectionVariables.set('stage_id', pm.response.json().stages[0].id);"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{CONTEST_URL}}/contests",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"title\":\"PM Test Contest\",\"annotation\":\"Краткое описание конкурса для теста\",\"description\":\"Подробное описание конкурса для тестирования платформы\",\"tz_text\":\"Техническое задание\",\"prizepool\":10000,\"ends_at\":\"2026-12-31T00:00:00Z\",\"stages\":[{\"name\":\"Этап 1\",\"order\":1},{\"name\":\"Этап 2\",\"order\":2}]}" }
+          }
+        },
+        {
+          "name": "19. Редактирование этапов",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('3 этапа', () => pm.expect(pm.response.json().stages.length).to.eql(3));",
+            "pm.test('current_stage_id=null', () => pm.expect(pm.response.json().current_stage_id).to.be.null);",
+            "pm.collectionVariables.set('stage_id', pm.response.json().stages[0].id);"
+          ]}}],
+          "request": {
+            "method": "PUT", "url": "{{CONTEST_URL}}/contests/{{contest_id}}/stages",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "[{\"name\":\"Этап A\",\"order\":1},{\"name\":\"Этап B\",\"order\":2},{\"name\":\"Этап C\",\"order\":3}]" }
+          }
+        },
+        {
+          "name": "20. Установка текущего этапа",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('current_stage_id set', () => pm.expect(pm.response.json().current_stage_id).to.not.be.null);"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{CONTEST_URL}}/contests/{{contest_id}}/current-stage?stage_id={{stage_id}}", "query": [{ "key": "stage_id", "value": "{{stage_id}}" }]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "21. Сброс текущего этапа (авто)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('current_stage_id=null', () => pm.expect(pm.response.json().current_stage_id).to.be.null);"
+          ]}}],
+          "request": {
+            "method": "PATCH", "url": "{{CONTEST_URL}}/contests/{{contest_id}}/current-stage",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "18. Удаление конкурса (admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE", "url": "{{CONTEST_URL}}/contests/{{contest_id}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "22–33. Решения",
+      "item": [
+        {
+          "name": "29. Создание решения",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('status=1', () => pm.expect(pm.response.json().status).to.eql(1));",
+            "pm.test('executor_login присутствует', () => pm.expect(pm.response.json().executor_login).to.not.be.null);",
+            "pm.test('contest_title присутствует', () => pm.expect(pm.response.json().contest_title).to.not.be.null);",
+            "pm.collectionVariables.set('submission_id', pm.response.json().id);",
+            "pm.collectionVariables.set('submission_number', pm.response.json().number);"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{CONTEST_URL}}/submissions",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{executor_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"contest_id\":1,\"title\":\"PM Test Submission\",\"annotation\":\"Краткое описание решения для теста\",\"description\":\"Подробное описание решения достаточной длины для прохождения валидации формы\"}" }
+          }
+        },
+        {
+          "name": "28. Просмотр решения по номеру",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('executor_login', () => pm.expect(pm.response.json().executor_login).to.not.be.null);",
+            "pm.test('contest_title', () => pm.expect(pm.response.json().contest_title).to.not.be.null);"
+          ]}}],
+          "request": {
+            "method": "GET", "url": "{{CONTEST_URL}}/submissions/number/{{submission_number}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{executor_token}}" }]
+          }
+        },
+        {
+          "name": "23. Список решений по конкурсу",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{CONTEST_URL}}/submissions?contest_id=1", "query": [{ "key": "contest_id", "value": "1" }]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "24. Фильтр по статусу",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Все status=1', () => { pm.response.json().forEach(s => pm.expect(s.status).to.eql(1)); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{CONTEST_URL}}/submissions?contest_id=1&status=1", "query": [
+              { "key": "contest_id", "value": "1" }, { "key": "status", "value": "1" }
+            ]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "32. Изменение статуса решения",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('status=2', () => pm.expect(pm.response.json().status).to.eql(2));"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{CONTEST_URL}}/submissions/{{submission_id}}/status?status=2", "query": [{ "key": "status", "value": "2" }]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "33. Выбрать победителя",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('status=finished', () => pm.expect(pm.response.json().status).to.eql('finished'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{CONTEST_URL}}/contests/1/winner?submission_id={{submission_id}}&executor_id=3", "query": [
+              { "key": "submission_id", "value": "{{submission_id}}" },
+              { "key": "executor_id", "value": "3" }
+            ]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "31. Удаление решения",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE", "url": "{{CONTEST_URL}}/submissions/{{submission_id}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{executor_token}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "34–37. Отзывы",
+      "item": [
+        {
+          "name": "34. Написать отзыв",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('score=4.5', () => pm.expect(pm.response.json().score).to.eql(4.5));",
+            "pm.collectionVariables.set('review_number', pm.response.json().number);"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{CONTEST_URL}}/submissions/1/reviews",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"score\":4.5,\"commentary\":\"Отличная работа\"}" }
+          }
+        },
+        {
+          "name": "37. Список отзывов",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+          ]}}],
+          "request": {
+            "method": "GET", "url": "{{CONTEST_URL}}/submissions/1/reviews",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        },
+        {
+          "name": "35. Редактировать отзыв",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('score=3', () => pm.expect(pm.response.json().score).to.eql(3));"
+          ]}}],
+          "request": {
+            "method": "PUT", "url": "{{CONTEST_URL}}/submissions/1/reviews/{{review_number}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"score\":3,\"commentary\":\"Исправленный отзыв\"}" }
+          }
+        },
+        {
+          "name": "36. Удалить отзыв",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE", "url": "{{CONTEST_URL}}/submissions/1/reviews/{{review_number}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "38–42. Администрирование",
+      "item": [
+        {
+          "name": "38. Список пользователей",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+          ]}}],
+          "request": {
+            "method": "GET", "url": "{{USER_URL}}/users",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }]
+          }
+        },
+        {
+          "name": "39. Добавить тип конкурса",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('contest_type_id', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST", "url": "{{CONTEST_URL}}/contest-types",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"name\":\"PM Type {{$timestamp}}\"}" }
+          }
+        },
+        {
+          "name": "40. Удалить тип конкурса",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE", "url": "{{CONTEST_URL}}/contest-types/{{contest_type_id}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }]
+          }
+        },
+        {
+          "name": "41. Статистика по типу",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Есть x_labels', () => pm.expect(pm.response.json()).to.have.property('x_labels'));",
+            "pm.test('Есть datasets', () => pm.expect(pm.response.json()).to.have.property('datasets'));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{CONTEST_URL}}/statistics?x=type&y=count", "query": [
+              { "key": "x", "value": "type" }, { "key": "y", "value": "count" }
+            ]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }]
+          }
+        },
+        {
+          "name": "41b. Статистика по статусу + призовой фонд",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{CONTEST_URL}}/statistics?x=status&y=prizepool", "query": [
+              { "key": "x", "value": "status" }, { "key": "y", "value": "prizepool" }
+            ]},
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }]
+          }
+        }
+      ]
+    }
+
+  ]
+}

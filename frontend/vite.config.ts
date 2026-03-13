@@ -4,5 +4,10 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server: { host: true, port: 5173 }
+  server: { host: true, port: 5173 },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/__tests__/setup.js',
+  },
 })
