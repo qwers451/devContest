@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, verify_internal
 from app.models import Payment, PaymentStatus, PaymentType, Payout, WalletTxType
 from app.wallet_helpers import credit_wallet, debit_wallet, get_or_create_wallet
 
@@ -20,7 +20,9 @@ def _yk_configured() -> bool:
     return bool(settings.yookassa_shop_id and settings.yookassa_secret_key)
 
 
-async def _yk_create_wallet_payment(amount: float, user_id: int, payment_id_hint: int) -> dict:
+async def _yk_create_wallet_payment(
+    amount: float, user_id: int, payment_id_hint: int
+) -> dict:
     from yookassa import Configuration
     from yookassa import Payment as YKPayment
 
@@ -66,7 +68,9 @@ async def _yk_verify_payment(yk_payment_id: str) -> str | None:
         return None
 
 
-async def _yk_create_payout_local(amount: float, executor_id: int, card_number: str) -> dict | None:
+async def _yk_create_payout_local(
+    amount: float, executor_id: int, card_number: str
+) -> dict | None:
     try:
         from yookassa import Configuration
         from yookassa import Payout as YKPayout
@@ -93,6 +97,7 @@ async def _yk_create_payout_local(amount: float, executor_id: int, card_number: 
 
 # ─── Schemas ─────────────────────────────────────────────────────────────────
 
+
 class WalletBalanceOut(BaseModel):
     balance: float
     currency: str = "RUB"
@@ -100,6 +105,12 @@ class WalletBalanceOut(BaseModel):
 
 class TopupWalletRequest(BaseModel):
     amount: float
+
+
+class InternalCreditRequest(BaseModel):
+    user_id: int
+    amount: float
+    description: str = "Internal credit"
 
 
 class WithdrawWalletRequest(BaseModel):
@@ -132,6 +143,7 @@ class PayoutOut(BaseModel):
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
+
 
 @router.get("/balance", response_model=WalletBalanceOut)
 async def get_balance(
@@ -170,10 +182,14 @@ async def topup_wallet(
 
     if _yk_configured():
         try:
-            yk = await _yk_create_wallet_payment(data.amount, current_user["id"], payment.id)
+            yk = await _yk_create_wallet_payment(
+                data.amount, current_user["id"], payment.id
+            )
             yk_payment_id = yk.get("id")
             confirmation = yk.get("confirmation") or {}
-            redirect_url = confirmation.get("confirmation_url") or confirmation.get("redirect_url")
+            redirect_url = confirmation.get("confirmation_url") or confirmation.get(
+                "redirect_url"
+            )
             payment.yookassa_payment_id = yk_payment_id
             payment.redirect_url = redirect_url
         except Exception as e:
@@ -196,6 +212,27 @@ async def topup_wallet(
     }
 
 
+@router.post("/internal/credit", dependencies=[Depends(verify_internal)])
+async def internal_credit_wallet(
+    data: InternalCreditRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Directly credit a user's wallet (for seeding/testing)."""
+    if data.amount <= 0:
+        raise HTTPException(status_code=400, detail="Сумма должна быть больше нуля")
+
+    await credit_wallet(
+        data.user_id,
+        data.amount,
+        WalletTxType.topup,
+        data.description,
+        None,
+        db,
+    )
+    await db.commit()
+    return {"status": "success", "user_id": data.user_id, "credited": data.amount}
+
+
 @router.get("/transactions", response_model=list[WalletTransactionOut])
 async def get_wallet_transactions(
     db: AsyncSession = Depends(get_db),
@@ -203,6 +240,7 @@ async def get_wallet_transactions(
 ):
     """Wallet transaction history for current user."""
     from app.models import WalletTransaction
+
     result = await db.execute(
         select(WalletTransaction)
         .where(WalletTransaction.user_id == current_user["id"])
@@ -218,9 +256,7 @@ async def withdraw_from_wallet(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Executor withdraws funds from wallet balance to a bank card."""
-    if current_user["role"] not in ("executor", "admin"):
-        raise HTTPException(status_code=403, detail="Только исполнители могут выводить средства")
+    """Withdraw funds from wallet balance to a bank card."""
     if data.amount <= 0:
         raise HTTPException(status_code=400, detail="Сумма должна быть больше нуля")
 
@@ -238,7 +274,9 @@ async def withdraw_from_wallet(
     paid_at = None
 
     if _yk_configured() and data.card_number:
-        yk = await _yk_create_payout_local(data.amount, current_user["id"], data.card_number)
+        yk = await _yk_create_payout_local(
+            data.amount, current_user["id"], data.card_number
+        )
         if yk:
             yk_payout_id = yk.get("id")
             if yk.get("status") == "succeeded":
@@ -282,7 +320,11 @@ async def get_wallet_payment_status(
         raise HTTPException(status_code=404, detail="Payment not found")
 
     # If still pending and YooKassa is configured — re-fetch live status to auto-confirm
-    if payment.status == PaymentStatus.pending and _yk_configured() and payment.yookassa_payment_id:
+    if (
+        payment.status == PaymentStatus.pending
+        and _yk_configured()
+        and payment.yookassa_payment_id
+    ):
         yk_status = await _yk_verify_payment(payment.yookassa_payment_id)
         if yk_status in ("waiting_for_capture", "succeeded"):
             await _confirm_wallet_topup(payment.id, db)
@@ -301,11 +343,14 @@ async def get_wallet_payment_status(
 
 # ─── Internal helper ──────────────────────────────────────────────────────────
 
+
 async def _confirm_wallet_topup(payment_id: int, db: AsyncSession) -> None:
     """Mark wallet topup payment as held and credit the user's wallet.
     Uses SELECT FOR UPDATE to prevent double-credit on concurrent requests."""
     result = await db.execute(
-        select(Payment).where(Payment.id == payment_id).with_for_update(skip_locked=True)
+        select(Payment)
+        .where(Payment.id == payment_id)
+        .with_for_update(skip_locked=True)
     )
     payment = result.scalar_one_or_none()
     # skip_locked returns nothing if another transaction holds the lock;

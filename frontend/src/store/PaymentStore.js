@@ -174,6 +174,27 @@ export default class PaymentStore {
         }
     }
 
+    async refundPayment(contest_id) {
+        this.loading = true;
+        this.error = null;
+        try {
+            const res = await paymentApi.post(`/payments/${contest_id}/refund`);
+            runInAction(() => {
+                this.history = this.history.map(p =>
+                    p.contest_id === contest_id ? res.data : p
+                );
+            });
+            return res.data;
+        } catch (e) {
+            runInAction(() => {
+                this.error = e.response?.data?.detail || "Ошибка при возврате";
+            });
+            throw e;
+        } finally {
+            runInAction(() => { this.loading = false; });
+        }
+    }
+
     // ── Executor: withdrawal history (legacy /payments/withdrawals/my) ─────────
 
     async fetchWithdrawals() {

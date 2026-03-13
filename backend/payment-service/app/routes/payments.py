@@ -94,6 +94,22 @@ async def _yk_create_payout(amount: float, contest_id: int, executor_id: int, ca
         return None
 
 
+async def _yk_create_refund(yk_payment_id: str, amount: float) -> dict:
+    from yookassa import Configuration
+    from yookassa import Refund as YKRefund
+
+    Configuration.account_id = settings.yookassa_shop_id
+    Configuration.secret_key = settings.yookassa_secret_key
+
+    idempotency_key = str(uuid.uuid4())
+    payload = {
+        "payment_id": yk_payment_id,
+        "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
+    }
+    result = await asyncio.to_thread(YKRefund.create, payload, idempotency_key)
+    return result.dict() if hasattr(result, "dict") else dict(result)
+
+
 async def _notify_contest_service_activate(contest_id: int) -> None:
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -386,6 +402,71 @@ async def my_withdrawals(
         .order_by(Payout.created_at.desc())
     )
     return result.scalars().all()
+
+
+@router.post("/{contest_id}/refund", response_model=PaymentOut)
+async def refund_payment(
+    contest_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Refund a held contest payment back to the original payment method.
+    Only the customer who made the payment (or admin) can request a refund.
+    If paid from wallet — credits the wallet balance back instead."""
+    result = await db.execute(select(Payment).where(Payment.contest_id == contest_id))
+    payment = result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    if payment.customer_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not your payment")
+    if payment.status != PaymentStatus.held:
+        raise HTTPException(status_code=409, detail=f"Cannot refund payment in status '{payment.status}'")
+
+    # Check escrow not already released to executor
+    escrow_result = await db.execute(
+        select(EscrowAccount).where(EscrowAccount.contest_id == contest_id)
+    )
+    escrow = escrow_result.scalar_one_or_none()
+    if escrow and escrow.status == PaymentStatus.released:
+        raise HTTPException(status_code=409, detail="Escrow already released to executor — cannot refund")
+
+    yk_id = payment.yookassa_payment_id or ""
+    is_wallet_payment = yk_id.startswith("wallet_")
+
+    if is_wallet_payment:
+        # Paid from wallet — return funds to wallet balance
+        from app.wallet_helpers import credit_wallet
+        await credit_wallet(
+            payment.customer_id,
+            float(payment.amount),
+            WalletTxType.topup,
+            f"Возврат за конкурс #{contest_id}",
+            payment.id,
+            db,
+        )
+    elif _yk_configured() and yk_id and not yk_id.startswith("stub_"):
+        try:
+            await _yk_create_refund(yk_id, float(payment.amount))
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"YooKassa refund error: {e}")
+    # else stub mode — just mark refunded, no real money movement
+
+    payment.status = PaymentStatus.refunded
+    payment.updated_at = datetime.now(timezone.utc)
+
+    if escrow:
+        escrow.status = PaymentStatus.refunded
+
+    tx = Transaction(
+        payment_id=payment.id,
+        type="refund",
+        amount=float(payment.amount),
+        description=f"Возврат платежа за конкурс #{contest_id}",
+    )
+    db.add(tx)
+    await db.commit()
+    await db.refresh(payment)
+    return payment
 
 
 @router.post("/webhook")

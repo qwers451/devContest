@@ -52,6 +52,10 @@ const WalletPage = () => {
     const [withdrawError, setWithdrawError] = useState('');
     const [withdrawSuccess, setWithdrawSuccess] = useState('');
 
+    const [refundingId, setRefundingId] = useState(null);
+    const [refundError, setRefundError] = useState('');
+    const [refundSuccess, setRefundSuccess] = useState('');
+
     // Poll after YooKassa wallet topup callback
     useEffect(() => {
         if (!returningFromYK || !returnPaymentId) return;
@@ -86,7 +90,7 @@ const WalletPage = () => {
         payment.fetchBalance();
         payment.fetchWalletTransactions();
         if (isCustomer) payment.fetchHistory();
-        if (isExecutor) payment.fetchWithdrawals();
+        payment.fetchWithdrawals();
     }, []);
 
     const handleTopup = async (e) => {
@@ -118,6 +122,23 @@ const WalletPage = () => {
         }
     };
 
+    const handleRefund = async (contest_id) => {
+        if (!window.confirm('Вернуть средства за этот конкурс?')) return;
+        setRefundingId(contest_id);
+        setRefundError('');
+        setRefundSuccess('');
+        try {
+            await payment.refundPayment(contest_id);
+            setRefundSuccess('Возврат выполнен успешно');
+            await payment.fetchBalance();
+            await payment.fetchWalletTransactions();
+        } catch {
+            setRefundError(payment.error || 'Ошибка при возврате');
+        } finally {
+            setRefundingId(null);
+        }
+    };
+
     const handleWithdraw = async (e) => {
         e.preventDefault();
         const amount = Number(withdrawForm.amount);
@@ -144,10 +165,10 @@ const WalletPage = () => {
 
     const tabs = [
         { key: 'balance', label: 'Баланс' },
-        ...(isExecutor ? [{ key: 'withdraw', label: 'Вывести' }] : []),
+        { key: 'withdraw', label: 'Вывести' },
         { key: 'transactions', label: 'Транзакции' },
         ...(isCustomer ? [{ key: 'history', label: 'Платежи' }] : []),
-        ...(isExecutor ? [{ key: 'payouts', label: 'Выплаты' }] : []),
+        { key: 'payouts', label: 'Выплаты' },
     ];
 
     return (
@@ -235,7 +256,7 @@ const WalletPage = () => {
                             <ul className="mt-1 space-y-0.5 list-disc list-inside text-blue-600">
                                 <li>Пополните баланс и используйте его для оплаты конкурсов</li>
                                 {isExecutor && <li>Выигрыш за конкурсы начисляется сюда автоматически</li>}
-                                {isExecutor && <li>Выведите средства на карту в любой момент</li>}
+                                <li>Выведите средства на карту в любой момент</li>
                             </ul>
                         </div>
                     </div>
@@ -282,6 +303,16 @@ const WalletPage = () => {
                 {/* Contest payment history (customer) */}
                 {tab === 'history' && (
                     <div>
+                        {refundSuccess && (
+                            <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+                                {refundSuccess}
+                            </div>
+                        )}
+                        {refundError && (
+                            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                                {refundError}
+                            </div>
+                        )}
                         {payment.loading ? (
                             <div className="flex justify-center py-10">
                                 <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
@@ -302,11 +333,20 @@ const WalletPage = () => {
                                                 })}
                                             </div>
                                         </div>
-                                        <div className="text-right flex flex-col items-end gap-1">
+                                        <div className="text-right flex flex-col items-end gap-2">
                                             <StatusBadge status={p.status} />
                                             <span className="text-base font-bold text-gray-900">
                                                 {Number(p.amount).toLocaleString('ru-RU')} ₽
                                             </span>
+                                            {p.status === 'held' && (
+                                                <button
+                                                    onClick={() => handleRefund(p.contest_id)}
+                                                    disabled={refundingId === p.contest_id}
+                                                    className="text-xs px-3 py-1 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                >
+                                                    {refundingId === p.contest_id ? 'Возврат…' : 'Вернуть'}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

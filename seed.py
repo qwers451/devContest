@@ -8,14 +8,16 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-USER_API    = os.getenv("SEED_USER_URL",    "http://localhost:8001")
+USER_API = os.getenv("SEED_USER_URL", "http://localhost:8001")
 CONTEST_API = os.getenv("SEED_CONTEST_URL", "http://localhost:8002")
 PAYMENT_API = os.getenv("SEED_PAYMENT_URL", "http://localhost:8004")
+INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "cafdgadhffdah")
 
 
-def request(method, url, data=None, token=None):
+def request(method, url, data=None, token=None, headers=None):
     body = json.dumps(data).encode() if data else None
-    headers = {"Content-Type": "application/json"}
+    if headers is None:
+        headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
@@ -30,12 +32,12 @@ def request(method, url, data=None, token=None):
         return e.code, err_body
 
 
-def post(url, data, token=None):
-    return request("POST", url, data, token)
+def post(url, data, token=None, headers=None):
+    return request("POST", url, data, token, headers)
 
 
-def get(url, token=None):
-    return request("GET", url, token=token)
+def get(url, token=None, headers=None):
+    return request("GET", url, token=token, headers=headers)
 
 
 def patch(url, data=None, token=None):
@@ -60,17 +62,15 @@ def register_or_login(email, login, password, role):
 
 
 def activate_contest(contest_id, amount, token):
-    """Initiate payment (stub mode auto-activates the contest)."""
+    """Pay contest from wallet balance (works regardless of YooKassa config)."""
     status, resp = post(
         f"{PAYMENT_API}/payments/topup",
-        {"contest_id": contest_id, "amount": amount},
+        {"contest_id": contest_id, "amount": amount, "use_balance": True},
         token,
     )
     if status in (200, 201):
-        # Give stub a moment to call activate-internal on contest-service
-        time.sleep(0.5)
+        time.sleep(0.3)
         return True
-    # Already paid / already active
     if status == 409:
         return True
     print(f"    topup failed for contest {contest_id}: {status} {resp}")
@@ -85,18 +85,22 @@ def get_wallet_balance(token):
     return None
 
 
-def topup_wallet(amount, token, label):
-    """Top up user wallet via stub (auto-credits in dev mode)."""
-    balance_before = get_wallet_balance(token)
-    # Skip if already has enough balance (idempotency for re-runs)
-    if balance_before is not None and balance_before >= amount:
-        print(f"    {label} wallet → already {balance_before} ₽, skipping")
-        return True
-    status, resp = post(f"{PAYMENT_API}/wallet/topup", {"amount": amount}, token)
+def topup_wallet_internal(user_id, amount, label):
+    """Directly credit user wallet via internal endpoint."""
+    headers = {"X-Internal-Secret": INTERNAL_SECRET, "Content-Type": "application/json"}
+    status, resp = post(
+        f"{PAYMENT_API}/wallet/internal/credit",
+        {
+            "user_id": user_id,
+            "amount": amount,
+            "description": f"Seed topup for {label}",
+        },
+        headers=headers,
+    )
     if status in (200, 201):
-        time.sleep(0.3)
+        print(f"    {label} wallet (internal) → OK +{amount} ₽")
         return True
-    print(f"    wallet topup failed for {label}: {status} {resp}")
+    print(f"    internal wallet topup failed for {label}: {status} {resp}")
     return False
 
 
@@ -106,38 +110,63 @@ print("=== Creating users ===")
 
 admin_resp = register_or_login("admin@devcontest.ru", "admin", "admin123", "admin")
 admin_token = admin_resp["access_token"] if admin_resp else None
-print(f"  admin     → {'OK id=' + str(admin_resp['user']['id']) if admin_resp else 'FAIL'}")
+admin_id = admin_resp["user"]["id"] if admin_resp else None
+print(f"  admin     → {'OK id=' + str(admin_id) if admin_id else 'FAIL'}")
 
-customer_resp = register_or_login("customer@devcontest.ru", "customer1", "test1234", "customer")
+customer_resp = register_or_login(
+    "customer@devcontest.ru", "customer1", "test1234", "customer"
+)
 customer_token = customer_resp["access_token"] if customer_resp else None
-print(f"  customer1 → {'OK id=' + str(customer_resp['user']['id']) if customer_resp else 'FAIL'}")
+customer_id = customer_resp["user"]["id"] if customer_resp else None
+print(f"  customer1 → {'OK id=' + str(customer_id) if customer_id else 'FAIL'}")
 
-executor_resp = register_or_login("executor@devcontest.ru", "executor1", "test1234", "executor")
+executor_resp = register_or_login(
+    "executor@devcontest.ru", "executor1", "test1234", "executor"
+)
 executor_token = executor_resp["access_token"] if executor_resp else None
-print(f"  executor1 → {'OK id=' + str(executor_resp['user']['id']) if executor_resp else 'FAIL'}")
+executor_id = executor_resp["user"]["id"] if executor_resp else None
+print(f"  executor1 → {'OK id=' + str(executor_id) if executor_id else 'FAIL'}")
 
-executor2_resp = register_or_login("executor2@devcontest.ru", "executor2", "test1234", "executor")
+executor2_resp = register_or_login(
+    "executor2@devcontest.ru", "executor2", "test1234", "executor"
+)
 executor2_token = executor2_resp["access_token"] if executor2_resp else None
-print(f"  executor2 → {'OK id=' + str(executor2_resp['user']['id']) if executor2_resp else 'FAIL'}")
+executor2_id = executor2_resp["user"]["id"] if executor2_resp else None
+print(f"  executor2 → {'OK id=' + str(executor2_id) if executor2_id else 'FAIL'}")
 
 # ── Wallet top-ups ─────────────────────────────────────────────────────────────
 
 print("\n=== Topping up wallets ===")
 
-if customer_token:
-    ok = topup_wallet(50000, customer_token, "customer1")
+# customer1 needs enough to pay all 3 contests: 15000 + 8000 + 12000 = 35000
+if customer_id and customer_token:
+    balance = get_wallet_balance(customer_token)
+    if balance is not None and balance < 50000:
+        topup_wallet_internal(customer_id, 50000, "customer1")
     bal = get_wallet_balance(customer_token)
-    print(f"  customer1 → {'OK' if ok else 'FAIL'} | баланс: {bal} ₽")
+    print(f"  customer1 → баланс: {bal} ₽")
 
-if executor_token:
-    ok = topup_wallet(5000, executor_token, "executor1")
+if executor_id and executor_token:
+    balance = get_wallet_balance(executor_token)
+    if balance is not None and balance < 5000:
+        topup_wallet_internal(executor_id, 5000, "executor1")
     bal = get_wallet_balance(executor_token)
-    print(f"  executor1 → {'OK' if ok else 'FAIL'} | баланс: {bal} ₽")
+    print(f"  executor1 → баланс: {bal} ₽")
 
-if executor2_token:
-    ok = topup_wallet(3000, executor2_token, "executor2")
+if executor2_id and executor2_token:
+    balance = get_wallet_balance(executor2_token)
+    if balance is not None and balance < 3000:
+        topup_wallet_internal(executor2_id, 3000, "executor2")
     bal = get_wallet_balance(executor2_token)
-    print(f"  executor2 → {'OK' if ok else 'FAIL'} | баланс: {bal} ₽")
+    print(f"  executor2 → баланс: {bal} ₽")
+
+if admin_id and admin_token:
+    balance = get_wallet_balance(admin_token)
+    if balance is not None and balance < 10000:
+        topup_wallet_internal(admin_id, 10000, "admin")
+    bal = get_wallet_balance(admin_token)
+    print(f"  admin     → баланс: {bal} ₽")
+
 
 # ── Contest Types ──────────────────────────────────────────────────────────────
 
@@ -163,9 +192,9 @@ for name in ["Статья", "Логотип", "Баннер", "Иконка"]:
     else:
         print(f"  {name} → FAIL {status} {ct}")
 
-logo_type    = type_ids.get("Логотип")
+logo_type = type_ids.get("Логотип")
 article_type = type_ids.get("Статья")
-banner_type  = type_ids.get("Баннер")
+banner_type = type_ids.get("Баннер")
 
 # ── Contests ───────────────────────────────────────────────────────────────────
 
@@ -222,7 +251,9 @@ else:
     c1 = c1 if status == 201 else None
     if c1:
         activated = activate_contest(c1["id"], 15000, customer_token)
-        print(f"  Логотип для стартапа → OK id={c1['id']} | payment={'activated' if activated else 'FAIL'}")
+        print(
+            f"  Логотип для стартапа → OK id={c1['id']} | payment={'activated' if activated else 'FAIL'}"
+        )
     else:
         print(f"  Логотип для стартапа → FAIL {status}")
 
@@ -253,7 +284,9 @@ else:
     c2 = c2 if status == 201 else None
     if c2:
         activated = activate_contest(c2["id"], 8000, customer_token)
-        print(f"  Статья об ИИ        → OK id={c2['id']} | payment={'activated' if activated else 'FAIL'}")
+        print(
+            f"  Статья об ИИ        → OK id={c2['id']} | payment={'activated' if activated else 'FAIL'}"
+        )
     else:
         print(f"  Статья об ИИ        → FAIL {status}")
 
@@ -297,7 +330,9 @@ else:
     c3 = c3 if status == 201 else None
     if c3:
         activated = activate_contest(c3["id"], 12000, customer_token)
-        print(f"  Баннеры для рекламы → OK id={c3['id']} | payment={'activated' if activated else 'FAIL'}")
+        print(
+            f"  Баннеры для рекламы → OK id={c3['id']} | payment={'activated' if activated else 'FAIL'}"
+        )
     else:
         print(f"  Баннеры для рекламы → FAIL {status}")
 
@@ -305,10 +340,12 @@ else:
 
 print("\n=== Creating submissions ===")
 
+
 # Re-fetch contests to confirm active status before creating submissions
 def get_contest(contest_id, token):
     _, c = get(f"{CONTEST_API}/contests/{contest_id}", token)
     return c if isinstance(c, dict) and c.get("status") == "active" else None
+
 
 if c1 and executor_token:
     c1_active = get_contest(c1["id"], executor_token)
@@ -327,7 +364,9 @@ if c1 and executor_token:
             },
             executor_token,
         )
-        print(f"  Лого TechFlow (executor1) → {'OK id=' + str(s1['id']) if status == 201 else f'FAIL {status} {s1}'}")
+        print(
+            f"  Лого TechFlow (executor1) → {'OK id=' + str(s1['id']) if status == 201 else f'FAIL {status} {s1}'}"
+        )
     else:
         print(f"  Лого TechFlow (executor1) → SKIP (contest not active)")
 
@@ -347,7 +386,9 @@ if c1 and executor2_token:
             },
             executor2_token,
         )
-        print(f"  Лого градиент (executor2) → {'OK id=' + str(s2['id']) if status == 201 else f'FAIL {status} {s2}'}")
+        print(
+            f"  Лого градиент (executor2) → {'OK id=' + str(s2['id']) if status == 201 else f'FAIL {status} {s2}'}"
+        )
     else:
         print(f"  Лого градиент (executor2) → SKIP (contest not active)")
 
@@ -367,7 +408,9 @@ if c2 and executor_token:
             },
             executor_token,
         )
-        print(f"  Статья ИИ (executor1)     → {'OK id=' + str(s3['id']) if status == 201 else f'FAIL {status} {s3}'}")
+        print(
+            f"  Статья ИИ (executor1)     → {'OK id=' + str(s3['id']) if status == 201 else f'FAIL {status} {s3}'}"
+        )
     else:
         print(f"  Статья ИИ (executor1)     → SKIP (contest not active)")
 
@@ -387,18 +430,28 @@ if c3 and executor2_token:
             },
             executor2_token,
         )
-        print(f"  Баннеры (executor2)       → {'OK id=' + str(s4['id']) if status == 201 else f'FAIL {status} {s4}'}")
+        print(
+            f"  Баннеры (executor2)       → {'OK id=' + str(s4['id']) if status == 201 else f'FAIL {status} {s4}'}"
+        )
     else:
         print(f"  Баннеры (executor2)       → SKIP (contest not active)")
 
 # ── Summary ────────────────────────────────────────────────────────────────────
 
 print("\n=== Done! Credentials ===")
-print("  admin     / admin123")
-print("  customer1 / test1234  (кошелёк: 50 000 ₽)")
-print("  executor1 / test1234  (кошелёк: 5 000 ₽)")
-print("  executor2 / test1234  (кошелёк: 3 000 ₽)")
-print("\n=== Payment service (stub mode) ===")
-print("  Конкурсы активируются автоматически без YooKassa ключей.")
-print("  Кошельки пополняются автоматически (re-run безопасен — не дублирует).")
-print("  Для реальной оплаты: задайте YOOKASSA_SHOP_ID и YOOKASSA_SECRET_KEY.")
+print("  admin     / admin123   (кошелёк: 10 000 ₽)")
+print("  customer1 / test1234   (кошелёк: ~50 000 ₽ минус оплата конкурсов)")
+print("  executor1 / test1234   (кошелёк: 5 000 ₽)")
+print("  executor2 / test1234   (кошелёк: 3 000 ₽)")
+print("\n=== Wallet & payments ===")
+print(
+    "  Конкурсы оплачиваются с кошелька (use_balance=True) — работает с любым конфигом YooKassa."
+)
+print(
+    "  Пополнение кошельков идёт через stub (auto-credit) если YooKassa не настроена."
+)
+print("  Вывод средств: доступен всем ролям. Без номера карты — stub-успех мгновенно.")
+print(
+    "  Возвраты: кнопка 'Вернуть' на странице Кошелёк → Платежи (только статус 'held')."
+)
+print("  Re-run безопасен: балансы не дублируются, конкурсы не создаются повторно.")
