@@ -104,11 +104,13 @@ const SolutionPage = () => {
         }
     };
 
-    const handleDownloadArchive = () => {
-        const firstFile = currentSolution.files[0];
-        const relativePath = firstFile.replace('/static/', '');
-        const folderPath = relativePath.split('/').slice(0, -1).join('/');
-        downloadFileOrZip(`/download-folder/${folderPath}`, `solution_${currentSolution.number}`);
+    const handleDownloadAll = async () => {
+        for (const fileName of currentSolution.files) {
+            await downloadFileOrZip(
+                `/submissions/${currentSolution.id}/files/${fileName}`,
+                fileName
+            );
+        }
     };
 
     const statusInfo = solution.getStatus(solution.currentSolution.status);
@@ -174,22 +176,21 @@ const SolutionPage = () => {
                                 <hr className="my-5 border-gray-100" />
                                 <h3 className="text-base font-bold text-gray-800 mb-2">Файлы</h3>
                                 <ul className="space-y-1 mb-3">
-                                    {currentSolution.files.map((filePath, index) => {
-                                        const fileName = filePath.split('/').pop();
-                                        const relativePath = filePath.replace('/static/', '');
-                                        return (
-                                            <li key={index}>
-                                                <button
-                                                    onClick={() => downloadFileOrZip(`/files/${relativePath}`, fileName)}
-                                                    className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
-                                                >
-                                                    {fileName}
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
+                                    {currentSolution.files.map((fileName, index) => (
+                                        <li key={index}>
+                                            <button
+                                                onClick={() => downloadFileOrZip(
+                                                    `/submissions/${currentSolution.id}/files/${fileName}`,
+                                                    fileName
+                                                )}
+                                                className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
+                                            >
+                                                {fileName}
+                                            </button>
+                                        </li>
+                                    ))}
                                 </ul>
-                                <button onClick={handleDownloadArchive} className={btnSuccess}>
+                                <button onClick={handleDownloadAll} className={btnSuccess}>
                                     Скачать всё
                                 </button>
                             </>

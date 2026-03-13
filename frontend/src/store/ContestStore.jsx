@@ -448,7 +448,12 @@ export default class ContestStore {
         return updated;
     }
 
-    async fetchStatistics() {
-        console.warn("fetchStatistics: no backend endpoint, skipping");
+    async fetchStatistics(x = 'type', y = 'count') {
+        try {
+            const data = await fetchData('/statistics', { x, y });
+            this.setStatistics(data);
+        } catch (error) {
+            console.error('fetchStatistics error:', error);
+        }
     }
 }

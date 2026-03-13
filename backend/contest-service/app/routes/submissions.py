@@ -1,5 +1,9 @@
+import asyncio
+import os
+import aiofiles
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from pydantic import BaseModel
@@ -9,6 +13,8 @@ from app.dependencies import get_current_user, require_role
 from app.clients import trigger_evaluation, get_user
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
+
+UPLOAD_DIR = "/app/uploads"
 
 
 class SubmissionCreate(BaseModel):
@@ -30,8 +36,33 @@ class SubmissionOut(BaseModel):
     status: int
     created_at: datetime
     updated_at: datetime
+    executor_login: str | None = None
+    contest_title: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+async def _enrich_submissions(subs: list, db: AsyncSession) -> list[SubmissionOut]:
+    if not subs:
+        return []
+    contest_ids = list({s.contest_id for s in subs})
+    executor_ids = list({s.executor_id for s in subs})
+
+    c_result = await db.execute(
+        select(Contest.id, Contest.title).where(Contest.id.in_(contest_ids))
+    )
+    contest_map = {row[0]: row[1] for row in c_result}
+
+    user_results = await asyncio.gather(*[get_user(uid) for uid in executor_ids])
+    user_map = {u["id"]: u["login"] for u in user_results if u}
+
+    return [
+        SubmissionOut.model_validate(s).model_copy(update={
+            "executor_login": user_map.get(s.executor_id),
+            "contest_title": contest_map.get(s.contest_id),
+        })
+        for s in subs
+    ]
 
 
 class ReviewCreate(BaseModel):
@@ -78,7 +109,6 @@ async def create_submission(
     await db.commit()
     await db.refresh(submission)
 
-    # Trigger evaluation in background — non-blocking
     if contest.tz_text and data.description:
         background_tasks.add_task(
             trigger_evaluation,
@@ -88,7 +118,7 @@ async def create_submission(
             data.description,
         )
 
-    return submission
+    return (await _enrich_submissions([submission], db))[0]
 
 
 @router.get("", response_model=list[SubmissionOut])
@@ -113,7 +143,8 @@ async def list_submissions(
         q = q.where(and_(*filters))
     q = q.order_by(Submission.created_at.desc()).offset((page - 1) * limit).limit(limit)
     result = await db.execute(q)
-    return result.scalars().all()
+    subs = result.scalars().all()
+    return await _enrich_submissions(subs, db)
 
 
 @router.get("/number/{number}", response_model=SubmissionOut)
@@ -126,7 +157,7 @@ async def get_submission_by_number(
     s = result.scalar_one_or_none()
     if not s:
         raise HTTPException(status_code=404, detail="Submission not found")
-    return s
+    return (await _enrich_submissions([s], db))[0]
 
 
 @router.get("/{submission_id}", response_model=SubmissionOut)
@@ -139,7 +170,7 @@ async def get_submission(
     s = result.scalar_one_or_none()
     if not s:
         raise HTTPException(status_code=404, detail="Submission not found")
-    return s
+    return (await _enrich_submissions([s], db))[0]
 
 
 @router.patch("/{submission_id}/status", response_model=SubmissionOut)
@@ -156,7 +187,7 @@ async def update_status(
     s.status = status
     await db.commit()
     await db.refresh(s)
-    return s
+    return (await _enrich_submissions([s], db))[0]
 
 
 @router.delete("/{submission_id}", status_code=204)
@@ -175,7 +206,57 @@ async def delete_submission(
     await db.commit()
 
 
-# ─── Reviews ────────────────────────────────────────────────────────────────
+# ─── Files ───────────────────────────────────────────────────────────────────
+
+@router.post("/{submission_id}/files", response_model=SubmissionOut)
+async def upload_files(
+    submission_id: int,
+    files: list[UploadFile] = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    result = await db.execute(select(Submission).where(Submission.id == submission_id))
+    s = result.scalar_one_or_none()
+    if not s:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    if s.executor_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    upload_dir = f"{UPLOAD_DIR}/{submission_id}"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    saved = []
+    for file in files:
+        safe_name = os.path.basename(file.filename or "file")
+        dest = f"{upload_dir}/{safe_name}"
+        async with aiofiles.open(dest, "wb") as f:
+            content = await file.read()
+            await f.write(content)
+        saved.append(safe_name)
+
+    s.files = saved
+    await db.commit()
+    await db.refresh(s)
+    return (await _enrich_submissions([s], db))[0]
+
+
+@router.get("/{submission_id}/files/{filename}")
+async def download_file(
+    submission_id: int,
+    filename: str,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    result = await db.execute(select(Submission.id).where(Submission.id == submission_id))
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Submission not found")
+    path = f"{UPLOAD_DIR}/{submission_id}/{filename}"
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path, filename=filename)
+
+
+# ─── Reviews ─────────────────────────────────────────────────────────────────
 
 @router.post("/{submission_id}/reviews", response_model=ReviewOut, status_code=201)
 async def add_review(

@@ -38,9 +38,8 @@ const SolutionsList = ({ showContestTitle, showFreelancerLogin }) => {
                 <SolutionCard
                     key={solutionItem.number}
                     solution={solutionItem}
-                    contestTitle={solutionItem.contestTitle}
-                    freelancerLogin={solutionItem.freelancerLogin}
-                    employerLogin={solutionItem.employerLogin}
+                    contestTitle={solutionItem.contest_title}
+                    freelancerLogin={solutionItem.executor_login}
                     showContestTitle={showContestTitle}
                     showFreelancerLogin={showFreelancerLogin}
                 />

@@ -59,6 +59,11 @@ const CreateSolution = () => {
 
         try {
             const res = await sendData(submitURL, data);
+            if (files.length > 0) {
+                const formData = new FormData();
+                files.forEach(file => formData.append('files', file));
+                await sendData(`/submissions/${res.id}/files`, formData, true);
+            }
             solution.resetForm();
             navigate(-1);
             alert(`Решение успешно ${state ? 'изменёно' : 'отправлено'}!`);
