@@ -115,6 +115,56 @@
 
 ---
 
+## Тестирование и инструменты
+
+Проект покрыт тестами на трех уровнях: фронтенд, бэкенд (интеграционные) и API (Postman).
+
+### 1. Фронтенд-тесты (Vitest)
+Тестируют логику хранилищ (stores) и взаимодействия с API на стороне клиента.
+- **Путь:** `frontend/src/__tests__/`
+- **Запуск:**
+  ```bash
+  cd frontend
+  npm install
+  npm run test
+  ```
+
+### 2. Бэкенд-тесты (Pytest)
+Интеграционные тесты, проверяющие работу всех микросервисов вместе.
+- **Путь:** `tests/pytest/`
+- **Требования:** Запущенный стек контейнеров (`podman-compose up`).
+- **Запуск:**
+  ```bash
+  # Установите зависимости (если еще не установлены)
+  pip install -r tests/pytest/requirements.txt
+  
+  # Запустите тесты
+  python3 -m pytest
+  ```
+  *Примечание: Тесты автоматически создают временных пользователей и данные для каждой сессии.*
+
+### 3. API-тесты (Postman / Newman)
+Коллекция запросов для проверки всех эндпоинтов API.
+- **Путь:** `tests/postman/devContest_collection.json`
+- **Запуск через CLI (Newman):**
+  ```bash
+  newman run tests/postman/devContest_collection.json
+  ```
+- **Запуск через GUI:** Импортируйте JSON-файл в приложение Postman и запустите Collection Runner.
+
+### 4. GitHub Actions (CI)
+Все вышеуказанные тесты автоматически запускаются при каждом `push` или `pull request` в ветки `main`/`master`. Конфигурация находится в `.github/workflows/tests.yml`.
+
+### 5. Просмотр баз данных (Adminer)
+Для удобного просмотра таблиц всех микросервисов в браузере:
+1. Запустите Adminer: `podman-compose up -d adminer`
+2. Откройте: `http://localhost:8080`
+3. Параметры входа (PostgreSQL):
+   - **Server:** `user-db`, `contest-db`, `payment-db` или `evaluation-db`
+   - **Username/Password/Database:** см. файл `.env`
+
+---
+
 ## Seed данных (`seed.py`)
 
 Скрипт `seed.py` заполняет систему тестовыми данными через API:
