@@ -1,0 +1,77 @@
+name: Comprehensive Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Run Vitest
+        working-directory: frontend
+        run: npm run test
+
+  backend-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cp .env.example .env
+          # Use default passwords from example for CI
+          sed -i 's/USER_DB_PASSWORD=/USER_DB_PASSWORD=123/g' .env
+          sed -i 's/CONTEST_DB_PASSWORD=/CONTEST_DB_PASSWORD=123/g' .env
+          sed -i 's/EVAL_DB_PASSWORD=/EVAL_DB_PASSWORD=123/g' .env
+          sed -i 's/PAYMENT_DB_PASSWORD=/PAYMENT_DB_PASSWORD=123/g' .env
+          sed -i 's/JWT_SECRET=/JWT_SECRET=ci_secret_key_123/g' .env
+          sed -i 's/INTERNAL_SECRET=/INTERNAL_SECRET=ci_internal_secret_123/g' .env
+
+      - name: Start services
+        run: docker compose up -d --build
+
+      - name: Wait for services to be healthy
+        run: |
+          timeout 60s sh -c 'until curl -s http://localhost:8001/auth/login > /dev/null; do sleep 2; done'
+          timeout 60s sh -c 'until curl -s http://localhost:8002/contests > /dev/null; do sleep 2; done'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/pytest/requirements.txt
+
+      - name: Run Pytest
+        run: python -m pytest
+
+      - name: Run Postman Tests (Newman)
+        uses: matt-ball/newman-action@master
+        with:
+          collection: tests/postman/devContest_collection.json
+          # You might need to add environment if you have one:
+          # environment: tests/postman/devContest_environment.json
+
+      - name: Stop services
+        if: always()
+        run: docker compose down
