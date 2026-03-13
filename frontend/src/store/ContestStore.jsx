@@ -119,6 +119,7 @@ export default class ContestStore {
       description: "",
       deadline: "",
       order: this.stages.length + 1,
+      prize_amount: 0,
     });
   }
 
@@ -442,6 +443,11 @@ export default class ContestStore {
       console.error("Ошибка при загрузке конкурса по ID:", error);
       return null;
     }
+  }
+
+  // Alias used by PaymentCheckoutPage / PaymentCallbackPage
+  async fetchOneContest(id) {
+    return this.fetchOneContestById(id);
   }
 
   async fetchOneContestByNumber(number) {

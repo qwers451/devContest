@@ -2,17 +2,6 @@ import httpx
 from app.config import settings
 
 
-async def reserve_escrow(contest_id: int, customer_id: int, amount: int) -> dict:
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(
-            f"{settings.payment_service_url}/escrow/reserve",
-            json={"contest_id": contest_id, "customer_id": customer_id, "amount": amount},
-            headers={"x-internal-secret": settings.internal_secret},
-        )
-        resp.raise_for_status()
-        return resp.json()
-
-
 async def release_escrow(contest_id: int, executor_id: int) -> dict:
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(
@@ -22,6 +11,38 @@ async def release_escrow(contest_id: int, executor_id: int) -> dict:
         )
         resp.raise_for_status()
         return resp.json()
+
+
+async def release_stage_escrow(contest_id: int, stage_id: int, executor_id: int, amount: float) -> dict:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.post(
+            f"{settings.payment_service_url}/escrow/release-stage",
+            json={
+                "contest_id": contest_id,
+                "stage_id": stage_id,
+                "executor_id": executor_id,
+                "amount": amount,
+            },
+            headers={"x-internal-secret": settings.internal_secret},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def check_escrow_held(contest_id: int) -> bool:
+    """Returns True if payment for this contest is held in payment-service."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(
+                f"{settings.payment_service_url}/escrow/status/{contest_id}",
+                headers={"x-internal-secret": settings.internal_secret},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return data.get("held", False)
+    except Exception:
+        pass
+    return False
 
 
 async def trigger_evaluation(

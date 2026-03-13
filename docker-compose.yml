@@ -169,6 +169,9 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
+      YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL:-http://localhost:5173/payment/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CONTEST_SERVICE_URL: http://contest-service:8000
     healthcheck:
       test:
         [
@@ -193,6 +196,7 @@ services:
         VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8001}
         VITE_CONTEST_API_URL: ${VITE_CONTEST_API_URL:-http://localhost:8002}
         VITE_IMPORT_EXPORT_API_URL: ${VITE_IMPORT_EXPORT_API_URL:-http://localhost:8002}
+        VITE_PAYMENT_API_URL: ${VITE_PAYMENT_API_URL:-http://localhost:8004}
     ports:
       - "3000:80"
     depends_on:

@@ -14,7 +14,10 @@ import {
     SOLUTION_REVIEWS_ROUTE,
     REVIEW_ROUTE,
     PROFILE_ROUTE,
-    EDIT_ROUTE
+    EDIT_ROUTE,
+    PAYMENT_CHECKOUT_ROUTE,
+    PAYMENT_CALLBACK_ROUTE,
+    WALLET_ROUTE,
 } from "./utils/consts.js";
 import Auth from "./pages/Auth.jsx";
 import Contests from "./pages/Contests.jsx";
@@ -30,6 +33,9 @@ import CreateReview from "./pages/CreateReview.jsx";
 import SolutionReviews from "./pages/SolutionReviews.jsx";
 import ReviewPage from './pages/ReviewPage.jsx';
 import ProfilePage from "./pages/ProfilePage.jsx";
+import PaymentCheckoutPage from "./pages/PaymentCheckoutPage.jsx";
+import PaymentCallbackPage from "./pages/PaymentCallbackPage.jsx";
+import WalletPage from "./pages/WalletPage.jsx";
 
 export const authRoutes = [
     {
@@ -84,6 +90,14 @@ export const authRoutes = [
         path: PROFILE_ROUTE,
         element: <ProfilePage />
     },
+    {
+        path: PAYMENT_CHECKOUT_ROUTE,
+        element: <PaymentCheckoutPage />
+    },
+    {
+        path: WALLET_ROUTE,
+        element: <WalletPage />
+    },
 ]
 
 export const publicRoutes = [
@@ -102,5 +116,9 @@ export const publicRoutes = [
     {
         path: CONTEST_ROUTE + '/:number',
         element: <ContestPage />
-    }
+    },
+    {
+        path: PAYMENT_CALLBACK_ROUTE,
+        element: <PaymentCallbackPage />
+    },
 ]

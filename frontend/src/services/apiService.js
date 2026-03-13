@@ -6,18 +6,22 @@ const CONTEST_API_URL =
   import.meta.env.VITE_CONTEST_API_URL || "http://localhost:8002";
 const IMPORT_EXPORT_API_URL =
   import.meta.env.VITE_IMPORT_EXPORT_API_URL || CONTEST_API_URL;
+const PAYMENT_API_URL =
+  import.meta.env.VITE_PAYMENT_API_URL || "http://localhost:8004";
 
 // Endpoints that belong to user-service
 const USER_ENDPOINTS = ["/auth/", "/users", "/profile"];
+// Endpoints that belong to payment-service
+const PAYMENT_ENDPOINTS = ["/payments", "/escrow", "/transactions", "/payouts", "/withdrawals"];
 
-export { USER_API_URL, CONTEST_API_URL, IMPORT_EXPORT_API_URL };
+export { USER_API_URL, CONTEST_API_URL, IMPORT_EXPORT_API_URL, PAYMENT_API_URL };
 
 function isUserEndpoint(endpoint) {
   return USER_ENDPOINTS.some((prefix) => endpoint.startsWith(prefix));
 }
 
-function getBaseUrl(endpoint) {
-  return isUserEndpoint(endpoint) ? USER_API_URL : CONTEST_API_URL;
+function isPaymentEndpoint(endpoint) {
+  return PAYMENT_ENDPOINTS.some((prefix) => endpoint.startsWith(prefix));
 }
 
 function createClient(baseURL) {
@@ -26,7 +30,6 @@ function createClient(baseURL) {
     headers: { "Content-Type": "application/json" },
   });
 
-  // Attach JWT token to every request
   client.interceptors.request.use((config) => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -40,9 +43,12 @@ function createClient(baseURL) {
 
 const userApi = createClient(USER_API_URL);
 const contestApi = createClient(CONTEST_API_URL);
+export const paymentApi = createClient(PAYMENT_API_URL);
 
 function getClient(endpoint) {
-  return isUserEndpoint(endpoint) ? userApi : contestApi;
+  if (isUserEndpoint(endpoint)) return userApi;
+  if (isPaymentEndpoint(endpoint)) return paymentApi;
+  return contestApi;
 }
 
 export const fetchData = async (endpoint, params = {}) => {

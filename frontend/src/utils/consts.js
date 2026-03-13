@@ -14,3 +14,6 @@ export const SOLUTION_REVIEWS_ROUTE = '/solution/:number/reviews';
 export const REVIEW_ROUTE = '/solution/:number/review/:reviewNumber';
 export const PROFILE_ROUTE = '/profile';
 export const EDIT_ROUTE = '/edit';
+export const PAYMENT_CHECKOUT_ROUTE = '/payment/checkout';
+export const PAYMENT_CALLBACK_ROUTE = '/payment/callback';
+export const WALLET_ROUTE = '/wallet';

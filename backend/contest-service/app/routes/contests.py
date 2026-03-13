@@ -6,9 +6,9 @@ from sqlalchemy import String, and_, case, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.clients import release_escrow, reserve_escrow
+from app.clients import check_escrow_held, release_escrow, release_stage_escrow
 from app.database import get_db
-from app.dependencies import get_current_user, require_role
+from app.dependencies import get_current_user, require_role, verify_internal
 from app.models import Contest, ContestStage, ContestStatus, Submission, Winner
 
 router = APIRouter(prefix="/contests", tags=["contests"])
@@ -19,6 +19,7 @@ class StageIn(BaseModel):
     description: str | None = None
     deadline: datetime | None = None
     order: int
+    prize_amount: int = 0
 
 
 class StageOut(BaseModel):
@@ -27,6 +28,7 @@ class StageOut(BaseModel):
     description: str | None
     deadline: datetime | None
     order: int
+    prize_amount: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -191,20 +193,58 @@ async def create_contest(
                 description=stage_data.description,
                 deadline=stage_data.deadline,
                 order=stage_data.order,
+                prize_amount=stage_data.prize_amount,
             )
         )
 
-    try:
-        await reserve_escrow(contest.id, current_user["id"], data.prizepool)
-        contest.status = ContestStatus.active
-    except Exception:
-        raise HTTPException(status_code=502, detail="Payment service unavailable")
-
+    # Contest stays in draft until payment is confirmed via /activate
     await db.commit()
     result = await db.execute(
         select(Contest).options(*_relations()).where(Contest.id == contest.id)
     )
     return result.scalar_one()
+
+
+@router.patch("/{contest_id}/activate")
+async def activate_contest(
+    contest_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Activate contest after payment is confirmed. Called by frontend after YooKassa payment."""
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    if contest.customer_id != current_user["id"] and current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not your contest")
+    if contest.status == ContestStatus.active:
+        return {"status": "already_active", "contest_id": contest_id}
+
+    # Verify payment is held in payment-service
+    held = await check_escrow_held(contest_id)
+    if not held:
+        raise HTTPException(status_code=402, detail="Payment not confirmed yet")
+
+    contest.status = ContestStatus.active
+    await db.commit()
+    return {"status": "activated", "contest_id": contest_id}
+
+
+@router.patch("/{contest_id}/activate-internal", dependencies=[Depends(verify_internal)])
+async def activate_contest_internal(contest_id: int, db: AsyncSession = Depends(get_db)):
+    """Called by payment-service webhook to activate contest after payment."""
+    result = await db.execute(select(Contest).where(Contest.id == contest_id))
+    contest = result.scalar_one_or_none()
+    if not contest:
+        return {"status": "not_found"}
+    if contest.status != ContestStatus.draft:
+        return {"status": "already_active"}
+    contest.status = ContestStatus.active
+    await db.commit()
+    return {"status": "activated", "contest_id": contest_id}
 
 
 @router.get("/number/{number}", response_model=ContestOut)
@@ -289,6 +329,7 @@ async def select_winner(
     contest_id: int,
     submission_id: int,
     executor_id: int,
+    stage_id: int | None = Query(None, description="If set — partial milestone release for this stage only"),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("customer", "admin")),
 ):
@@ -303,6 +344,32 @@ async def select_winner(
     if contest.status != ContestStatus.active:
         raise HTTPException(status_code=409, detail="Contest is not active")
 
+    if stage_id:
+        # Milestone payment — partial release for a specific stage
+        stage_result = await db.execute(
+            select(ContestStage).where(
+                ContestStage.id == stage_id, ContestStage.contest_id == contest_id
+            )
+        )
+        stage = stage_result.scalar_one_or_none()
+        if not stage:
+            raise HTTPException(status_code=404, detail="Stage not found")
+
+        prize = stage.prize_amount or (contest.prizepool // max(len(contest.stages), 1))
+        try:
+            await release_stage_escrow(contest_id, stage_id, executor_id, prize)
+        except Exception:
+            pass  # non-blocking: payment failure doesn't block stage completion
+
+        # Don't finish contest yet — just return current state
+        await db.commit()
+        db.expire_all()
+        result = await db.execute(
+            select(Contest).options(*_relations()).where(Contest.id == contest_id)
+        )
+        return result.scalar_one()
+
+    # Full winner — finish contest
     db.add(
         Winner(
             contest_id=contest_id,
@@ -312,13 +379,15 @@ async def select_winner(
     )
     contest.status = ContestStatus.finished
 
-    # Update submission status to Winner (3)
-    result = await db.execute(select(Submission).where(Submission.id == submission_id))
-    submission = result.scalar_one_or_none()
+    sub_result = await db.execute(select(Submission).where(Submission.id == submission_id))
+    submission = sub_result.scalar_one_or_none()
     if submission:
         submission.status = 3
 
-    await release_escrow(contest_id, executor_id)
+    try:
+        await release_escrow(contest_id, executor_id)
+    except Exception:
+        pass  # non-blocking
 
     await db.commit()
     db.expire_all()
@@ -361,6 +430,7 @@ async def update_stages(
                 description=stage_data.description,
                 deadline=stage_data.deadline,
                 order=stage_data.order,
+                prize_amount=stage_data.prize_amount,
             )
         )
 

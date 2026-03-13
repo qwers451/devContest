@@ -8,6 +8,7 @@ services:
       VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8001}
       VITE_CONTEST_API_URL: ${VITE_CONTEST_API_URL:-http://localhost:8002}
       VITE_IMPORT_EXPORT_API_URL: ${VITE_IMPORT_EXPORT_API_URL:-http://localhost:8002}
+      VITE_PAYMENT_API_URL: ${VITE_PAYMENT_API_URL:-http://localhost:8004}
     ports:
       - "5173:5173"
     volumes:

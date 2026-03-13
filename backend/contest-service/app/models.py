@@ -89,6 +89,7 @@ class ContestStage(Base):
     description = Column(Text)
     deadline = Column(DateTime(timezone=True))
     order = Column(Integer, nullable=False)
+    prize_amount = Column(Integer, default=0, nullable=False)
 
     contest = relationship("Contest", back_populates="stages")
 

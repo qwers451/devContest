@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Context } from "../main.jsx";
 import { observer } from "mobx-react-lite";
@@ -10,6 +10,7 @@ import {
   MY_CONTESTS_ROUTE,
   CREATE_CONTEST_ROUTE,
   PROFILE_ROUTE,
+  WALLET_ROUTE,
 } from "../utils/consts.js";
 
 const SunIcon = () => (
@@ -42,7 +43,7 @@ const MoonIcon = () => (
 );
 
 const NavBar = observer(() => {
-  const { user } = useContext(Context);
+  const { user, payment } = useContext(Context);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const desktopThemeButtonRef = useRef(null);
@@ -50,6 +51,12 @@ const NavBar = observer(() => {
   const [isDark, setIsDark] = useState(() =>
     document.documentElement.classList.contains("dark"),
   );
+
+  useEffect(() => {
+    if (user.isAuth) {
+      payment.fetchBalance();
+    }
+  }, [user.isAuth]);
 
   const applyTheme = React.useCallback((nextIsDark) => {
     if (nextIsDark) {
@@ -157,7 +164,23 @@ const NavBar = observer(() => {
             >
               Добавить конкурс
             </NavLink>
+            <NavLink
+              to={WALLET_ROUTE}
+              className={linkClass}
+              onClick={() => setOpen(false)}
+            >
+              Кошелёк
+            </NavLink>
           </>
+        )}
+        {role === "executor" && (
+          <NavLink
+            to={WALLET_ROUTE}
+            className={linkClass}
+            onClick={() => setOpen(false)}
+          >
+            Кошелёк
+          </NavLink>
         )}
         {role === "admin" && (
           <NavLink
@@ -199,6 +222,9 @@ const NavBar = observer(() => {
           </button>
           {user.isAuth ? (
             <>
+              <span className="text-xs font-mono font-semibold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-lg">
+                {Number(payment.balance).toLocaleString("ru-RU")} ₽
+              </span>
               <button
                 onClick={() => navigate(PROFILE_ROUTE)}
                 className="text-sm font-semibold text-gray-700 hover:text-violet-600 transition-colors flex items-center gap-1.5"

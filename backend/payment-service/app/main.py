@@ -3,7 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import create_tables
 from app.routes.escrow import router as escrow_router
+from app.routes.payments import router as payments_router
 from app.routes.transactions import router as transactions_router
+from app.routes.wallet import router as wallet_router
 
 
 @asynccontextmanager
@@ -21,5 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(payments_router)
 app.include_router(escrow_router)
 app.include_router(transactions_router)
+app.include_router(wallet_router)

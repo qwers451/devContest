@@ -4,9 +4,10 @@ import { sendData } from '../services/apiService.js';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
+import { PAYMENT_CHECKOUT_ROUTE } from '../utils/consts.js';
 
 const CreateContest = () => {
-    const { contest, user } = useContext(Context);
+    const { contest, user, payment } = useContext(Context);
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -46,6 +47,7 @@ const CreateContest = () => {
                 description: s.description || undefined,
                 deadline: s.deadline ? new Date(s.deadline).toISOString() : undefined,
                 order: i + 1,
+                prize_amount: s.prize_amount || 0,
             }));
 
         const data = {
@@ -62,8 +64,16 @@ const CreateContest = () => {
         try {
             const res = await sendData(submitURL, data);
             contest.resetForm();
-            navigate(-1);
-            alert(`Конкурс успешно ${state ? 'изменён' : 'добавлен'}!`);
+
+            if (!state && res.id && res.status === 'draft') {
+                // New contest created in draft — redirect to payment checkout
+                navigate(
+                    `${PAYMENT_CHECKOUT_ROUTE}?contest_id=${res.id}&amount=${data.prizepool}`
+                );
+            } else {
+                navigate(-1);
+                alert(`Конкурс успешно ${state ? 'изменён' : 'добавлен'}!`);
+            }
         } catch (error) {
             console.error('Ошибка при отправке:', error);
             alert(`Ошибка при ${state ? 'редактировании' : 'создании'} конкурса`);
@@ -300,6 +310,14 @@ const CreateContest = () => {
                                                 type="date"
                                                 value={stage.deadline}
                                                 onChange={e => contest.updateStage(index, 'deadline', e.target.value)}
+                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white"
+                                            />
+                                            <input
+                                                type="number"
+                                                placeholder="Выплата за этап (₽), 0 = весь призовой фонд"
+                                                value={stage.prize_amount || ''}
+                                                onChange={e => contest.updateStage(index, 'prize_amount', parseInt(e.target.value) || 0)}
+                                                min={0}
                                                 className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white"
                                             />
                                         </div>
