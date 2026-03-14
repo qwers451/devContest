@@ -336,8 +336,9 @@ export default class SolutionStore {
     }
   }
 
-  async selectWinner(contestId, submissionId, executorId) {
-    const url = `/contests/${contestId}/winner?submission_id=${submissionId}&executor_id=${executorId}`;
+  async selectWinner(contestId, submissionId, executorId, stageId = null) {
+    let url = `/contests/${contestId}/winner?submission_id=${submissionId}&executor_id=${executorId}`;
+    if (stageId != null) url += `&stage_id=${stageId}`;
     const contest = await sendData(url, {});
     return contest;
   }

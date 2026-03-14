@@ -8,7 +8,7 @@ import ChangeSolutionStatusModal from "../components/ChangeSolutionStatusModal";
 import { downloadFileOrZip } from "../services/apiService.js";
 
 const SolutionPage = () => {
-  const { solution, contest, user } = useContext(Context);
+  const { solution, contest, user, payment } = useContext(Context);
   const { number } = useParams();
   const [currentSolution, setCurrentSolution] = useState(null);
   const [currentContest, setCurrentContest] = useState(null);
@@ -17,6 +17,8 @@ const SolutionPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
+  const [milestoneLoading, setMilestoneLoading] = useState(null);
+  const [milestoneError, setMilestoneError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +43,12 @@ const SolutionPage = () => {
           sol.contest_id,
         );
         setCurrentContest(fetchedContest);
+
+        // Load milestones if contest has stages with individual prizes
+        const hasPrizeStages = fetchedContest?.stages?.some(s => s.prize_amount > 0);
+        if (hasPrizeStages) {
+          await payment.fetchMilestones(sol.contest_id);
+        }
 
         const [execUser] = await Promise.all([
           user.fetchUserById(sol.executor_id),
@@ -78,6 +86,11 @@ const SolutionPage = () => {
   const isContestActive = currentContest?.status === "active";
   const isCreated = currentSolution.created_at === currentSolution.updated_at;
 
+  const prizeStages = (currentContest?.stages || []).filter(s => s.prize_amount > 0);
+  const hasMilestones = prizeStages.length > 0;
+  const paidStageIds = new Set((payment.milestones || []).map(m => m.stage_id));
+  const allMilestonesPaid = hasMilestones && prizeStages.every(s => paidStageIds.has(s.id));
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -107,6 +120,24 @@ const SolutionPage = () => {
       setCurrentSolution(updatedSolution);
     } catch (error) {
       console.error("Ошибка изменения статуса:", error);
+    }
+  };
+
+  const handleMilestonePayment = async (stage) => {
+    setMilestoneError('');
+    setMilestoneLoading(stage.id);
+    try {
+      await solution.selectWinner(
+        currentContest.id,
+        currentSolution.id,
+        currentSolution.executor_id,
+        stage.id,
+      );
+      await payment.fetchMilestones(currentContest.id);
+    } catch (err) {
+      setMilestoneError('Ошибка выплаты: ' + (err?.response?.data?.detail || err.message));
+    } finally {
+      setMilestoneLoading(null);
     }
   };
 
@@ -212,6 +243,54 @@ const SolutionPage = () => {
                 {currentSolution.description}
               </Markdown>
             </div>
+
+            {/* Milestone payments section */}
+            {hasMilestones && (isContestOwner || isAdmin) && (
+              <>
+                <hr className="my-5 border-gray-100" />
+                <h3 className="text-base font-bold text-gray-800 mb-3">Поэтапная выплата</h3>
+                {milestoneError && (
+                  <p className="text-sm text-red-500 mb-2">{milestoneError}</p>
+                )}
+                <div className="space-y-2">
+                  {prizeStages.map(stage => {
+                    const paid = paidStageIds.has(stage.id);
+                    const loading = milestoneLoading === stage.id;
+                    return (
+                      <div key={stage.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-800 text-sm truncate">{stage.name}</p>
+                          <p className="text-xs text-gray-500">{stage.prize_amount.toLocaleString('ru-RU')} ₽</p>
+                        </div>
+                        {paid ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            ✓ Выплачено
+                          </span>
+                        ) : isContestActive ? (
+                          <button
+                            onClick={() => handleMilestonePayment(stage)}
+                            disabled={loading}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-semibold text-xs transition-colors"
+                          >
+                            {loading ? (
+                              <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                            ) : '💸'}
+                            Выплатить
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400">Конкурс не активен</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {allMilestonesPaid && (
+                  <p className="mt-2 text-xs text-emerald-600 font-medium">
+                    Все этапы оплачены. Выберите победителя для завершения конкурса.
+                  </p>
+                )}
+              </>
+            )}
 
             {currentSolution.files && currentSolution.files.length > 0 && (
               <>
@@ -339,7 +418,7 @@ const SolutionPage = () => {
                         onClick={() => setShowWinnerModal(true)}
                         className={btnPrimary}
                       >
-                        🏆 Выбрать победителем
+                        🏆 {hasMilestones ? 'Завершить конкурс' : 'Выбрать победителем'}
                       </button>
                     )}
                   </>
@@ -374,8 +453,12 @@ const SolutionPage = () => {
         onHide={() => setShowWinnerModal(false)}
         onConfirm={handleSelectWinner}
         title="Выбор победителя"
-        message={`Вы уверены, что хотите выбрать это решение победителем? Конкурс завершится, а приз (${currentContest.prizepool} руб.) будет начислен исполнителю. Действие необратимо.`}
-        confirmText="Выбрать победителем"
+        message={
+          hasMilestones
+            ? `Конкурс завершится. ${allMilestonesPaid ? 'Все поэтапные выплаты уже произведены.' : `Оставшиеся средства (${currentContest.prizepool} руб.) будут выплачены исполнителю.`} Действие необратимо.`
+            : `Вы уверены, что хотите выбрать это решение победителем? Конкурс завершится, а приз (${currentContest.prizepool} руб.) будет начислен исполнителю. Действие необратимо.`
+        }
+        confirmText={hasMilestones ? 'Завершить конкурс' : 'Выбрать победителем'}
         cancelText="Отмена"
         confirmVariant="primary"
       />

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import verify_internal
+from app.dependencies import get_current_user, verify_internal
 from app.models import EscrowAccount, MilestoneRelease, Payment, PaymentStatus, Payout, Transaction, WalletTxType
 from app.wallet_helpers import credit_wallet
 
@@ -215,6 +215,40 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
         "amount": data.amount,
         "total_released": float(escrow.released_amount),
     }
+
+
+class MilestoneOut(BaseModel):
+    id: int
+    escrow_id: int
+    stage_id: int
+    executor_id: int
+    amount: float
+    status: str
+    released_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+@router.get("/{contest_id}/milestones", response_model=list[MilestoneOut])
+async def get_milestones(
+    contest_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    """Returns milestone payment history for a contest. Accessible by JWT auth."""
+    result = await db.execute(
+        select(EscrowAccount).where(EscrowAccount.contest_id == contest_id)
+    )
+    escrow = result.scalar_one_or_none()
+    if not escrow:
+        return []
+    milestones = await db.execute(
+        select(MilestoneRelease)
+        .where(MilestoneRelease.escrow_id == escrow.id)
+        .order_by(MilestoneRelease.released_at)
+    )
+    return milestones.scalars().all()
 
 
 @router.get("/status/{contest_id}", dependencies=[Depends(verify_internal)])
