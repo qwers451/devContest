@@ -72,11 +72,27 @@ export const fetchData = async (endpoint, params = {}) => {
 };
 
 export const sendData = async (endpoint, data = {}, isFile = false) => {
+  if (isFile) {
+    // Use fetch for multipart uploads — axios with explicit Content-Type drops the boundary
+    let baseURL;
+    if (isUserEndpoint(endpoint)) baseURL = USER_API_URL;
+    else if (isPaymentEndpoint(endpoint)) baseURL = PAYMENT_API_URL;
+    else if (isEvalEndpoint(endpoint)) baseURL = EVAL_API_URL;
+    else baseURL = CONTEST_API_URL;
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${baseURL}${endpoint}`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: data,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw Object.assign(new Error("Upload failed"), { response: { data: err } });
+    }
+    return response.json();
+  }
   try {
-    const config = isFile
-      ? { headers: { "Content-Type": "multipart/form-data" } }
-      : {};
-    const response = await getClient(endpoint).post(endpoint, data, config);
+    const response = await getClient(endpoint).post(endpoint, data);
     return response.data;
   } catch (error) {
     console.error(`Error sending data to ${endpoint}:`, error);
