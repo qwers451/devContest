@@ -26,11 +26,9 @@ Return ONLY a valid JSON object with this exact structure:
   "critical_issues": <true or false>
 }}"""
 
-# Stub mode: when Ollama is not available, return a placeholder result
-STUB_MODE = True
-
 
 async def _generate(prompt: str) -> str:
+    """Call Ollama API to generate a response."""
     async with httpx.AsyncClient(timeout=120.0) as client:
         resp = await client.post(
             f"{settings.ollama_url}/api/generate",
@@ -41,7 +39,7 @@ async def _generate(prompt: str) -> str:
 
 
 async def extract_requirements(tz_text: str) -> list[str]:
-    if STUB_MODE:
+    if settings.evaluation_stub:
         return ["Stub requirement 1", "Stub requirement 2"]
     prompt = EXTRACT_PROMPT.format(tz_text=tz_text)
     raw = await _generate(prompt)
@@ -54,7 +52,7 @@ async def extract_requirements(tz_text: str) -> list[str]:
 
 
 async def evaluate_submission(requirements: list[str], submission_text: str) -> dict:
-    if STUB_MODE:
+    if settings.evaluation_stub:
         return {
             "passed_requirements": requirements,
             "failed_requirements": [],

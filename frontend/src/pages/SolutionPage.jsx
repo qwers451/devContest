@@ -50,6 +50,9 @@ const SolutionPage = () => {
           await payment.fetchMilestones(sol.contest_id);
         }
 
+        // Load AI evaluation (non-blocking — may return 404 if not yet evaluated)
+        await solution.fetchEvaluation(sol.id);
+
         const [execUser] = await Promise.all([
           user.fetchUserById(sol.executor_id),
           fetchedContest?.customer_id
@@ -251,6 +254,70 @@ const SolutionPage = () => {
                 {currentSolution.description}
               </Markdown>
             </div>
+
+            {/* AI Evaluation section */}
+            {(solution.evaluation || solution.evaluationLoading) && (
+              <>
+                <hr className="my-5 border-gray-100" />
+                <h3 className="text-base font-bold text-gray-800 mb-3">Автоматическая оценка ИИ</h3>
+                {solution.evaluationLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <div className="w-4 h-4 rounded-full border-2 border-violet-200 border-t-violet-500 animate-spin" />
+                    Оценивается…
+                  </div>
+                ) : solution.evaluation && (
+                  <div className="space-y-3">
+                    {/* Score row */}
+                    <div className="flex items-center gap-4">
+                      <div className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white ${
+                        solution.evaluation.compliance_score >= 80 ? 'bg-emerald-500' :
+                        solution.evaluation.compliance_score >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                      }`}>
+                        {solution.evaluation.compliance_score}%
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700">Соответствие требованиям ТЗ</p>
+                        {solution.evaluation.critical_issues ? (
+                          <p className="text-xs text-red-600 font-semibold mt-0.5">⚠ Обнаружены критические нарушения</p>
+                        ) : (
+                          <p className="text-xs text-emerald-600 mt-0.5">Критических нарушений нет</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {solution.evaluation.passed_requirements.length} выполнено · {solution.evaluation.failed_requirements.length} не выполнено
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Requirements lists */}
+                    {solution.evaluation.passed_requirements.length > 0 && (
+                      <div className="bg-emerald-50 rounded-xl px-4 py-3">
+                        <p className="text-xs font-semibold text-emerald-700 mb-2">Выполненные требования</p>
+                        <ul className="space-y-1">
+                          {solution.evaluation.passed_requirements.map((r, i) => (
+                            <li key={i} className="text-xs text-gray-700 flex gap-2">
+                              <span className="text-emerald-500 flex-shrink-0 font-bold">✓</span>{r}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {solution.evaluation.failed_requirements.length > 0 && (
+                      <div className="bg-red-50 rounded-xl px-4 py-3">
+                        <p className="text-xs font-semibold text-red-600 mb-2">Невыполненные требования</p>
+                        <ul className="space-y-1">
+                          {solution.evaluation.failed_requirements.map((r, i) => (
+                            <li key={i} className="text-xs text-gray-700 flex gap-2">
+                              <span className="text-red-400 flex-shrink-0 font-bold">✗</span>{r}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-400">Оценка сформирована автоматически · Окончательное решение принимает заказчик</p>
+                  </div>
+                )}
+              </>
+            )}
 
             {/* Milestone payments section */}
             {hasMilestones && (isContestOwner || isAdmin) && (

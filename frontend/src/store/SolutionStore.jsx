@@ -1,9 +1,10 @@
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import {
   fetchData,
   deleteData,
   patchData,
   sendData,
+  evalApi,
 } from "../services/apiService";
 
 const baseForm = {
@@ -66,6 +67,8 @@ export default class SolutionStore {
     this.isLoading = true;
     this._lastFilterParams = null;
     this._searchForMySolutions = null;
+    this.evaluation = null;      // AI evaluation result for current solution
+    this.evaluationLoading = false;
     this._page = 1;
     this._limit = 2;
     this._totalCount = 0;
@@ -341,5 +344,17 @@ export default class SolutionStore {
     if (stageId != null) url += `&stage_id=${stageId}`;
     const contest = await sendData(url, {});
     return contest;
+  }
+
+  async fetchEvaluation(submissionId) {
+    runInAction(() => { this.evaluationLoading = true; });
+    try {
+      const res = await evalApi.get(`/evaluation/${submissionId}`);
+      runInAction(() => { this.evaluation = res.data; });
+    } catch {
+      runInAction(() => { this.evaluation = null; });
+    } finally {
+      runInAction(() => { this.evaluationLoading = false; });
+    }
   }
 }

@@ -144,6 +144,7 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: llama3.1
+      EVALUATION_STUB: ${EVALUATION_STUB:-true}
     healthcheck:
       test:
         [

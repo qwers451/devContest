@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     internal_secret: str
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.1"
+    evaluation_stub: bool = True  # set EVALUATION_STUB=false to use real Ollama
 
     class Config:
         env_file = ".env"
