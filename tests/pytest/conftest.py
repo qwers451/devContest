@@ -75,7 +75,7 @@ async def admin_token():
             f"{USER_URL}/auth/register",
             json={
                 "login": "admin",
-                "email": "admin@devcontest.local",
+                "email": "admin@example.com",
                 "password": "admin123",
                 "role": "admin",
             },
