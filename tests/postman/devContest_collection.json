@@ -59,7 +59,7 @@
     },
     {
       "key": "INTERNAL_SECRET",
-      "value": "cafdgadhffdah"
+      "value": "ci_internal_secret_123"
     },
     {
       "key": "customer_id",
