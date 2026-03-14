@@ -39,6 +39,7 @@ const statusOptions = [
 
 const SolutionsFiltersBar = observer(({ isMySolutions }) => {
   const { solution } = useContext(Context);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -53,6 +54,12 @@ const SolutionsFiltersBar = observer(({ isMySolutions }) => {
     solution.addedAfter,
     solution,
   ]);
+
+  const handleReset = () => {
+    setIsResetting(true);
+    solution.resetFilters();
+    setTimeout(() => setIsResetting(false), 400);
+  };
 
   const toggleStatus = (value) => {
     const cur = solution.selectedStatuses || [];
@@ -144,8 +151,8 @@ const SolutionsFiltersBar = observer(({ isMySolutions }) => {
       </FilterSection>
 
       <button
-        onClick={() => solution.resetFilters()}
-        className="mt-3 w-full py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-500/30 transition-all font-medium"
+        onClick={handleReset}
+        className={`mt-3 w-full py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-500/30 transition-all font-medium active:scale-95 ${isResetting ? "animate-shake" : ""}`}
       >
         Сбросить всё
       </button>

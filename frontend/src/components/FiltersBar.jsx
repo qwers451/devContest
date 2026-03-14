@@ -31,6 +31,7 @@ const inputCls =
 
 const FiltersBar = observer(() => {
   const { contest } = useContext(Context);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => contest.fetchContestsFiltered(), 500);
@@ -45,6 +46,12 @@ const FiltersBar = observer(() => {
     contest.endAfter,
     contest,
   ]);
+
+  const handleReset = () => {
+    setIsResetting(true);
+    contest.resetFilters();
+    setTimeout(() => setIsResetting(false), 400);
+  };
 
   const statusOptions = [
     { value: "active", label: "Активный" },
@@ -204,8 +211,8 @@ const FiltersBar = observer(() => {
       </FilterSection>
 
       <button
-        onClick={() => contest.resetFilters()}
-        className="mt-3 w-full py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-500/30 transition-all font-medium"
+        onClick={handleReset}
+        className={`mt-3 w-full py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-500/30 transition-all font-medium active:scale-95 ${isResetting ? "animate-shake" : ""}`}
       >
         Сбросить всё
       </button>
