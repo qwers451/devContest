@@ -47,12 +47,12 @@ jobs:
       - name: Create .env file
         run: |
           cp .env.example .env
-          sed -i 's/USER_DB_PASSWORD=/USER_DB_PASSWORD=123/g' .env
-          sed -i 's/CONTEST_DB_PASSWORD=/CONTEST_DB_PASSWORD=123/g' .env
-          sed -i 's/EVAL_DB_PASSWORD=/EVAL_DB_PASSWORD=123/g' .env
-          sed -i 's/PAYMENT_DB_PASSWORD=/PAYMENT_DB_PASSWORD=123/g' .env
-          sed -i 's/JWT_SECRET=/JWT_SECRET=ci_secret_key_123/g' .env
-          sed -i 's/INTERNAL_SECRET=/INTERNAL_SECRET=ci_internal_secret_123/g' .env
+          sed -i 's/USER_DB_PASSWORD=.*/USER_DB_PASSWORD=123/' .env
+          sed -i 's/CONTEST_DB_PASSWORD=.*/CONTEST_DB_PASSWORD=123/' .env
+          sed -i 's/EVAL_DB_PASSWORD=.*/EVAL_DB_PASSWORD=123/' .env
+          sed -i 's/PAYMENT_DB_PASSWORD=.*/PAYMENT_DB_PASSWORD=123/' .env
+          sed -i 's/JWT_SECRET=.*/JWT_SECRET=ci_secret_key_123/' .env
+          sed -i 's/INTERNAL_SECRET=.*/INTERNAL_SECRET=ci_internal_secret_123/' .env
 
       - name: Start services
         run: docker compose up -d --build

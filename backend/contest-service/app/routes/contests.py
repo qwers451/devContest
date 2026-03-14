@@ -406,7 +406,10 @@ async def select_winner(
 
         prize = stage.prize_amount or (contest.prizepool // max(len(contest.stages), 1))
         try:
-            await release_stage_escrow(contest_id, stage_id, executor_id, prize)
+            await release_stage_escrow(
+                contest_id, stage_id, executor_id, prize,
+                stage_name=stage.name, contest_title=contest.title,
+            )
         except Exception:
             pass  # non-blocking: payment failure doesn't block stage completion
 
@@ -434,7 +437,7 @@ async def select_winner(
         submission.status = 3
 
     try:
-        await release_escrow(contest_id, executor_id)
+        await release_escrow(contest_id, executor_id, contest_title=contest.title)
     except Exception:
         pass  # non-blocking
 

@@ -6,7 +6,7 @@ import { Context } from '../main.jsx';
 const STATUS_LABELS = {
     pending:  { label: 'В обработке', cls: 'bg-yellow-100 text-yellow-700' },
     held:     { label: 'Оплачено',    cls: 'bg-emerald-100 text-emerald-700' },
-    released: { label: 'Выполнено',   cls: 'bg-violet-100 text-violet-700' },
+    released: { label: 'Завершён',    cls: 'bg-violet-100 text-violet-700' },
     failed:   { label: 'Ошибка',      cls: 'bg-red-100 text-red-600' },
     refunded: { label: 'Возвращено',  cls: 'bg-gray-100 text-gray-600' },
 };
@@ -388,21 +388,37 @@ const WalletPage = () => {
                             <div className="text-center py-10 text-gray-400">Платежей пока нет</div>
                         ) : (
                             <div className="space-y-3">
-                                {payment.history.map(p => (
-                                    <div key={p.id} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between">
+                                {payment.history.map(p => {
+                                    const isFinished = p.status === 'released';
+                                    const isRefunded = p.status === 'refunded';
+                                    return (
+                                    <div
+                                        key={p.id}
+                                        className={`rounded-2xl border p-4 flex items-center justify-between ${isFinished ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-100'}`}
+                                    >
                                         <div>
-                                            <div className="text-sm font-semibold text-gray-800">
-                                                Конкурс #{p.contest_id}
+                                            <div className="flex items-center gap-2">
+                                                {isFinished && (
+                                                    <span className="text-gray-400" title="Конкурс завершён">🔒</span>
+                                                )}
+                                                <div className="text-sm font-semibold text-gray-800">
+                                                    Конкурс #{p.contest_id}
+                                                </div>
                                             </div>
                                             <div className="text-xs text-gray-400 mt-0.5">
                                                 {new Date(p.created_at).toLocaleDateString('ru-RU', {
                                                     day: '2-digit', month: 'long', year: 'numeric',
                                                 })}
                                             </div>
+                                            {isFinished && (
+                                                <div className="text-xs text-gray-400 mt-1">
+                                                    Средства выплачены исполнителю — возврат невозможен
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="text-right flex flex-col items-end gap-2">
                                             <StatusBadge status={p.status} />
-                                            <span className="text-base font-bold text-gray-900">
+                                            <span className={`text-base font-bold ${isFinished || isRefunded ? 'text-gray-400' : 'text-gray-900'}`}>
                                                 {Number(p.amount).toLocaleString('ru-RU')} ₽
                                             </span>
                                             {p.status === 'held' && (
@@ -416,7 +432,8 @@ const WalletPage = () => {
                                             )}
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

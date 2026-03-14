@@ -2,18 +2,21 @@ import httpx
 from app.config import settings
 
 
-async def release_escrow(contest_id: int, executor_id: int) -> dict:
+async def release_escrow(contest_id: int, executor_id: int, contest_title: str | None = None) -> dict:
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(
             f"{settings.payment_service_url}/escrow/release",
-            json={"contest_id": contest_id, "executor_id": executor_id},
+            json={"contest_id": contest_id, "executor_id": executor_id, "contest_title": contest_title},
             headers={"x-internal-secret": settings.internal_secret},
         )
         resp.raise_for_status()
         return resp.json()
 
 
-async def release_stage_escrow(contest_id: int, stage_id: int, executor_id: int, amount: float) -> dict:
+async def release_stage_escrow(
+    contest_id: int, stage_id: int, executor_id: int, amount: float,
+    stage_name: str | None = None, contest_title: str | None = None,
+) -> dict:
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(
             f"{settings.payment_service_url}/escrow/release-stage",
@@ -22,6 +25,8 @@ async def release_stage_escrow(contest_id: int, stage_id: int, executor_id: int,
                 "stage_id": stage_id,
                 "executor_id": executor_id,
                 "amount": amount,
+                "stage_name": stage_name,
+                "contest_title": contest_title,
             },
             headers={"x-internal-secret": settings.internal_secret},
         )

@@ -22,6 +22,7 @@ class ReserveRequest(BaseModel):
 class ReleaseRequest(BaseModel):
     contest_id: int
     executor_id: int
+    contest_title: str | None = None
 
 
 class ReleaseStageRequest(BaseModel):
@@ -29,6 +30,8 @@ class ReleaseStageRequest(BaseModel):
     stage_id: int
     executor_id: int
     amount: float
+    stage_name: str | None = None
+    contest_title: str | None = None
 
 
 @router.post("/reserve", dependencies=[Depends(verify_internal)])
@@ -98,12 +101,20 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
     escrow.released_at = datetime.now(timezone.utc)
     escrow.released_amount = escrow.amount
 
+    # Mark payment as released so refund button disappears in UI
+    payment_result = await db.execute(select(Payment).where(Payment.id == escrow.payment_id))
+    if payment_obj := payment_result.scalar_one_or_none():
+        payment_obj.status = PaymentStatus.released
+        payment_obj.updated_at = datetime.now(timezone.utc)
+
+    contest_label = data.contest_title or f"#{data.contest_id}"
+
     # Credit executor's wallet
     await credit_wallet(
         data.executor_id,
         remaining,
         WalletTxType.income,
-        f"Выигрыш в конкурсе #{data.contest_id}",
+        f"Выигрыш в конкурсе «{contest_label}»",
         data.contest_id,
         db,
     )
@@ -123,7 +134,7 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
         payment_id=escrow.payment_id,
         type="release",
         amount=remaining,
-        description=f"Эскроу выплачен исполнителю {data.executor_id} (на кошелёк)",
+        description=f"Выигрыш в конкурсе «{contest_label}» исполнителю {data.executor_id} (на кошелёк)",
     )
     db.add(tx)
 
@@ -154,10 +165,11 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
         select(MilestoneRelease).where(
             MilestoneRelease.escrow_id == escrow.id,
             MilestoneRelease.stage_id == data.stage_id,
+            MilestoneRelease.executor_id == data.executor_id,
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Stage already released")
+        raise HTTPException(status_code=409, detail="Stage already released for this executor")
 
     milestone = MilestoneRelease(
         escrow_id=escrow.id,
@@ -175,13 +187,21 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
     if float(escrow.released_amount) >= float(escrow.amount):
         escrow.status = PaymentStatus.released
         escrow.released_at = datetime.now(timezone.utc)
+        # Mark payment as released so refund button disappears in UI
+        payment_result = await db.execute(select(Payment).where(Payment.id == escrow.payment_id))
+        if payment_obj := payment_result.scalar_one_or_none():
+            payment_obj.status = PaymentStatus.released
+            payment_obj.updated_at = datetime.now(timezone.utc)
+
+    stage_label = data.stage_name or f"#{data.stage_id}"
+    contest_label = data.contest_title or f"#{data.contest_id}"
 
     # Credit executor's wallet
     await credit_wallet(
         data.executor_id,
         data.amount,
         WalletTxType.income,
-        f"Выплата за этап #{data.stage_id} конкурса #{data.contest_id}",
+        f"Выплата за этап «{stage_label}» конкурса «{contest_label}»",
         data.contest_id,
         db,
     )
@@ -191,7 +211,7 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
         executor_id=data.executor_id,
         contest_id=data.contest_id,
         amount=data.amount,
-        yookassa_payout_id=f"wallet_stage_{data.contest_id}_{data.stage_id}",
+        yookassa_payout_id=f"wallet_stage_{data.contest_id}_{data.stage_id}_{data.executor_id}",
         status=PaymentStatus.released,
         paid_at=datetime.now(timezone.utc),
     )
@@ -201,7 +221,7 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
         payment_id=escrow.payment_id,
         type="release_stage",
         amount=data.amount,
-        description=f"Выплата за этап {data.stage_id} исполнителю {data.executor_id} (на кошелёк)",
+        description=f"Выплата за этап «{stage_label}» исполнителю {data.executor_id} (на кошелёк)",
     )
     db.add(tx)
 

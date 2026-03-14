@@ -88,8 +88,16 @@ const SolutionPage = () => {
 
   const prizeStages = (currentContest?.stages || []).filter(s => s.prize_amount > 0);
   const hasMilestones = prizeStages.length > 0;
-  const paidStageIds = new Set((payment.milestones || []).map(m => m.stage_id));
+  // Track which stages have been paid to THIS specific executor
+  const paidStageIds = new Set(
+    (payment.milestones || [])
+      .filter(m => m.executor_id === currentSolution.executor_id)
+      .map(m => m.stage_id)
+  );
   const allMilestonesPaid = hasMilestones && prizeStages.every(s => paidStageIds.has(s.id));
+  // Escrow balance: total paid across ALL executors for all milestones
+  const totalMilestonePaid = (payment.milestones || []).reduce((sum, m) => sum + m.amount, 0);
+  const escrowRemaining = (currentContest?.prizepool || 0) - totalMilestonePaid;
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("ru-RU", {
@@ -248,7 +256,18 @@ const SolutionPage = () => {
             {hasMilestones && (isContestOwner || isAdmin) && (
               <>
                 <hr className="my-5 border-gray-100" />
-                <h3 className="text-base font-bold text-gray-800 mb-3">Поэтапная выплата</h3>
+                <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+                  <h3 className="text-base font-bold text-gray-800">Поэтапная выплата</h3>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-500">
+                      Выплачено: <span className="font-semibold text-gray-700">{totalMilestonePaid.toLocaleString('ru-RU')} ₽</span>
+                    </span>
+                    <span className="text-gray-300">|</span>
+                    <span className="text-gray-500">
+                      Остаток эскроу: <span className={`font-semibold ${escrowRemaining > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>{escrowRemaining.toLocaleString('ru-RU')} ₽</span>
+                    </span>
+                  </div>
+                </div>
                 {milestoneError && (
                   <p className="text-sm text-red-500 mb-2">{milestoneError}</p>
                 )}

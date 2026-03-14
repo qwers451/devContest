@@ -442,6 +442,8 @@ async def refund_payment(
     escrow = escrow_result.scalar_one_or_none()
     if escrow and escrow.status == PaymentStatus.released:
         raise HTTPException(status_code=409, detail="Escrow already released to executor — cannot refund")
+    if escrow and float(escrow.released_amount) > 0:
+        raise HTTPException(status_code=409, detail="Milestone payments have been made — cannot refund")
 
     yk_id = payment.yookassa_payment_id or ""
     is_wallet_payment = yk_id.startswith("wallet_")
