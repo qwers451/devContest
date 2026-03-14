@@ -13,6 +13,8 @@ import pytest_asyncio
 
 USER_URL = os.getenv("PYTEST_USER_URL", "http://localhost:8001")
 CONTEST_URL = os.getenv("PYTEST_CONTEST_URL", "http://localhost:8002")
+PAYMENT_URL = os.getenv("PYTEST_PAYMENT_URL", "http://localhost:8004")
+INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "cafdgadhffdah")
 SERVICE_STARTUP_TIMEOUT = float(os.getenv("PYTEST_SERVICE_STARTUP_TIMEOUT", "30"))
 SERVICE_POLL_INTERVAL = float(os.getenv("PYTEST_SERVICE_POLL_INTERVAL", "1"))
 
@@ -153,6 +155,20 @@ async def contest(admin_token, customer_token, contest_type_id):
         )
         assert r.status_code == 201, r.text
         contest_data = r.json()
+
+        # Reserve escrow (stub) and activate the contest
+        internal_headers = {"x-internal-secret": INTERNAL_SECRET}
+        await c.post(
+            f"{PAYMENT_URL}/escrow/reserve",
+            json={"contest_id": contest_data["id"], "customer_id": contest_data["customer_id"], "amount": contest_data["prizepool"]},
+            headers=internal_headers,
+        )
+        await c.patch(
+            f"{CONTEST_URL}/contests/{contest_data['id']}/activate-internal",
+            headers=internal_headers,
+        )
+        contest_data["status"] = "active"
+
         yield contest_data
         await delete_if_exists(
             c, f"{CONTEST_URL}/contests/{contest_data['id']}", admin_token

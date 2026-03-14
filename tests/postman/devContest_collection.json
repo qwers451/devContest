@@ -5,18 +5,66 @@
     "description": "Integration tests for all 42 use case scenarios"
   },
   "variable": [
-    { "key": "USER_URL", "value": "http://localhost:8001" },
-    { "key": "CONTEST_URL", "value": "http://localhost:8002" },
-    { "key": "admin_token", "value": "" },
-    { "key": "customer_token", "value": "" },
-    { "key": "executor_token", "value": "" },
-    { "key": "contest_id", "value": "" },
-    { "key": "contest_number", "value": "" },
-    { "key": "submission_id", "value": "" },
-    { "key": "submission_number", "value": "" },
-    { "key": "contest_type_id", "value": "" },
-    { "key": "review_number", "value": "" },
-    { "key": "stage_id", "value": "" }
+    {
+      "key": "USER_URL",
+      "value": "http://localhost:8001"
+    },
+    {
+      "key": "CONTEST_URL",
+      "value": "http://localhost:8002"
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "customer_token",
+      "value": ""
+    },
+    {
+      "key": "executor_token",
+      "value": ""
+    },
+    {
+      "key": "contest_id",
+      "value": ""
+    },
+    {
+      "key": "contest_number",
+      "value": ""
+    },
+    {
+      "key": "submission_id",
+      "value": ""
+    },
+    {
+      "key": "submission_number",
+      "value": ""
+    },
+    {
+      "key": "contest_type_id",
+      "value": ""
+    },
+    {
+      "key": "review_number",
+      "value": ""
+    },
+    {
+      "key": "stage_id",
+      "value": ""
+    },
+    {
+      "key": "PAYMENT_URL",
+      "value": "http://localhost:8004"
+    },
+    {
+      "key": "INTERNAL_SECRET",
+      "value": "cafdgadhffdah"
+    },
+    {
+      "key": "customer_id",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -38,7 +86,12 @@
           "request": {
             "method": "POST",
             "url": "{{USER_URL}}/auth/login",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\"login\":\"admin\",\"password\":\"admin123\"}"
@@ -61,7 +114,12 @@
           "request": {
             "method": "POST",
             "url": "{{USER_URL}}/auth/login",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\"login\":\"customer1\",\"password\":\"test1234\"}"
@@ -84,7 +142,12 @@
           "request": {
             "method": "POST",
             "url": "{{USER_URL}}/auth/login",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\"login\":\"executor1\",\"password\":\"test1234\"}"
@@ -93,7 +156,6 @@
         }
       ]
     },
-
     {
       "name": "1–5. Аутентификация",
       "item": [
@@ -114,7 +176,12 @@
           "request": {
             "method": "POST",
             "url": "{{USER_URL}}/auth/register",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\"login\":\"pm_exec_{{$timestamp}}\",\"email\":\"pm_exec_{{$timestamp}}@test.com\",\"password\":\"Test1234!\",\"role\":\"executor\"}"
@@ -137,7 +204,12 @@
           "request": {
             "method": "POST",
             "url": "{{USER_URL}}/auth/login",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\"login\":\"admin\",\"password\":\"admin123\"}"
@@ -159,7 +231,12 @@
           "request": {
             "method": "POST",
             "url": "{{USER_URL}}/auth/login",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\"login\":\"admin\",\"password\":\"wrong\"}"
@@ -183,7 +260,10 @@
             "method": "GET",
             "url": "{{USER_URL}}/users/profile",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -203,15 +283,23 @@
             "method": "PUT",
             "url": "{{USER_URL}}/users/profile",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\"login\":\"customer1\"}" }
+            "body": {
+              "mode": "raw",
+              "raw": "{\"login\":\"customer1\"}"
+            }
           }
         }
       ]
     },
-
     {
       "name": "6–14. Конкурсы — просмотр и фильтры",
       "item": [
@@ -233,7 +321,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/contests",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -254,7 +345,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/contests?status=active",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -274,7 +368,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/contests?min_reward=1000&max_reward=100000",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -294,7 +391,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/contests?search=Лого",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -319,7 +419,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/contests/number/1",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -341,13 +444,15 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/contests?page=1&limit=2",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         }
       ]
     },
-
     {
       "name": "15–21. Конкурсы — управление",
       "item": [
@@ -359,8 +464,9 @@
               "script": {
                 "exec": [
                   "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                  "pm.test('status=active', () => pm.expect(pm.response.json().status).to.eql('active'));",
+                  "pm.test('status=draft', () => pm.expect(pm.response.json().status).to.eql('draft'));",
                   "pm.collectionVariables.set('contest_id', pm.response.json().id);",
+                  "pm.collectionVariables.set('customer_id', pm.response.json().customer_id);",
                   "if (pm.response.json().stages.length > 0) pm.collectionVariables.set('stage_id', pm.response.json().stages[0].id);"
                 ]
               }
@@ -370,13 +476,74 @@
             "method": "POST",
             "url": "{{CONTEST_URL}}/contests",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\"title\":\"PM Test Contest\",\"annotation\":\"Краткое описание конкурса для теста\",\"description\":\"Подробное описание конкурса для тестирования платформы\",\"tz_text\":\"Техническое задание\",\"prizepool\":10000,\"ends_at\":\"2026-12-31T00:00:00Z\",\"stages\":[{\"name\":\"Этап 1\",\"order\":1},{\"name\":\"Этап 2\",\"order\":2}]}"
             }
+          }
+        },
+        {
+          "name": "15a. Резервирование эскроу (internal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{PAYMENT_URL}}/escrow/reserve",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-internal-secret",
+                "value": "{{INTERNAL_SECRET}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"contest_id\": {{contest_id}}, \"customer_id\": {{customer_id}}, \"amount\": 10000}"
+            }
+          }
+        },
+        {
+          "name": "15b. Активация конкурса (internal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status=active', () => pm.expect(pm.response.json().status).to.eql('activated'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{CONTEST_URL}}/contests/{{contest_id}}/activate-internal",
+            "header": [
+              {
+                "key": "x-internal-secret",
+                "value": "{{INTERNAL_SECRET}}"
+              }
+            ]
           }
         },
         {
@@ -398,8 +565,14 @@
             "method": "PUT",
             "url": "{{CONTEST_URL}}/contests/{{contest_id}}/stages",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -424,7 +597,10 @@
             "method": "PATCH",
             "url": "{{CONTEST_URL}}/contests/{{contest_id}}/current-stage?stage_id={{stage_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -445,7 +621,10 @@
             "method": "PATCH",
             "url": "{{CONTEST_URL}}/contests/{{contest_id}}/current-stage",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -465,13 +644,15 @@
             "method": "DELETE",
             "url": "{{CONTEST_URL}}/contests/{{contest_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
             ]
           }
         }
       ]
     },
-
     {
       "name": "22–33. Решения",
       "item": [
@@ -496,8 +677,14 @@
             "method": "POST",
             "url": "{{CONTEST_URL}}/submissions",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{executor_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{executor_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -523,8 +710,14 @@
             "method": "POST",
             "url": "{{CONTEST_URL}}/submissions",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{executor_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{executor_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -550,7 +743,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/submissions/number/{{submission_number}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{executor_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{executor_token}}"
+              }
             ]
           }
         },
@@ -571,7 +767,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/submissions?contest_id=1",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -592,7 +791,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/submissions?contest_id=1&status=1",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -613,7 +815,10 @@
             "method": "PATCH",
             "url": "{{CONTEST_URL}}/submissions/{{submission_id}}/status?status=2",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -634,7 +839,10 @@
             "method": "POST",
             "url": "{{CONTEST_URL}}/contests/1/winner?submission_id={{winner_submission_id}}&executor_id={{winner_executor_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -654,13 +862,15 @@
             "method": "DELETE",
             "url": "{{CONTEST_URL}}/submissions/{{submission_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{executor_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{executor_token}}"
+              }
             ]
           }
         }
       ]
     },
-
     {
       "name": "34–37. Отзывы",
       "item": [
@@ -682,8 +892,14 @@
             "method": "POST",
             "url": "{{CONTEST_URL}}/submissions/1/reviews",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -708,7 +924,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/submissions/1/reviews",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         },
@@ -729,8 +948,14 @@
             "method": "PUT",
             "url": "{{CONTEST_URL}}/submissions/1/reviews/{{review_number}}",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -754,13 +979,15 @@
             "method": "DELETE",
             "url": "{{CONTEST_URL}}/submissions/1/reviews/{{review_number}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
             ]
           }
         }
       ]
     },
-
     {
       "name": "38–42. Администрирование",
       "item": [
@@ -781,7 +1008,10 @@
             "method": "GET",
             "url": "{{USER_URL}}/users",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
             ]
           }
         },
@@ -802,8 +1032,14 @@
             "method": "POST",
             "url": "{{CONTEST_URL}}/contest-types",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -827,7 +1063,10 @@
             "method": "DELETE",
             "url": "{{CONTEST_URL}}/contest-types/{{contest_type_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
             ]
           }
         },
@@ -849,7 +1088,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/statistics?x=type&y=count",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
             ]
           }
         },
@@ -869,7 +1111,10 @@
             "method": "GET",
             "url": "{{CONTEST_URL}}/statistics?x=status&y=prizepool",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
             ]
           }
         }

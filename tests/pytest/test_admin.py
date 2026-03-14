@@ -8,7 +8,7 @@ import time
 import httpx
 import pytest
 import pytz
-from conftest import CONTEST_URL, USER_URL, auth_headers
+from conftest import CONTEST_URL, PAYMENT_URL, USER_URL, INTERNAL_SECRET, auth_headers
 
 TS = int(time.time())
 
@@ -181,6 +181,15 @@ async def test_select_winner(
         )
         assert contest_response.status_code == 201
         contest = contest_response.json()
+
+        # Reserve escrow (stub) and activate contest so winner selection works
+        internal_h = {"x-internal-secret": INTERNAL_SECRET}
+        await c.post(
+            f"{PAYMENT_URL}/escrow/reserve",
+            json={"contest_id": contest["id"], "customer_id": contest["customer_id"], "amount": contest["prizepool"]},
+            headers=internal_h,
+        )
+        await c.patch(f"{CONTEST_URL}/contests/{contest['id']}/activate-internal", headers=internal_h)
 
         submission_response = await c.post(
             f"{CONTEST_URL}/submissions",
