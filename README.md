@@ -1,4 +1,4 @@
-z [jxe # devContest
+# devContest
 
 ## О проекте
 
