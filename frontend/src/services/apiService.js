@@ -117,13 +117,21 @@ export const deleteData = async (endpoint, config = {}) => {
 };
 
 export const downloadFileOrZip = async (endpoint, filename) => {
+  // Use fetch instead of axios to avoid axios injecting Content-Type: application/json
+  // on GET requests, which can cause CORS preflight failures with FileResponse.
+  let baseURL;
+  if (isUserEndpoint(endpoint)) baseURL = USER_API_URL;
+  else if (isPaymentEndpoint(endpoint)) baseURL = PAYMENT_API_URL;
+  else if (isEvalEndpoint(endpoint)) baseURL = EVAL_API_URL;
+  else baseURL = CONTEST_API_URL;
+
   try {
-    const response = await getClient(endpoint).get(endpoint, {
-      responseType: "blob",
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${baseURL}${endpoint}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    const blob = new Blob([response.data], {
-      type: response.headers["content-type"],
-    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
