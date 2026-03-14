@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     internal_secret: str
     ollama_url: str = "http://ollama:11434"
-    ollama_model: str = "llama3.1"
+    ollama_model: str = "llama3.2-vision"
     evaluation_stub: bool = True  # set EVALUATION_STUB=false to use real Ollama
 
     class Config:

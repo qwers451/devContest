@@ -69,6 +69,7 @@ export default class SolutionStore {
     this._searchForMySolutions = null;
     this.evaluation = null;      // AI evaluation result for current solution
     this.evaluationLoading = false;
+    this.evaluationUnavailable = false; // true after polling gives up
     this._page = 1;
     this._limit = 2;
     this._totalCount = 0;
@@ -110,10 +111,12 @@ export default class SolutionStore {
 
   setFreelancerId(id) {
     this._freelancerId = id;
+    this._lastFilterParams = null;
   }
 
   setContestId(id) {
     this._contestId = id;
+    this._lastFilterParams = null;
   }
 
   setLoading(bool) {
@@ -347,14 +350,32 @@ export default class SolutionStore {
   }
 
   async fetchEvaluation(submissionId) {
-    runInAction(() => { this.evaluationLoading = true; });
+    runInAction(() => { this.evaluationLoading = true; this.evaluationUnavailable = false; });
     try {
-      const res = await evalApi.get(`/evaluation/${submissionId}`);
+      const res = await evalApi.get(`/evaluation/${submissionId}`, { validateStatus: (s) => s === 200 || s === 404 });
+      if (res.status === 404) {
+        runInAction(() => { this.evaluation = null; });
+        return false;
+      }
       runInAction(() => { this.evaluation = res.data; });
+      return true; // found
     } catch {
       runInAction(() => { this.evaluation = null; });
+      return false; // network error
     } finally {
       runInAction(() => { this.evaluationLoading = false; });
     }
+  }
+
+  markEvaluationUnavailable() {
+    runInAction(() => { this.evaluationUnavailable = true; });
+  }
+
+  async triggerEvaluation(submissionId) {
+    await sendData(`/submissions/${submissionId}/evaluate`, {});
+    runInAction(() => {
+      this.evaluation = null;
+      this.evaluationUnavailable = false;
+    });
   }
 }

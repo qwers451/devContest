@@ -1,6 +1,6 @@
 import React, { useEffect, useContext, useState, useCallback } from 'react';
 import { Context } from '../main.jsx';
-import { sendData, updateData } from '../services/apiService.js';
+import { sendData, updateData, CONTEST_API_URL } from '../services/apiService.js';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
@@ -13,6 +13,7 @@ const CreateContest = () => {
     const location = useLocation();
     const contestData = location.state;
 
+    const [tzFile, setTzFile] = useState(null);
     const [files, setFiles] = useState([]);
     const [imagesMap, setImagesMap] = useState({});
     const [showPreview, setShowPreview] = useState(false);
@@ -64,6 +65,23 @@ const CreateContest = () => {
         try {
             const res = state ? await updateData(submitURL, data) : await sendData(submitURL, data);
             contest.resetForm();
+
+            // Upload TZ file if provided (overwrites tz_text extracted from file)
+            if (res.id && tzFile) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const formData = new FormData();
+                    formData.append('file', tzFile);
+                    await fetch(`${CONTEST_API_URL}/contests/${res.id}/tz-file`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: formData,
+                    });
+                } catch (e) {
+                    console.error('TZ file upload failed:', e);
+                }
+                setTzFile(null);
+            }
 
             if (!state && res.id && res.status === 'draft') {
                 // New contest created in draft — redirect to payment checkout
@@ -237,8 +255,30 @@ const CreateContest = () => {
                             onChange={e => contest.setFormField('tz_text', e.target.value)}
                             className={inputCls}
                         />
+                        <div className="mt-2 flex items-center gap-3">
+                            <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-xs font-medium text-gray-600 transition-colors">
+                                <span>📎</span>
+                                <span>{tzFile ? tzFile.name : 'Загрузить ТЗ (PDF / DOCX)'}</span>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.docx"
+                                    className="hidden"
+                                    onChange={e => setTzFile(e.target.files[0] || null)}
+                                />
+                            </label>
+                            {tzFile && (
+                                <button
+                                    type="button"
+                                    onClick={() => setTzFile(null)}
+                                    className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    ✕ убрать
+                                </button>
+                            )}
+                        </div>
                         <p className="text-xs text-gray-400 mt-1">
-                            Необязательно. Используется для автоматической оценки решений с помощью LLaMA.
+                            Необязательно. Текст или файл — используется для автоматической оценки решений с помощью LLaMA.
+                            {tzFile && <span className="text-violet-600 ml-1">Текст из файла заменит введённый текст ТЗ.</span>}
                         </p>
                     </div>
 

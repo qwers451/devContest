@@ -19,6 +19,7 @@ const SolutionPage = () => {
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [milestoneLoading, setMilestoneLoading] = useState(null);
   const [milestoneError, setMilestoneError] = useState('');
+  const [evalTriggering, setEvalTriggering] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,7 +52,7 @@ const SolutionPage = () => {
         }
 
         // Load AI evaluation (non-blocking — may return 404 if not yet evaluated)
-        await solution.fetchEvaluation(sol.id);
+        solution.fetchEvaluation(sol.id);
 
         const [execUser] = await Promise.all([
           user.fetchUserById(sol.executor_id),
@@ -67,6 +68,25 @@ const SolutionPage = () => {
     };
     fetchData();
   }, [number]);
+
+  // Poll for evaluation result every 6s (max 20 attempts ≈ 2 min)
+  // Must be before any conditional returns (Rules of Hooks)
+  const shouldHaveEvaluation = !!(currentContest?.tz_text && currentSolution?.description);
+  useEffect(() => {
+    if (!shouldHaveEvaluation || solution.evaluation || solution.evaluationUnavailable) return;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 20;
+    const intervalId = setInterval(async () => {
+      if (solution.evaluation) { clearInterval(intervalId); return; }
+      attempts++;
+      const found = await solution.fetchEvaluation(currentSolution.id);
+      if (found || attempts >= MAX_ATTEMPTS) {
+        clearInterval(intervalId);
+        if (!found) solution.markEvaluationUnavailable();
+      }
+    }, 6000);
+    return () => clearInterval(intervalId);
+  }, [shouldHaveEvaluation, currentSolution?.id]);
 
   if (error) {
     return (
@@ -256,14 +276,34 @@ const SolutionPage = () => {
             </div>
 
             {/* AI Evaluation section */}
-            {(solution.evaluation || solution.evaluationLoading) && (
+            {(solution.evaluation || solution.evaluationLoading || (shouldHaveEvaluation && !solution.evaluationUnavailable)) && (
               <>
                 <hr className="my-5 border-gray-100" />
-                <h3 className="text-base font-bold text-gray-800 mb-3">Автоматическая оценка ИИ</h3>
-                {solution.evaluationLoading ? (
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h3 className="text-base font-bold text-gray-800">Автоматическая оценка ИИ</h3>
+                  <button
+                    onClick={async () => {
+                      setEvalTriggering(true);
+                      try {
+                        await solution.triggerEvaluation(currentSolution.id);
+                      } catch { /* ignore */ } finally {
+                        setEvalTriggering(false);
+                      }
+                    }}
+                    disabled={evalTriggering || solution.evaluationLoading}
+                    title="Запустить оценку заново"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs text-gray-500 font-medium transition-colors"
+                  >
+                    {evalTriggering ? (
+                      <span className="w-3 h-3 rounded-full border-2 border-gray-300 border-t-gray-500 animate-spin" />
+                    ) : '↻'}
+                    Оценить
+                  </button>
+                </div>
+                {(solution.evaluationLoading || (!solution.evaluation && shouldHaveEvaluation)) ? (
                   <div className="flex items-center gap-2 text-sm text-gray-400">
                     <div className="w-4 h-4 rounded-full border-2 border-violet-200 border-t-violet-500 animate-spin" />
-                    Оценивается…
+                    {solution.evaluationLoading ? 'Загружается…' : 'Оценка в процессе, проверяем каждые 6 сек…'}
                   </div>
                 ) : solution.evaluation && (
                   <div className="space-y-3">

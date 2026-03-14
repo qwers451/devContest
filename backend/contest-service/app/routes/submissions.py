@@ -1,5 +1,7 @@
 import asyncio
+import base64
 import os
+import struct
 from datetime import date, datetime, time, timezone
 
 import aiofiles
@@ -18,6 +20,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients import get_user, trigger_evaluation
+from app.file_text import extract_file_text
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
 from app.models import Contest, Review, Submission
@@ -25,6 +28,18 @@ from app.models import Contest, Review, Submission
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
 UPLOAD_DIR = "/app/uploads"
+
+
+def _png_size(data: bytes) -> tuple[int, int] | None:
+    """Read width×height from PNG IHDR chunk (bytes 16-24). Returns None if not a valid PNG."""
+    try:
+        if data[:8] != b"\x89PNG\r\n\x1a\n":
+            return None
+        w = struct.unpack(">I", data[16:20])[0]
+        h = struct.unpack(">I", data[20:24])[0]
+        return w, h
+    except Exception:
+        return None
 
 
 def _parse_csv_ints(raw: str | None) -> list[int]:
@@ -103,7 +118,6 @@ class ReviewOut(BaseModel):
 @router.post("", response_model=SubmissionOut, status_code=201)
 async def create_submission(
     data: SubmissionCreate,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("executor")),
 ):
@@ -128,15 +142,6 @@ async def create_submission(
     db.add(submission)
     await db.commit()
     await db.refresh(submission)
-
-    if contest.tz_text and data.description:
-        background_tasks.add_task(
-            trigger_evaluation,
-            submission.id,
-            data.contest_id,
-            contest.tz_text,
-            data.description,
-        )
 
     return (await _enrich_submissions([submission], db))[0]
 
@@ -226,6 +231,75 @@ async def update_status(
     return (await _enrich_submissions([s], db))[0]
 
 
+@router.post("/{submission_id}/evaluate", status_code=202)
+async def retrigger_evaluation(
+    submission_id: int,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Manually re-trigger AI evaluation. Accessible by executor (owner), customer, or admin."""
+    result = await db.execute(select(Submission).where(Submission.id == submission_id))
+    s = result.scalar_one_or_none()
+    if not s:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    # Allow: submission owner, any customer/admin
+    if current_user["role"] == "executor" and s.executor_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    contest_result = await db.execute(select(Contest).where(Contest.id == s.contest_id))
+    contest = contest_result.scalar_one_or_none()
+    if not contest or not contest.tz_text:
+        raise HTTPException(status_code=422, detail="Contest has no TZ text")
+    if not s.description and not s.files:
+        raise HTTPException(status_code=422, detail="Submission has no description or files")
+
+    # Read files: PNG → images, PDF/DOCX → extracted text
+    images_b64 = []
+    image_meta = []
+    doc_texts = []
+    if s.files:
+        for fname in s.files:
+            path = f"{UPLOAD_DIR}/{submission_id}/{fname}"
+            try:
+                async with aiofiles.open(path, "rb") as f:
+                    data = await f.read()
+                if fname.lower().endswith(".png"):
+                    images_b64.append(base64.b64encode(data).decode())
+                    size = _png_size(data)
+                    image_meta.append({
+                        "filename": fname,
+                        "size_bytes": len(data),
+                        "width": size[0] if size else None,
+                        "height": size[1] if size else None,
+                    })
+                else:
+                    text = extract_file_text(fname, data)
+                    if text:
+                        doc_texts.append(f"[{fname}]\n{text}")
+            except OSError:
+                pass
+
+    submission_text = s.description or ""
+    if doc_texts:
+        submission_text += "\n\n--- Прикреплённые документы ---\n" + "\n\n".join(doc_texts)
+
+    if not submission_text.strip():
+        raise HTTPException(status_code=422, detail="No evaluable content in submission")
+
+    background_tasks.add_task(
+        trigger_evaluation,
+        s.id,
+        s.contest_id,
+        contest.tz_text,
+        submission_text,
+        images_b64 or None,
+        image_meta or None,
+    )
+    return {"detail": "Evaluation started"}
+
+
 @router.delete("/{submission_id}", status_code=204)
 async def delete_submission(
     submission_id: int,
@@ -274,6 +348,7 @@ async def upload_files(
     s.files = saved
     await db.commit()
     await db.refresh(s)
+
     return (await _enrich_submissions([s], db))[0]
 
 

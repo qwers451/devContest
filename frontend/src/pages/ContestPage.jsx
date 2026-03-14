@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Context } from '../main.jsx';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
-import { downloadFileOrZip, deleteData } from '../services/apiService.js';
+import { downloadFileOrZip, deleteData, sendData } from '../services/apiService.js';
 
 const statusConfig = {
     active:    { label: 'Активный',    cls: 'bg-emerald-100 text-emerald-700' },
@@ -20,6 +20,7 @@ const ContestPage = () => {
     const [editingStages, setEditingStages] = useState(false);
     const [draftStages, setDraftStages] = useState([]);
     const [savingStages, setSavingStages] = useState(false);
+    const [uploadingTz, setUploadingTz] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -58,6 +59,23 @@ const ContestPage = () => {
     const isOwner = user.getCurrentUserId() === currentContest.customer_id;
     const isFreelancer = user.user && user.user.role === 'executor';
     const isFinished = currentContest.status === 'finished';
+
+    const handleTzFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingTz(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const updated = await sendData(`/contests/${currentContest.id}/tz-file`, formData, true);
+            setCurrentContest(updated);
+        } catch (err) {
+            alert(err?.response?.data?.detail || 'Не удалось загрузить файл ТЗ');
+        } finally {
+            setUploadingTz(false);
+            e.target.value = '';
+        }
+    };
 
     const handleDelete = async () => {
         if (!window.confirm('Вы точно хотите удалить этот конкурс?')) return;
@@ -205,13 +223,25 @@ const ContestPage = () => {
                         </div>
 
                         {/* Technical specification */}
-                        {currentContest.tz_text && (
+                        {(currentContest.tz_text || (isOwner || isAdmin)) && (
                             <>
                                 <hr className="my-5 border-gray-100" />
-                                <h3 className="text-base font-bold text-gray-800 mb-2">Техническое задание</h3>
-                                <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    {currentContest.tz_text}
-                                </pre>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-base font-bold text-gray-800">Техническое задание</h3>
+                                    {(isOwner || isAdmin) && !isFinished && (
+                                        <label className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 font-medium transition-colors cursor-pointer ${uploadingTz ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            {uploadingTz ? 'Загрузка...' : '↑ PDF / DOCX'}
+                                            <input type="file" accept=".pdf,.docx" className="hidden" onChange={handleTzFileUpload} />
+                                        </label>
+                                    )}
+                                </div>
+                                {currentContest.tz_text ? (
+                                    <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        {currentContest.tz_text}
+                                    </pre>
+                                ) : (
+                                    <p className="text-sm text-gray-400 italic">Техническое задание не заполнено. Загрузите PDF или DOCX.</p>
+                                )}
                             </>
                         )}
 

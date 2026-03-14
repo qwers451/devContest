@@ -51,10 +51,15 @@ async def check_escrow_held(contest_id: int) -> bool:
 
 
 async def trigger_evaluation(
-    submission_id: int, contest_id: int, tz_text: str, submission_text: str
+    submission_id: int,
+    contest_id: int,
+    tz_text: str,
+    submission_text: str,
+    images: list[str] | None = None,
+    image_meta: list[dict] | None = None,
 ) -> dict | None:
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=660.0) as client:
             resp = await client.post(
                 f"{settings.evaluation_service_url}/evaluation/evaluate",
                 json={
@@ -62,6 +67,8 @@ async def trigger_evaluation(
                     "contest_id": contest_id,
                     "tz_text": tz_text,
                     "submission_text": submission_text,
+                    "images": images or [],
+                    "image_meta": image_meta or [],
                 },
                 headers={"x-internal-secret": settings.internal_secret},
             )

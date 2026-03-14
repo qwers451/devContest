@@ -143,7 +143,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2-vision}
       EVALUATION_STUB: ${EVALUATION_STUB:-true}
     extra_hosts:
       - "host.docker.internal:host-gateway"

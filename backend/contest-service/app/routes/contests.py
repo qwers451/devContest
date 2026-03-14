@@ -1,12 +1,13 @@
 from datetime import date, datetime, time, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import String, and_, case, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.clients import check_escrow_held, release_escrow, release_stage_escrow
+from app.file_text import extract_file_text
 from app.database import get_db
 from app.dependencies import get_current_user, require_role, verify_internal
 from app.models import Contest, ContestStage, ContestStatus, Submission, Winner
@@ -356,6 +357,38 @@ async def get_contest(contest_id: int, db: AsyncSession = Depends(get_db)):
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
+    return contest
+
+
+@router.post("/{contest_id}/tz-file", response_model=ContestOut)
+async def upload_tz_file(
+    contest_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Upload a PDF or DOCX file as the contest TZ. Extracts text and saves to tz_text."""
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    if current_user["role"] not in ("admin",) and contest.customer_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    fname = file.filename or "file"
+    if not (fname.lower().endswith(".pdf") or fname.lower().endswith(".docx")):
+        raise HTTPException(status_code=422, detail="Only PDF and DOCX files are supported")
+
+    data = await file.read()
+    text = extract_file_text(fname, data)
+    if not text:
+        raise HTTPException(status_code=422, detail="Could not extract text from file")
+
+    contest.tz_text = text
+    await db.commit()
+    await db.refresh(contest)
     return contest
 
 

@@ -5,10 +5,17 @@ from pydantic import BaseModel
 from datetime import datetime
 from app.database import get_db
 from app.models import EvaluationResult
-from app.ollama_client import extract_requirements, evaluate_submission
+from app.ollama_client import evaluate_submission
 from app.dependencies import verify_internal, get_current_user
 
 router = APIRouter(prefix="/evaluation", tags=["evaluation"])
+
+
+class ImageMeta(BaseModel):
+    filename: str
+    size_bytes: int | None = None
+    width: int | None = None
+    height: int | None = None
 
 
 class EvaluateRequest(BaseModel):
@@ -16,6 +23,8 @@ class EvaluateRequest(BaseModel):
     contest_id: int
     tz_text: str
     submission_text: str
+    images: list[str] = []  # base64-encoded PNG images
+    image_meta: list[ImageMeta] = []
 
 
 class EvaluationOut(BaseModel):
@@ -35,22 +44,34 @@ async def evaluate(data: EvaluateRequest, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(
         select(EvaluationResult).where(EvaluationResult.submission_id == data.submission_id)
     )
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Evaluation already exists")
+    record = existing.scalar_one_or_none()
 
-    requirements = await extract_requirements(data.tz_text)
-    result_data = await evaluate_submission(requirements, data.submission_text)
-
-    record = EvaluationResult(
-        submission_id=data.submission_id,
-        contest_id=data.contest_id,
-        compliance_score=result_data.get("compliance_score", 0),
-        passed_requirements=result_data.get("passed_requirements", []),
-        failed_requirements=result_data.get("failed_requirements", []),
-        critical_issues=result_data.get("critical_issues", False),
-        raw_llm_response=str(result_data),
+    result_data = await evaluate_submission(
+        data.tz_text,
+        data.submission_text,
+        images=data.images if data.images else None,
+        image_meta=[m.model_dump() for m in data.image_meta] if data.image_meta else None,
     )
-    db.add(record)
+
+    if record:
+        # Upsert: re-evaluate when files are uploaded after initial text-only pass
+        record.compliance_score = result_data.get("compliance_score", 0)
+        record.passed_requirements = result_data.get("passed_requirements", [])
+        record.failed_requirements = result_data.get("failed_requirements", [])
+        record.critical_issues = result_data.get("critical_issues", False)
+        record.raw_llm_response = str(result_data)
+    else:
+        record = EvaluationResult(
+            submission_id=data.submission_id,
+            contest_id=data.contest_id,
+            compliance_score=result_data.get("compliance_score", 0),
+            passed_requirements=result_data.get("passed_requirements", []),
+            failed_requirements=result_data.get("failed_requirements", []),
+            critical_issues=result_data.get("critical_issues", False),
+            raw_llm_response=str(result_data),
+        )
+        db.add(record)
+
     await db.commit()
     await db.refresh(record)
     return record
