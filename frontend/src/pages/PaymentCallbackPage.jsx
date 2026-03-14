@@ -18,7 +18,8 @@ const PaymentCallbackPage = () => {
     const [status, setStatus]   = useState('pending');
     const [message, setMessage] = useState('Проверяем статус платежа…');
     const [contestNum, setContestNum] = useState(null);
-    const pollRef = useRef(null);
+    const pollRef   = useRef(null);
+    const pollCount = useRef(0);
 
     useEffect(() => {
         if (!contestId) {
@@ -30,12 +31,20 @@ const PaymentCallbackPage = () => {
         // Immediate check
         checkStatus();
 
-        // Poll every 2 sec
+        // Poll every 2 sec, give up after 30 attempts (~60 sec)
         pollRef.current = setInterval(checkStatus, 2000);
         return () => clearInterval(pollRef.current);
     }, [contestId]);
 
     const checkStatus = async () => {
+        pollCount.current += 1;
+        if (pollCount.current > 30) {
+            clearInterval(pollRef.current);
+            setStatus('failed');
+            setMessage('Платёж не подтверждён за 60 секунд. Возможно, вы закрыли страницу оплаты. Попробуйте ещё раз.');
+            return;
+        }
+
         const data = await payment.fetchPaymentStatus(contestId);
         if (!data) return;
 

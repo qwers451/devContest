@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
     --color-primary: #7c3aed;
     --color-primary-dark: #6d28d9;
@@ -359,6 +361,72 @@ path {
 }
 .dark .prose a {
     color: #a78bfa;
+}
+
+/* Status/info colour blocks in dark */
+.dark .bg-blue-50 {
+    background-color: rgba(96, 165, 250, 0.08);
+}
+.dark .border-blue-100 {
+    border-color: rgba(96, 165, 250, 0.2);
+}
+.dark .text-blue-700 {
+    color: #93c5fd;
+}
+.dark .text-blue-600 {
+    color: #60a5fa;
+}
+.dark .bg-emerald-50 {
+    background-color: rgba(52, 211, 153, 0.08);
+}
+.dark .border-emerald-200 {
+    border-color: rgba(52, 211, 153, 0.25);
+}
+.dark .text-emerald-700 {
+    color: #6ee7b7;
+}
+.dark .text-emerald-600 {
+    color: #34d399;
+}
+.dark .bg-emerald-100 {
+    background-color: rgba(52, 211, 153, 0.14);
+}
+.dark .text-emerald-100 {
+    color: rgba(52, 211, 153, 0.9);
+}
+.dark .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.08);
+}
+.dark .border-red-200 {
+    border-color: rgba(239, 68, 68, 0.25);
+}
+.dark .text-red-600 {
+    color: #fca5a5;
+}
+.dark .text-red-500 {
+    color: #f87171;
+}
+.dark .bg-yellow-100 {
+    background-color: rgba(251, 191, 36, 0.1);
+}
+.dark .text-yellow-700 {
+    color: #fcd34d;
+}
+.dark .bg-violet-100 {
+    background-color: rgba(167, 139, 250, 0.12);
+}
+.dark .text-violet-700 {
+    color: #c4b5fd;
+}
+.dark .bg-violet-600,
+.dark .hover\:bg-violet-700:hover {
+    background-color: #7c3aed;
+}
+.dark .shadow-2xl {
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.7);
+}
+.dark .shadow-lg {
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
 }
 
 /* Scrollbar dark */

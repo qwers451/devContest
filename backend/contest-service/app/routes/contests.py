@@ -205,6 +205,55 @@ async def create_contest(
     return result.scalar_one()
 
 
+class ContestUpdate(BaseModel):
+    title: str | None = None
+    annotation: str | None = None
+    description: str | None = None
+    tz_text: str | None = None
+    prizepool: int | None = None
+    ends_at: datetime | None = None
+    type_id: int | None = None
+
+
+@router.put("/{contest_id}", response_model=ContestOut)
+async def update_contest(
+    contest_id: int,
+    data: ContestUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    if contest.customer_id != current_user["id"] and current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not your contest")
+
+    for field, value in data.model_dump(exclude_none=True).items():
+        setattr(contest, field, value)
+
+    await db.commit()
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    return result.scalar_one()
+
+
+@router.patch("/{contest_id}/cancel-internal", dependencies=[Depends(verify_internal)])
+async def cancel_contest_internal(
+    contest_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Contest).where(Contest.id == contest_id))
+    contest = result.scalar_one_or_none()
+    if contest:
+        contest.status = ContestStatus.cancelled
+        await db.commit()
+    return {"status": "cancelled", "contest_id": contest_id}
+
+
 @router.patch("/{contest_id}/activate")
 async def activate_contest(
     contest_id: int,

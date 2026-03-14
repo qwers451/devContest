@@ -110,6 +110,17 @@ async def _yk_create_refund(yk_payment_id: str, amount: float) -> dict:
     return result.dict() if hasattr(result, "dict") else dict(result)
 
 
+async def _notify_contest_service_cancel(contest_id: int) -> None:
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.patch(
+                f"{settings.contest_service_url}/contests/{contest_id}/cancel-internal",
+                headers={"x-internal-secret": settings.internal_secret},
+            )
+    except Exception as e:
+        print(f"[payment-service] Failed to cancel contest: {e}")
+
+
 async def _notify_contest_service_activate(contest_id: int) -> None:
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -300,7 +311,9 @@ async def get_payment(
     _: dict = Depends(get_current_user),
 ):
     """Poll contest payment status. When YooKassa is configured, re-fetches live status."""
-    result = await db.execute(select(Payment).where(Payment.contest_id == contest_id))
+    result = await db.execute(
+        select(Payment).where(Payment.contest_id == contest_id).with_for_update()
+    )
     payment = result.scalar_one_or_none()
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -466,6 +479,8 @@ async def refund_payment(
     db.add(tx)
     await db.commit()
     await db.refresh(payment)
+    # Cancel the contest so it disappears from active listings
+    await _notify_contest_service_cancel(contest_id)
     return payment
 
 

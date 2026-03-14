@@ -125,7 +125,7 @@ const NavBar = observer(() => {
   };
 
   const linkClass = ({ isActive }) =>
-    `text-sm font-medium transition-colors duration-150 ${isActive ? "text-violet-600" : "text-gray-600 hover:text-violet-600"}`;
+    `text-sm font-medium transition-colors duration-150 ${isActive ? "text-violet-600 dark:text-violet-400" : "text-gray-600 hover:text-violet-600 dark:text-gray-300 dark:hover:text-violet-400"}`;
 
   const links = () => {
     if (!user.isAuth) return null;
@@ -164,23 +164,7 @@ const NavBar = observer(() => {
             >
               Добавить конкурс
             </NavLink>
-            <NavLink
-              to={WALLET_ROUTE}
-              className={linkClass}
-              onClick={() => setOpen(false)}
-            >
-              Кошелёк
-            </NavLink>
           </>
-        )}
-        {role === "executor" && (
-          <NavLink
-            to={WALLET_ROUTE}
-            className={linkClass}
-            onClick={() => setOpen(false)}
-          >
-            Кошелёк
-          </NavLink>
         )}
         {role === "admin" && (
           <NavLink
@@ -196,12 +180,12 @@ const NavBar = observer(() => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-white border-b border-gray-200">
+    <nav className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
         <button
           onClick={() => navigate(CONTESTS_ROUTE)}
-          className="flex items-center gap-2 font-black text-lg tracking-tight text-gray-900 hover:text-violet-700 transition-colors"
+          className="flex items-center gap-2 font-black text-lg tracking-tight text-gray-900 dark:text-white hover:text-violet-700 dark:hover:text-violet-400 transition-colors"
         >
           <img src="/logo.svg" alt="logo" className="w-7 h-7" />
           devContest
@@ -215,28 +199,38 @@ const NavBar = observer(() => {
           <button
             ref={desktopThemeButtonRef}
             onClick={toggleTheme}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-all"
             title={isDark ? "Светлая тема" : "Тёмная тема"}
           >
             {isDark ? <SunIcon /> : <MoonIcon />}
           </button>
           {user.isAuth ? (
             <>
-              <span className="text-xs font-mono font-semibold text-violet-700 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-lg">
-                {Number(payment.balance).toLocaleString("ru-RU")} ₽
-              </span>
+              <NavLink
+                to={WALLET_ROUTE}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900 transition-colors group"
+                title="Кошелёк"
+              >
+                <svg className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="3" />
+                  <path d="M16 12a2 2 0 0 1 0 4h-2v-4h2z" />
+                </svg>
+                <span className="text-sm font-bold text-violet-700 dark:text-violet-300 tabular-nums">
+                  {Number(payment.balance).toLocaleString("ru-RU")} ₽
+                </span>
+              </NavLink>
               <button
                 onClick={() => navigate(PROFILE_ROUTE)}
-                className="text-sm font-semibold text-gray-700 hover:text-violet-600 transition-colors flex items-center gap-1.5"
+                className="text-sm font-semibold text-gray-700 dark:text-gray-200 hover:text-violet-600 dark:hover:text-violet-400 transition-colors flex items-center gap-1.5"
               >
-                <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-black">
+                <span className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 flex items-center justify-center text-xs font-black">
                   {user.user?.login?.[0]?.toUpperCase()}
                 </span>
                 {user.user?.login}
               </button>
               <button
                 onClick={logOut}
-                className="px-3.5 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-all font-medium"
+                className="px-3.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-medium"
               >
                 Выйти
               </button>
@@ -253,7 +247,7 @@ const NavBar = observer(() => {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+          className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           onClick={() => setOpen((o) => !o)}
         >
           <div
@@ -270,12 +264,25 @@ const NavBar = observer(() => {
 
       {/* Mobile menu */}
       {open && (
-        <div className="md:hidden border-t border-gray-100 bg-white animate-slide-down px-4 py-3 flex flex-col gap-3">
+        <div className="md:hidden border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 animate-slide-down px-4 py-3 flex flex-col gap-3">
           {links()}
+          {user.isAuth && (
+            <NavLink
+              to={WALLET_ROUTE}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 text-sm font-bold text-violet-700 dark:text-violet-300"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="3" />
+                <path d="M16 12a2 2 0 0 1 0 4h-2v-4h2z" />
+              </svg>
+              {Number(payment.balance).toLocaleString("ru-RU")} ₽
+            </NavLink>
+          )}
           <button
             ref={mobileThemeButtonRef}
             onClick={toggleTheme}
-            className="flex items-center gap-2 text-sm text-gray-600 text-left"
+            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 text-left"
           >
             {isDark ? <SunIcon /> : <MoonIcon />}
             {isDark ? "Светлая тема" : "Тёмная тема"}
@@ -287,7 +294,7 @@ const NavBar = observer(() => {
                   navigate(PROFILE_ROUTE);
                   setOpen(false);
                 }}
-                className="text-sm text-gray-600 text-left"
+                className="text-sm text-gray-600 dark:text-gray-300 text-left"
               >
                 {user.user?.login}
               </button>

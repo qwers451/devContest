@@ -212,6 +212,61 @@ async def topup_wallet(
     }
 
 
+@router.post("/topup/{payment_id}/refund")
+async def refund_wallet_topup(
+    payment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Refund a wallet top-up payment. Debits wallet balance, returns funds via YooKassa or stub."""
+    result = await db.execute(
+        select(Payment).where(
+            Payment.id == payment_id,
+            Payment.payment_type == PaymentType.wallet_topup,
+        )
+    )
+    payment = result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Wallet topup payment not found")
+    if payment.wallet_user_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not your payment")
+    if payment.status != PaymentStatus.held:
+        raise HTTPException(status_code=409, detail=f"Cannot refund payment in status '{payment.status}'")
+
+    # Debit wallet (raises 400 if insufficient balance)
+    await debit_wallet(
+        current_user["id"],
+        float(payment.amount),
+        WalletTxType.withdrawal,
+        "Возврат пополнения кошелька",
+        payment.id,
+        db,
+    )
+
+    yk_id = payment.yookassa_payment_id or ""
+    if _yk_configured() and yk_id and not yk_id.startswith("wallet_stub_"):
+        try:
+            import asyncio
+            from yookassa import Configuration
+            from yookassa import Refund as YKRefund
+            Configuration.account_id = settings.yookassa_shop_id
+            Configuration.secret_key = settings.yookassa_secret_key
+            payload = {
+                "payment_id": yk_id,
+                "amount": {"value": f"{float(payment.amount):.2f}", "currency": "RUB"},
+            }
+            import uuid as _uuid
+            await asyncio.to_thread(YKRefund.create, payload, str(_uuid.uuid4()))
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"YooKassa refund error: {e}")
+
+    payment.status = PaymentStatus.refunded
+    payment.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(payment)
+    return {"payment_id": payment.id, "status": payment.status, "amount": float(payment.amount)}
+
+
 @router.post("/internal/credit", dependencies=[Depends(verify_internal)])
 async def internal_credit_wallet(
     data: InternalCreditRequest,
@@ -301,6 +356,30 @@ async def withdraw_from_wallet(
     return payout
 
 
+class InternalCreditRequest(BaseModel):
+    user_id: int
+    amount: float
+    description: str = "Internal credit"
+
+
+@router.post("/internal/credit")
+async def internal_credit_wallet(
+    data: InternalCreditRequest,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(verify_internal),
+):
+    """Internal endpoint: directly credit a user's wallet. Used by seed and admin tools."""
+    wallet = await credit_wallet(
+        data.user_id,
+        data.amount,
+        WalletTxType.topup,
+        data.description,
+        None,
+        db,
+    )
+    return {"user_id": data.user_id, "balance": float(wallet.balance)}
+
+
 @router.get("/payment/{payment_id}")
 async def get_wallet_payment_status(
     payment_id: int,
@@ -309,11 +388,13 @@ async def get_wallet_payment_status(
 ):
     """Poll the status of a wallet top-up payment after returning from YooKassa."""
     result = await db.execute(
-        select(Payment).where(
+        select(Payment)
+        .where(
             Payment.id == payment_id,
             Payment.payment_type == PaymentType.wallet_topup,
             Payment.customer_id == current_user["id"],
         )
+        .with_for_update()
     )
     payment = result.scalar_one_or_none()
     if not payment:
@@ -326,6 +407,20 @@ async def get_wallet_payment_status(
         and payment.yookassa_payment_id
     ):
         yk_status = await _yk_verify_payment(payment.yookassa_payment_id)
+        if yk_status == "waiting_for_capture":
+            try:
+                from yookassa import Configuration
+                from yookassa import Payment as YKPayment
+
+                Configuration.account_id = settings.yookassa_shop_id
+                Configuration.secret_key = settings.yookassa_secret_key
+                await asyncio.to_thread(
+                    YKPayment.capture,
+                    payment.yookassa_payment_id,
+                    {"amount": {"value": f"{float(payment.amount):.2f}", "currency": "RUB"}},
+                )
+            except Exception as e:
+                print(f"[wallet] YooKassa capture failed: {e}")
         if yk_status in ("waiting_for_capture", "succeeded"):
             await _confirm_wallet_topup(payment.id, db)
             await db.refresh(payment)

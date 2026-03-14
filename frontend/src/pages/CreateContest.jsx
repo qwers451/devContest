@@ -1,6 +1,6 @@
 import React, { useEffect, useContext, useState, useCallback } from 'react';
 import { Context } from '../main.jsx';
-import { sendData } from '../services/apiService.js';
+import { sendData, updateData } from '../services/apiService.js';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
@@ -62,7 +62,7 @@ const CreateContest = () => {
         };
 
         try {
-            const res = await sendData(submitURL, data);
+            const res = state ? await updateData(submitURL, data) : await sendData(submitURL, data);
             contest.resetForm();
 
             if (!state && res.id && res.status === 'draft') {

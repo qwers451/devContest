@@ -8,6 +8,7 @@ const STATUS_LABELS = {
     held:     { label: 'Оплачено',    cls: 'bg-emerald-100 text-emerald-700' },
     released: { label: 'Выполнено',   cls: 'bg-violet-100 text-violet-700' },
     failed:   { label: 'Ошибка',      cls: 'bg-red-100 text-red-600' },
+    refunded: { label: 'Возвращено',  cls: 'bg-gray-100 text-gray-600' },
 };
 
 const TX_LABELS = {
@@ -45,7 +46,8 @@ const WalletPage = () => {
     const [topupError, setTopupError] = useState('');
     const [topupSuccess, setTopupSuccess] = useState('');
     const [topupPollStatus, setTopupPollStatus] = useState(returningFromYK ? 'polling' : null);
-    const pollRef = useRef(null);
+    const pollRef   = useRef(null);
+    const pollCount = useRef(0);
 
     const [withdrawForm, setWithdrawForm] = useState({ amount: '', card_number: '' });
     const [withdrawing, setWithdrawing] = useState(false);
@@ -56,11 +58,25 @@ const WalletPage = () => {
     const [refundError, setRefundError] = useState('');
     const [refundSuccess, setRefundSuccess] = useState('');
 
-    // Poll after YooKassa wallet topup callback
+    const [topupRefundingId, setTopupRefundingId] = useState(null);
+    const [topupRefundError, setTopupRefundError] = useState('');
+    const [topupRefundSuccess, setTopupRefundSuccess] = useState('');
+
+    // Poll after YooKassa wallet topup callback, give up after 30 attempts (~60 sec)
     useEffect(() => {
         if (!returningFromYK || !returnPaymentId) return;
 
         const poll = async () => {
+            pollCount.current += 1;
+            if (pollCount.current > 30) {
+                clearInterval(pollRef.current);
+                sessionStorage.removeItem('wallet_topup_payment_id');
+                setTopupPollStatus('failed');
+                setTopupError('Платёж не подтверждён за 60 секунд. Возможно, вы закрыли страницу оплаты. Попробуйте ещё раз.');
+                setSearchParams({});
+                return;
+            }
+
             const data = await payment.fetchWalletPaymentStatus(returnPaymentId);
             if (!data) return;
             if (data.status === 'held') {
@@ -70,7 +86,6 @@ const WalletPage = () => {
                 setTopupSuccess(`Кошелёк пополнен на ${Number(data.amount).toLocaleString('ru-RU')} ₽`);
                 await payment.fetchBalance();
                 await payment.fetchWalletTransactions();
-                // Clean URL params
                 setSearchParams({});
             } else if (data.status === 'failed') {
                 clearInterval(pollRef.current);
@@ -122,6 +137,23 @@ const WalletPage = () => {
         }
     };
 
+    const handleTopupRefund = async (paymentId) => {
+        if (!window.confirm('Вернуть пополнение? Сумма будет списана с баланса.')) return;
+        setTopupRefundingId(paymentId);
+        setTopupRefundError('');
+        setTopupRefundSuccess('');
+        try {
+            await payment.refundWalletTopup(paymentId);
+            setTopupRefundSuccess('Возврат пополнения выполнен');
+            await payment.fetchBalance();
+            await payment.fetchWalletTransactions();
+        } catch {
+            setTopupRefundError(payment.error || 'Ошибка при возврате');
+        } finally {
+            setTopupRefundingId(null);
+        }
+    };
+
     const handleRefund = async (contest_id) => {
         if (!window.confirm('Вернуть средства за этот конкурс?')) return;
         setRefundingId(contest_id);
@@ -130,8 +162,11 @@ const WalletPage = () => {
         try {
             await payment.refundPayment(contest_id);
             setRefundSuccess('Возврат выполнен успешно');
-            await payment.fetchBalance();
-            await payment.fetchWalletTransactions();
+            await Promise.all([
+                payment.fetchBalance(),
+                payment.fetchWalletTransactions(),
+                payment.fetchHistory(),
+            ]);
         } catch {
             setRefundError(payment.error || 'Ошибка при возврате');
         } finally {
@@ -265,6 +300,16 @@ const WalletPage = () => {
                 {/* Wallet transactions */}
                 {tab === 'transactions' && (
                     <div>
+                        {topupRefundSuccess && (
+                            <div className="mb-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+                                {topupRefundSuccess}
+                            </div>
+                        )}
+                        {topupRefundError && (
+                            <div className="mb-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                                {topupRefundError}
+                            </div>
+                        )}
                         {payment.loading ? (
                             <div className="flex justify-center py-10">
                                 <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
@@ -273,15 +318,25 @@ const WalletPage = () => {
                             <div className="text-center py-10 text-gray-400">Операций пока нет</div>
                         ) : (
                             <div className="space-y-2">
-                                {payment.walletTransactions.map(tx => {
-                                    const cfg = TX_LABELS[tx.tx_type] || TX_LABELS.topup;
+                                {(() => {
+                                    const refundedIds = new Set(
+                                        payment.walletTransactions
+                                            .filter(tx => tx.tx_type === 'withdrawal' && tx.reference_id)
+                                            .map(tx => tx.reference_id)
+                                    );
+                                    return payment.walletTransactions.map(tx => {
+                                    const isRefundEntry = tx.tx_type === 'withdrawal' && tx.reference_id && tx.description?.includes('Возврат');
+                                    const cfg = isRefundEntry
+                                        ? { label: 'Возврат', cls: 'text-gray-500' }
+                                        : (TX_LABELS[tx.tx_type] || TX_LABELS.topup);
                                     const isCredit = tx.amount > 0;
+                                    const canRefund = tx.tx_type === 'topup' && isCredit && tx.reference_id && !refundedIds.has(tx.reference_id);
                                     return (
-                                        <div key={tx.id} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between">
-                                            <div>
+                                        <div key={tx.id} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
                                                 <div className="text-sm font-semibold text-gray-800">{cfg.label}</div>
                                                 {tx.description && (
-                                                    <div className="text-xs text-gray-400 mt-0.5">{tx.description}</div>
+                                                    <div className="text-xs text-gray-400 mt-0.5 truncate">{tx.description}</div>
                                                 )}
                                                 <div className="text-xs text-gray-400">
                                                     {new Date(tx.created_at).toLocaleDateString('ru-RU', {
@@ -289,12 +344,24 @@ const WalletPage = () => {
                                                     })}
                                                 </div>
                                             </div>
-                                            <div className={`text-base font-bold ${isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
-                                                {isCredit ? '+' : ''}{Number(tx.amount).toLocaleString('ru-RU')} ₽
+                                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                                <div className={`text-base font-bold ${isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                    {isCredit ? '+' : ''}{Number(tx.amount).toLocaleString('ru-RU')} ₽
+                                                </div>
+                                                {canRefund && (
+                                                    <button
+                                                        onClick={() => handleTopupRefund(tx.reference_id)}
+                                                        disabled={topupRefundingId === tx.reference_id}
+                                                        className="text-xs px-2.5 py-0.5 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                    >
+                                                        {topupRefundingId === tx.reference_id ? 'Возврат…' : 'Вернуть'}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     );
-                                })}
+                                });
+                                })()}
                             </div>
                         )}
                     </div>
@@ -395,14 +462,14 @@ const WalletPage = () => {
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="5555555555554477 (тестовая карта)"
+                                    placeholder="Номер карты (необязательно)"
                                     value={withdrawForm.card_number}
                                     onChange={e => setWithdrawForm(f => ({ ...f, card_number: e.target.value }))}
                                     className={inputCls}
-                                    maxLength={16}
+                                    maxLength={19}
                                 />
                                 <p className="text-xs text-gray-400 mt-1">
-                                    В тестовом режиме: <code className="bg-gray-100 px-1 rounded">5555555555554477</code>
+                                    Без номера карты — средства списываются с баланса без перевода.
                                 </p>
                             </div>
                             <button
@@ -413,11 +480,6 @@ const WalletPage = () => {
                                 {withdrawing ? 'Отправка…' : 'Вывести средства'}
                             </button>
                         </form>
-
-                        <div className="mt-4 p-3 bg-blue-50 rounded-xl text-xs text-blue-700">
-                            <strong>Тестовый режим YooKassa</strong><br />
-                            Выплаты работают в тестовой среде. Средства списываются с вашего баланса.
-                        </div>
                     </div>
                 )}
 

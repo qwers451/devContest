@@ -26,7 +26,8 @@ const PaymentCheckoutPage = () => {
     const [error, setError]             = useState(null);
     const [contestNum, setContestNum]   = useState(null);
     const [balanceLoaded, setBalanceLoaded] = useState(false);
-    const pollRef = useRef(null);
+    const pollRef   = useRef(null);
+    const pollCount = useRef(0);
 
     // Load balance to decide which options to show
     useEffect(() => {
@@ -35,11 +36,19 @@ const PaymentCheckoutPage = () => {
         return () => clearInterval(pollRef.current);
     }, [contestId, amount]);
 
-    // Poll status every 3s after YooKassa redirect
+    // Poll status every 3s after YooKassa redirect, give up after 20 attempts (~60 sec)
     useEffect(() => {
         if (method !== 'card' || status === 'held' || status === 'failed') return;
 
         pollRef.current = setInterval(async () => {
+            pollCount.current += 1;
+            if (pollCount.current > 20) {
+                clearInterval(pollRef.current);
+                setStatus('failed');
+                setError('Платёж не подтверждён за 60 секунд. Возможно, вы закрыли страницу оплаты. Попробуйте ещё раз.');
+                return;
+            }
+
             const data = await payment.fetchPaymentStatus(contestId);
             if (data) {
                 setStatus(data.status);

@@ -174,6 +174,22 @@ export default class PaymentStore {
         }
     }
 
+    async refundWalletTopup(payment_id) {
+        this.loading = true;
+        this.error = null;
+        try {
+            const res = await paymentApi.post(`/wallet/topup/${payment_id}/refund`);
+            return res.data;
+        } catch (e) {
+            runInAction(() => {
+                this.error = e.response?.data?.detail || 'Ошибка при возврате пополнения';
+            });
+            throw e;
+        } finally {
+            runInAction(() => { this.loading = false; });
+        }
+    }
+
     async refundPayment(contest_id) {
         this.loading = true;
         this.error = null;
