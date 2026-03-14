@@ -56,6 +56,7 @@ async def wait_for_service(base_url: str) -> None:
 async def wait_for_stack():
     await wait_for_service(USER_URL)
     await wait_for_service(CONTEST_URL)
+    await wait_for_service(PAYMENT_URL)
 
 
 # ── Token fixtures ────────────────────────────────────────────────────────────
@@ -67,7 +68,19 @@ async def admin_token():
         r = await c.post(
             f"{USER_URL}/auth/login", json={"login": "admin", "password": "admin123"}
         )
-        assert r.status_code == 200, f"Admin login failed: {r.text}"
+        if r.status_code == 200:
+            return r.json()["access_token"]
+        # Fresh DB — register admin (works when no admin exists yet)
+        r = await c.post(
+            f"{USER_URL}/auth/register",
+            json={
+                "login": "admin",
+                "email": "admin@devcontest.local",
+                "password": "admin123",
+                "role": "admin",
+            },
+        )
+        assert r.status_code in (200, 201), f"Admin setup failed: {r.text}"
         return r.json()["access_token"]
 
 
