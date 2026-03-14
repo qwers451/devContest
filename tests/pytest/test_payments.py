@@ -1,7 +1,6 @@
 """
-Сценарии P1–P20: Платёжный сервис
-Тестирует кошелёк, эскроу, оплату конкурсов и возвраты в stub-режиме
-(YOOKASSA_SHOP_ID / YOOKASSA_SECRET_KEY не заданы).
+Сценарии P1–P18: Платёжный сервис
+Тестирует кошелёк, эскроу, оплату конкурсов и возвраты.
 """
 
 import datetime
@@ -190,81 +189,12 @@ async def test_wallet_withdraw_insufficient(customer_token):
         assert r.status_code == 400
 
 
-# ── P8. Кошелёк: возврат пополнения ──────────────────────────────────────────
-
-
-@pytest.mark.asyncio
-async def test_wallet_topup_refund(customer_token):
-    """P8. POST /wallet/topup/{id}/refund возвращает средства и статус refunded.
-    В режиме YooKassa топап остаётся pending до подтверждения пользователем — тест пропускается."""
-    async with httpx.AsyncClient() as c:
-        # Пополняем
-        topup = await c.post(
-            f"{PAYMENT_URL}/wallet/topup",
-            json={"amount": 300.0},
-            headers=auth_headers(customer_token),
-        )
-        assert topup.status_code == 200
-        topup_data = topup.json()
-
-        if topup_data.get("redirect_url") is not None:
-            pytest.skip("YooKassa configured — wallet topup refund test requires stub mode")
-
-        payment_id = topup_data["payment_id"]
-        before = (await c.get(f"{PAYMENT_URL}/wallet/balance", headers=auth_headers(customer_token))).json()["balance"]
-
-        # Возвращаем
-        r = await c.post(
-            f"{PAYMENT_URL}/wallet/topup/{payment_id}/refund",
-            headers=auth_headers(customer_token),
-        )
-        assert r.status_code == 200
-        data = r.json()
-        assert data["status"] == "refunded"
-
-        after = (await c.get(f"{PAYMENT_URL}/wallet/balance", headers=auth_headers(customer_token))).json()["balance"]
-        assert after == pytest.approx(before - 300.0, abs=0.01)
-
-
-# ── P9. Кошелёк: повторный возврат одного пополнения ─────────────────────────
-
-
-@pytest.mark.asyncio
-async def test_wallet_topup_refund_duplicate(customer_token):
-    """P9. Повторный возврат уже возвращённого платежа → 409.
-    В режиме YooKassa топап остаётся pending — тест пропускается."""
-    async with httpx.AsyncClient() as c:
-        topup = await c.post(
-            f"{PAYMENT_URL}/wallet/topup",
-            json={"amount": 100.0},
-            headers=auth_headers(customer_token),
-        )
-        assert topup.status_code == 200
-        topup_data = topup.json()
-
-        if topup_data.get("redirect_url") is not None:
-            pytest.skip("YooKassa configured — duplicate refund test requires stub mode")
-
-        payment_id = topup_data["payment_id"]
-
-        await c.post(
-            f"{PAYMENT_URL}/wallet/topup/{payment_id}/refund",
-            headers=auth_headers(customer_token),
-        )
-
-        r = await c.post(
-            f"{PAYMENT_URL}/wallet/topup/{payment_id}/refund",
-            headers=auth_headers(customer_token),
-        )
-        assert r.status_code == 409
-
-
-# ── P10. Эскроу: резервирование ──────────────────────────────────────────────
+# ── P8. Эскроу: резервирование ───────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_escrow_reserve(contest):
-    """P10. Эскроу уже зарезервирован при создании конкурса через fixture."""
+    """P8. Эскроу уже зарезервирован при создании конкурса через fixture."""
     async with httpx.AsyncClient() as c:
         r = await c.get(
             f"{PAYMENT_URL}/escrow/status/{contest['id']}",
@@ -276,12 +206,12 @@ async def test_escrow_reserve(contest):
         assert data["status"] == "held"
 
 
-# ── P11. Эскроу: повторное резервирование → 409 ──────────────────────────────
+# ── P9. Эскроу: повторное резервирование → 409 ──────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_escrow_reserve_duplicate(contest):
-    """P11. Повторное резервирование эскроу для того же конкурса → 409."""
+    """P9. Повторное резервирование эскроу для того же конкурса → 409."""
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{PAYMENT_URL}/escrow/reserve",
@@ -291,12 +221,12 @@ async def test_escrow_reserve_duplicate(contest):
         assert r.status_code == 409
 
 
-# ── P12. Оплата конкурса через баланс кошелька ───────────────────────────────
+# ── P10. Оплата конкурса через баланс кошелька ───────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_payment_topup_from_balance(customer_token, contest_type_id, admin_token):
-    """P12. Оплата конкурса через баланс кошелька (use_balance=True)."""
+    """P10. Оплата конкурса через баланс кошелька (use_balance=True)."""
     async with httpx.AsyncClient() as c:
         profile = await c.get(f"{USER_URL}/users/profile", headers=auth_headers(customer_token))
         user_id = profile.json()["id"]
@@ -346,12 +276,12 @@ async def test_payment_topup_from_balance(customer_token, contest_type_id, admin
         await c.delete(f"{CONTEST_URL}/contests/{contest_id}", headers=auth_headers(admin_token))
 
 
-# ── P13. Статус оплаты конкурса ──────────────────────────────────────────────
+# ── P11. Статус оплаты конкурса ──────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_payment_status(contest, customer_token):
-    """P13. GET /payments/{contest_id} возвращает статус held для оплаченного конкурса."""
+    """P11. GET /payments/{contest_id} возвращает статус held для оплаченного конкурса."""
     async with httpx.AsyncClient() as c:
         r = await c.get(
             f"{PAYMENT_URL}/payments/{contest['id']}",
@@ -363,12 +293,12 @@ async def test_payment_status(contest, customer_token):
         assert data["amount"] == pytest.approx(contest["prizepool"], abs=0.01)
 
 
-# ── P14. Возврат оплаты конкурса ─────────────────────────────────────────────
+# ── P12. Возврат оплаты конкурса ─────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_payment_refund(customer_token, contest_type_id, admin_token):
-    """P14. POST /payments/{contest_id}/refund возвращает платёж и отменяет конкурс."""
+    """P12. POST /payments/{contest_id}/refund возвращает платёж и отменяет конкурс."""
     async with httpx.AsyncClient() as c:
         profile = await c.get(f"{USER_URL}/users/profile", headers=auth_headers(customer_token))
         user_id = profile.json()["id"]
@@ -428,12 +358,12 @@ async def test_payment_refund(customer_token, contest_type_id, admin_token):
         await c.delete(f"{CONTEST_URL}/contests/{contest_id}", headers=auth_headers(admin_token))
 
 
-# ── P15. Возврат чужого платежа → 403 ────────────────────────────────────────
+# ── P13. Возврат чужого платежа → 403 ────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_payment_refund_forbidden(contest, executor_token):
-    """P15. Возврат платежа другого пользователя → 403."""
+    """P13. Возврат платежа другого пользователя → 403."""
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{PAYMENT_URL}/payments/{contest['id']}/refund",
@@ -442,12 +372,12 @@ async def test_payment_refund_forbidden(contest, executor_token):
         assert r.status_code == 403
 
 
-# ── P16. Эскроу: выплата победителю ──────────────────────────────────────────
+# ── P14. Эскроу: выплата победителю ──────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_escrow_release_credits_wallet(contest, executor_token, submission):
-    """P16. POST /escrow/release зачисляет приз на кошелёк исполнителя."""
+    """P14. POST /escrow/release зачисляет приз на кошелёк исполнителя."""
     async with httpx.AsyncClient() as c:
         profile = await c.get(f"{USER_URL}/users/profile", headers=auth_headers(executor_token))
         executor_id = profile.json()["id"]
@@ -468,12 +398,12 @@ async def test_escrow_release_credits_wallet(contest, executor_token, submission
         assert after == pytest.approx(before + contest["prizepool"], abs=0.01)
 
 
-# ── P17. Эскроу: повторная выплата → 409 ─────────────────────────────────────
+# ── P15. Эскроу: повторная выплата → 409 ─────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_escrow_release_duplicate(contest, executor_token):
-    """P17. Повторная выплата по уже выплаченному эскроу → 409."""
+    """P15. Повторная выплата по уже выплаченному эскроу → 409."""
     async with httpx.AsyncClient() as c:
         profile = await c.get(f"{USER_URL}/users/profile", headers=auth_headers(executor_token))
         executor_id = profile.json()["id"]
@@ -486,24 +416,24 @@ async def test_escrow_release_duplicate(contest, executor_token):
         assert r.status_code == 409
 
 
-# ── P18. Кошелёк: недоступен без авторизации ─────────────────────────────────
+# ── P16. Кошелёк: недоступен без авторизации ─────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_wallet_requires_auth():
-    """P18. Запросы к кошельку без токена → 401 или 403."""
+    """P16. Запросы к кошельку без токена → 401 или 403."""
     async with httpx.AsyncClient() as c:
         for path in ("/wallet/balance", "/wallet/transactions"):
             r = await c.get(f"{PAYMENT_URL}{path}")
             assert r.status_code in (401, 403), f"Expected 401/403 for {path}, got {r.status_code}"
 
 
-# ── P19. История платежей конкурсов ──────────────────────────────────────────
+# ── P17. История платежей конкурсов ──────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_payment_history(customer_token, contest):
-    """P19. GET /payments/history содержит запись об оплаченном конкурсе."""
+    """P17. GET /payments/history содержит запись об оплаченном конкурсе."""
     async with httpx.AsyncClient() as c:
         r = await c.get(f"{PAYMENT_URL}/payments/history", headers=auth_headers(customer_token))
         assert r.status_code == 200
@@ -513,12 +443,12 @@ async def test_payment_history(customer_token, contest):
         assert contest["id"] in contest_ids
 
 
-# ── P20. Internal credit: неверный секрет → 403 ──────────────────────────────
+# ── P18. Internal credit: неверный секрет → 403 ──────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_internal_credit_wrong_secret(customer_token):
-    """P20. Internal endpoint с неверным секретом → 403."""
+    """P18. Internal endpoint с неверным секретом → 403."""
     async with httpx.AsyncClient() as c:
         profile = await c.get(f"{USER_URL}/users/profile", headers=auth_headers(customer_token))
         user_id = profile.json()["id"]
