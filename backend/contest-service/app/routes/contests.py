@@ -1,6 +1,9 @@
+import os
 from datetime import date, datetime, time, timezone
 
+import aiofiles
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import String, and_, case, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,6 +65,7 @@ class ContestOut(BaseModel):
     annotation: str | None
     description: str | None
     tz_text: str | None
+    tz_filename: str | None = None
     prizepool: int
     status: str
     type_id: int | None
@@ -386,10 +390,35 @@ async def upload_tz_file(
     if not text:
         raise HTTPException(status_code=422, detail="Could not extract text from file")
 
+    upload_dir = f"/app/uploads/contests/{contest_id}"
+    os.makedirs(upload_dir, exist_ok=True)
+    dest = f"{upload_dir}/{fname}"
+    async with aiofiles.open(dest, "wb") as f:
+        await f.write(data)
+
     contest.tz_text = text
+    contest.tz_filename = fname
     await db.commit()
     await db.refresh(contest)
     return contest
+
+
+@router.get("/{contest_id}/tz-file")
+async def download_tz_file(
+    contest_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    result = await db.execute(select(Contest).where(Contest.id == contest_id))
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    if not contest.tz_filename:
+        raise HTTPException(status_code=404, detail="No TZ file uploaded")
+    path = f"/app/uploads/contests/{contest_id}/{contest.tz_filename}"
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+    return FileResponse(path, filename=contest.tz_filename)
 
 
 @router.delete("/{contest_id}", status_code=204)

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Context } from '../main.jsx';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
-import { deleteData, sendData } from '../services/apiService.js';
+import { deleteData, sendData, downloadFileOrZip } from '../services/apiService.js';
 
 const statusConfig = {
     active:    { label: 'Активный',    cls: 'bg-emerald-100 text-emerald-700' },
@@ -228,6 +228,14 @@ const ContestPage = () => {
                                 <hr className="my-5 border-gray-100" />
                                 <div className="flex items-center gap-3 mb-2">
                                     <h3 className="text-base font-bold text-gray-800">Техническое задание</h3>
+                                    {currentContest.tz_filename && (
+                                        <button
+                                            onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/tz-file`, currentContest.tz_filename)}
+                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 font-medium transition-colors"
+                                        >
+                                            ↓ {currentContest.tz_filename}
+                                        </button>
+                                    )}
                                     {(isOwner || isAdmin) && !isFinished && (
                                         <label className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 font-medium transition-colors cursor-pointer ${uploadingTz ? 'opacity-50 pointer-events-none' : ''}`}>
                                             {uploadingTz ? 'Загрузка...' : '↑ PDF / DOCX'}

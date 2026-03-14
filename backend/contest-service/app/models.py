@@ -53,6 +53,7 @@ class Contest(Base):
     annotation = Column(String(1000))
     description = Column(Text)
     tz_text = Column(Text)
+    tz_filename = Column(String(300), nullable=True)
     prizepool = Column(Integer, nullable=False)
     status = Column(SAEnum(ContestStatus), default=ContestStatus.draft, nullable=False)
     files = Column(JSON, default=list)
