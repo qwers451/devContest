@@ -627,29 +627,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "18. Удаление конкурса (admin)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "url": "{{CONTEST_URL}}/contests/{{contest_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
-              }
-            ]
-          }
         }
       ]
     },
@@ -688,7 +665,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"contest_id\":1,\"title\":\"PM Test Submission\",\"annotation\":\"Краткое описание решения для теста\",\"description\":\"Подробное описание решения достаточной длины для прохождения валидации формы\"}"
+              "raw": "{\"contest_id\":{{contest_id}},\"title\":\"PM Test Submission\",\"annotation\":\"Краткое описание решения для теста\",\"description\":\"Подробное описание решения достаточной длины для прохождения валидации формы\"}"
             }
           }
         },
@@ -721,7 +698,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"contest_id\":1,\"title\":\"PM Winner Submission\",\"annotation\":\"Краткое описание решения-победителя\",\"description\":\"Подробное описание решения-победителя достаточной длины для прохождения валидации формы\"}"
+              "raw": "{\"contest_id\":{{contest_id}},\"title\":\"PM Winner Submission\",\"annotation\":\"Краткое описание решения-победителя\",\"description\":\"Подробное описание решения-победителя достаточной длины для прохождения валидации формы\"}"
             }
           }
         },
@@ -765,7 +742,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{CONTEST_URL}}/submissions?contest_id=1",
+            "url": "{{CONTEST_URL}}/submissions?contest_id={{contest_id}}",
             "header": [
               {
                 "key": "Authorization",
@@ -789,7 +766,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{CONTEST_URL}}/submissions?contest_id=1&status=1",
+            "url": "{{CONTEST_URL}}/submissions?contest_id={{contest_id}}&status=1",
             "header": [
               {
                 "key": "Authorization",
@@ -837,34 +814,11 @@
           ],
           "request": {
             "method": "POST",
-            "url": "{{CONTEST_URL}}/contests/1/winner?submission_id={{winner_submission_id}}&executor_id={{winner_executor_id}}",
+            "url": "{{CONTEST_URL}}/contests/{{contest_id}}/winner?submission_id={{winner_submission_id}}&executor_id={{winner_executor_id}}",
             "header": [
               {
                 "key": "Authorization",
                 "value": "Bearer {{customer_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "31. Удаление решения",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "url": "{{CONTEST_URL}}/submissions/{{submission_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{executor_token}}"
               }
             ]
           }
@@ -890,7 +844,7 @@
           ],
           "request": {
             "method": "POST",
-            "url": "{{CONTEST_URL}}/submissions/1/reviews",
+            "url": "{{CONTEST_URL}}/submissions/{{submission_id}}/reviews",
             "header": [
               {
                 "key": "Content-Type",
@@ -922,7 +876,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{CONTEST_URL}}/submissions/1/reviews",
+            "url": "{{CONTEST_URL}}/submissions/{{submission_id}}/reviews",
             "header": [
               {
                 "key": "Authorization",
@@ -946,7 +900,7 @@
           ],
           "request": {
             "method": "PUT",
-            "url": "{{CONTEST_URL}}/submissions/1/reviews/{{review_number}}",
+            "url": "{{CONTEST_URL}}/submissions/{{submission_id}}/reviews/{{review_number}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -977,11 +931,34 @@
           ],
           "request": {
             "method": "DELETE",
-            "url": "{{CONTEST_URL}}/submissions/1/reviews/{{review_number}}",
+            "url": "{{CONTEST_URL}}/submissions/{{submission_id}}/reviews/{{review_number}}",
             "header": [
               {
                 "key": "Authorization",
                 "value": "Bearer {{customer_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "31. Удаление решения",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{CONTEST_URL}}/submissions/{{submission_id}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{executor_token}}"
               }
             ]
           }
@@ -1110,6 +1087,29 @@
           "request": {
             "method": "GET",
             "url": "{{CONTEST_URL}}/statistics?x=status&y=prizepool",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "18. Удаление конкурса (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{CONTEST_URL}}/contests/{{contest_id}}",
             "header": [
               {
                 "key": "Authorization",
