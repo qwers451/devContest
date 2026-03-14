@@ -142,9 +142,11 @@ services:
       DATABASE_URL: postgresql+asyncpg://eval_svc:${EVAL_DB_PASSWORD}@evaluation-db:5432/evaluation_db
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_SECRET: ${INTERNAL_SECRET}
-      OLLAMA_URL: http://ollama:11434
-      OLLAMA_MODEL: llama3.1
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
       EVALUATION_STUB: ${EVALUATION_STUB:-true}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test:
         [
