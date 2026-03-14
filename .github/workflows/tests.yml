@@ -69,6 +69,11 @@ jobs:
           INTERNAL_SECRET: ci_internal_secret_123
         run: python -m pytest -v
 
+      - name: Run Seed Data
+        env:
+          INTERNAL_SECRET: ci_internal_secret_123
+        run: python seed.py
+
       - name: Run Postman Tests (Newman)
         uses: matt-ball/newman-action@master
         with:
