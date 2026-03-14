@@ -33,6 +33,8 @@ const baseForm = {
       "image/jpeg",
       "image/jpg",
       "image/gif",
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ],
   },
 };

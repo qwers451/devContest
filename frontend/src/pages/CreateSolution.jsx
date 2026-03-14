@@ -189,7 +189,7 @@ const CreateSolution = () => {
                         />
                         {solution.form.files.error && <p className="text-red-500 text-xs mt-1">{solution.form.files.error}</p>}
                         <p className="text-xs text-gray-400 mt-1">
-                            Поддерживаемые форматы: .zip, .png, .jpg, .jpeg, .gif. Не более {solution.form.files.rules.max} файлов.
+                            Поддерживаемые форматы: .zip, .png, .jpg, .jpeg, .gif, .pdf, .docx. Не более {solution.form.files.rules.max} файлов.
                         </p>
                     </div>
 

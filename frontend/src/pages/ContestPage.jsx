@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Context } from '../main.jsx';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
-import { downloadFileOrZip, deleteData, sendData } from '../services/apiService.js';
+import { deleteData, sendData } from '../services/apiService.js';
 
 const statusConfig = {
     active:    { label: 'Активный',    cls: 'bg-emerald-100 text-emerald-700' },
@@ -364,40 +364,6 @@ const ContestPage = () => {
                             </>
                         )}
 
-                        {/* Files */}
-                        {currentContest.files && currentContest.files.length > 0 && (
-                            <>
-                                <hr className="my-5 border-gray-100" />
-                                <h3 className="text-base font-bold text-gray-800 mb-2">Файлы</h3>
-                                <ul className="space-y-1 mb-3">
-                                    {currentContest.files.map((filePath, index) => {
-                                        const fileName = filePath.split('/').pop();
-                                        const relativePath = filePath.replace('/static/', '');
-                                        return (
-                                            <li key={index}>
-                                                <button
-                                                    onClick={() => downloadFileOrZip(`/files/${relativePath}`, fileName)}
-                                                    className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
-                                                >
-                                                    {fileName}
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                                <button
-                                    onClick={() => {
-                                        const firstFile = currentContest.files[0];
-                                        const relativePath = firstFile.replace('/static/', '');
-                                        const folderPath = relativePath.split('/').slice(0, -1).join('/');
-                                        downloadFileOrZip(`/download-folder/${folderPath}`, `contest_${currentContest.number}`);
-                                    }}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors"
-                                >
-                                    Скачать всё
-                                </button>
-                            </>
-                        )}
                     </div>
 
                     {/* Footer actions */}
