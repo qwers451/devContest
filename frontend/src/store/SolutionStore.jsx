@@ -388,6 +388,7 @@ export default class SolutionStore {
     await sendData(`/submissions/${submissionId}/evaluate`, {});
     runInAction(() => {
       this.evaluation = null;
+      this.evaluationLoading = true;
       this.evaluationUnavailable = false;
     });
   }
