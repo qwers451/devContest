@@ -3,12 +3,14 @@ import io
 
 def extract_text_pdf(data: bytes) -> str:
     import fitz  # PyMuPDF
+
     doc = fitz.open(stream=data, filetype="pdf")
     return "\n".join(page.get_text() for page in doc).strip()
 
 
 def extract_text_docx(data: bytes) -> str:
     from docx import Document
+
     doc = Document(io.BytesIO(data))
     parts = []
     # Paragraphs at document level

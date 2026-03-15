@@ -1,12 +1,12 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from app.models import UserRole
 
 
 class UserCreate(BaseModel):
     email: EmailStr
     login: str
-    password: str
+    password: str = Field(min_length=1)
     role: UserRole = UserRole.executor
 
 

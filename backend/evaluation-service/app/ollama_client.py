@@ -1,5 +1,7 @@
 import json
+
 import httpx
+
 from app.config import settings
 
 # Single-step prompt: extract requirements from TZ and evaluate each one.
@@ -104,7 +106,7 @@ def _parse_result(raw: str, tz_text: str) -> dict:
         cleaned = raw.strip()
         if cleaned.startswith("```"):
             # Drop the opening fence line (```json or ```)
-            cleaned = cleaned[cleaned.index("\n") + 1:] if "\n" in cleaned else cleaned
+            cleaned = cleaned[cleaned.index("\n") + 1 :] if "\n" in cleaned else cleaned
             # Drop the closing fence if present
             if cleaned.rstrip().endswith("```"):
                 cleaned = cleaned.rstrip()[:-3].rstrip()
@@ -163,7 +165,10 @@ async def evaluate_submission(
 ) -> dict:
     if settings.evaluation_stub:
         return {
-            "passed_requirements": ["Stub: требование 1 выполнено", "Stub: требование 2 выполнено"],
+            "passed_requirements": [
+                "Stub: требование 1 выполнено",
+                "Stub: требование 2 выполнено",
+            ],
             "failed_requirements": ["Stub: требование 3 не выполнено"],
             "compliance_score": 67,
             "critical_issues": False,
@@ -177,7 +182,8 @@ async def evaluate_submission(
         )
         prompt = _EVALUATE_VISION_PROMPT.format(
             tz_text=tz_text,
-            submission_text=(submission_text or "(описание отсутствует)") + meta_section,
+            submission_text=(submission_text or "(описание отсутствует)")
+            + meta_section,
         )
     else:
         prompt = _EVALUATE_PROMPT.format(

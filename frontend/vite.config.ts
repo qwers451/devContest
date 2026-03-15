@@ -9,5 +9,12 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/__tests__/setup.js',
+    coverage: {
+      provider: 'v8',
+      // Only measure business-logic (stores); pages/components require full rendering tests
+      include: ['src/store/**'],
+      reporter: ['text'],
+      thresholds: { lines: 90, statements: 90, branches: 80, functions: 90 },
+    },
   },
 })

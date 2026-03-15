@@ -127,3 +127,87 @@ async def test_update_profile_requires_auth():
     async with httpx.AsyncClient() as c:
         r = await c.put(f"{USER_URL}/users/profile", json={"login": "x"})
     assert r.status_code == 401
+
+
+# ── 1b. Дополнительные сценарии регистрации ───────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_register_invalid_email():
+    """Сервер должен отклонить невалидный email."""
+    async with httpx.AsyncClient() as c:
+        r = await c.post(f"{USER_URL}/auth/register", json={
+            "login": f"bad_email_{TS}",
+            "email": "not-an-email",
+            "password": "Test1234!",
+            "role": "executor",
+        })
+    assert r.status_code in (400, 422)
+
+
+@pytest.mark.asyncio
+async def test_register_missing_role():
+    """Регистрация без поля role — role defaults to executor, returns 201."""
+    async with httpx.AsyncClient() as c:
+        r = await c.post(f"{USER_URL}/auth/register", json={
+            "login": f"norole_{TS}",
+            "email": f"norole_{TS}@test.com",
+            "password": "Test1234!",
+        })
+    assert r.status_code == 201
+    assert r.json()["user"]["role"] == "executor"
+
+
+@pytest.mark.asyncio
+async def test_register_empty_password():
+    """Пустой пароль должен быть отклонён."""
+    async with httpx.AsyncClient() as c:
+        r = await c.post(f"{USER_URL}/auth/register", json={
+            "login": f"nopass_{TS}",
+            "email": f"nopass_{TS}@test.com",
+            "password": "",
+            "role": "executor",
+        })
+    assert r.status_code in (400, 422)
+
+
+# ── 4b. Получение пользователя по ID ─────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_get_user_by_id(customer_token):
+    """Получить профиль, затем проверить GET /users/{id}."""
+    async with httpx.AsyncClient() as c:
+        profile_r = await c.get(
+            f"{USER_URL}/users/profile", headers=auth_headers(customer_token)
+        )
+        user_id = profile_r.json()["id"]
+        r = await c.get(
+            f"{USER_URL}/users/{user_id}", headers=auth_headers(customer_token)
+        )
+    assert r.status_code == 200
+    assert r.json()["id"] == user_id
+
+
+@pytest.mark.asyncio
+async def test_get_nonexistent_user(customer_token):
+    """Запрос несуществующего пользователя должен вернуть 404."""
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{USER_URL}/users/999999999", headers=auth_headers(customer_token)
+        )
+    assert r.status_code == 404
+
+
+# ── 5b. Обновление email ──────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_update_profile_email(customer_token):
+    """Обновление email — должно вернуть новый email."""
+    new_email = f"updated_{TS}@test.com"
+    async with httpx.AsyncClient() as c:
+        r = await c.put(
+            f"{USER_URL}/users/profile",
+            json={"email": new_email},
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 200
+    assert r.json()["email"] == new_email

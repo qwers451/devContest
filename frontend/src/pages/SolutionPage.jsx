@@ -20,6 +20,8 @@ const SolutionPage = () => {
   const [milestoneLoading, setMilestoneLoading] = useState(null);
   const [milestoneError, setMilestoneError] = useState('');
   const [evalTriggering, setEvalTriggering] = useState(false);
+  const [evalTriggerKey, setEvalTriggerKey] = useState(0);
+  const [evalError, setEvalError] = useState(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [statusLog, setStatusLog] = useState([]);
@@ -85,7 +87,8 @@ const SolutionPage = () => {
       }
     }, 6000);
     return () => clearInterval(intervalId);
-  }, [shouldHaveEvaluation, currentSolution?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldHaveEvaluation, currentSolution?.id, evalTriggerKey]);
 
   if (error) {
     return (
@@ -100,6 +103,20 @@ const SolutionPage = () => {
       </div>
     );
   }
+
+  const handleTriggerEval = async () => {
+    setEvalTriggering(true);
+    setEvalError(null);
+    try {
+      await solution.triggerEvaluation(currentSolution.id);
+      setEvalTriggerKey(k => k + 1);
+    } catch (e) {
+      const msg = e?.response?.data?.detail || e?.message || "Ошибка запуска оценки";
+      setEvalError(msg);
+    } finally {
+      setEvalTriggering(false);
+    }
+  };
 
   const isAdmin = user.user?.role === "admin";
   const isOwner = user.user?.id === currentSolution.executor_id;
@@ -325,7 +342,7 @@ const SolutionPage = () => {
             </div>
 
             {/* AI Evaluation section */}
-            {(solution.evaluation || solution.evaluationLoading || (shouldHaveEvaluation && !solution.evaluationUnavailable)) && (
+            {(solution.evaluation || solution.evaluationLoading || (shouldHaveEvaluation && (!solution.evaluationUnavailable || isAdmin || isContestOwner))) && (
               <>
                 <hr className="my-5 border-gray-100 dark:border-gray-700" />
                 {(solution.evaluationLoading || (!solution.evaluation && shouldHaveEvaluation)) ? (
@@ -337,20 +354,20 @@ const SolutionPage = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-violet-800 dark:text-violet-300 text-sm">Автоматическая оценка ИИ</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="w-4 h-4 rounded-full border-2 border-violet-300 dark:border-violet-700 border-t-violet-600 dark:border-t-violet-400 animate-spin flex-shrink-0" />
-                        <p className="text-xs text-violet-500 dark:text-violet-400">
-                          {solution.evaluationLoading ? 'Загружается…' : 'Оценка выполняется, проверяем каждые 6 сек…'}
-                        </p>
-                      </div>
+                      {evalError ? (
+                        <p className="text-xs text-red-500 dark:text-red-400 mt-1">{evalError}</p>
+                      ) : (
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="w-4 h-4 rounded-full border-2 border-violet-300 dark:border-violet-700 border-t-violet-600 dark:border-t-violet-400 animate-spin flex-shrink-0" />
+                          <p className="text-xs text-violet-500 dark:text-violet-400">
+                            {solution.evaluationLoading ? 'Загружается…' : solution.evaluationUnavailable ? 'Оценка не найдена. Нажмите «Оценить» для запуска.' : 'Оценка выполняется, проверяем каждые 6 сек…'}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    {(isAdmin || isContestOwner) && !solution.evaluationLoading && (
+                    {(isAdmin || isContestOwner) && !solution.evaluationLoading && !evalTriggering && (
                       <button
-                        onClick={async () => {
-                          setEvalTriggering(true);
-                          try { await solution.triggerEvaluation(currentSolution.id); }
-                          catch { /* ignore */ } finally { setEvalTriggering(false); }
-                        }}
+                        onClick={handleTriggerEval}
                         disabled={evalTriggering}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold text-xs transition-colors flex-shrink-0"
                       >
@@ -387,11 +404,7 @@ const SolutionPage = () => {
                           <div className="flex items-center justify-between gap-2 flex-wrap">
                             <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">Оценка ИИ · соответствие ТЗ</p>
                             <button
-                              onClick={async () => {
-                                setEvalTriggering(true);
-                                try { await solution.triggerEvaluation(currentSolution.id); }
-                                catch { /* ignore */ } finally { setEvalTriggering(false); }
-                              }}
+                              onClick={handleTriggerEval}
                               disabled={evalTriggering || solution.evaluationLoading}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors flex-shrink-0"
                             >

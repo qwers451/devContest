@@ -223,3 +223,89 @@ async def test_select_winner(
                 headers=auth_headers(admin_token),
             )
             assert cleanup.status_code == 204
+
+
+# ── 41b. Дополнительные варианты статистики ───────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_statistics_by_end_by(admin_token):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/statistics",
+            params={"x": "endBy", "y": "count"},
+            headers=auth_headers(admin_token),
+        )
+    assert r.status_code == 200
+    data = r.json()
+    assert "x_labels" in data
+    assert "datasets" in data
+
+
+@pytest.mark.asyncio
+async def test_statistics_by_prizepool_axis(admin_token):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/statistics",
+            params={"x": "prizepool", "y": "count"},
+            headers=auth_headers(admin_token),
+        )
+    assert r.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_statistics_unauthorized():
+    async with httpx.AsyncClient() as c:
+        r = await c.get(f"{CONTEST_URL}/statistics", params={"x": "type", "y": "count"})
+    assert r.status_code == 401
+
+
+# ── 38b. Фильтрация и структура пользователей ─────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_list_users_contains_expected_fields(admin_token):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(f"{USER_URL}/users", headers=auth_headers(admin_token))
+    assert r.status_code == 200
+    users = r.json()
+    assert len(users) > 0
+    for u in users[:3]:
+        assert "id" in u
+        assert "login" in u
+        assert "role" in u
+        assert "email" in u
+
+
+@pytest.mark.asyncio
+async def test_list_users_executor_forbidden(executor_token):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(f"{USER_URL}/users", headers=auth_headers(executor_token))
+    assert r.status_code == 403
+
+
+# ── 39b. Дубликат типа конкурса ───────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_create_duplicate_contest_type(admin_token):
+    """Создание типа с одинаковым именем — 409 или идемпотентность."""
+    name = f"DupType_{TS}"
+    async with httpx.AsyncClient() as c:
+        r1 = await c.post(
+            f"{CONTEST_URL}/contest-types",
+            json={"name": name},
+            headers=auth_headers(admin_token),
+        )
+        assert r1.status_code == 201
+        tid = r1.json()["id"]
+        try:
+            r2 = await c.post(
+                f"{CONTEST_URL}/contest-types",
+                json={"name": name},
+                headers=auth_headers(admin_token),
+            )
+            # Either duplicate is rejected or returns the same id
+            assert r2.status_code in (201, 409)
+        finally:
+            await c.delete(
+                f"{CONTEST_URL}/contest-types/{tid}",
+                headers=auth_headers(admin_token),
+            )

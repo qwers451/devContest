@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 from app.database import get_db
 from app.models import ContestType
@@ -34,7 +35,11 @@ async def create_type(
 ):
     ct = ContestType(name=data.name)
     db.add(ct)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Contest type with this name already exists")
     await db.refresh(ct)
     return ct
 

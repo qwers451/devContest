@@ -4,6 +4,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as api from "../services/apiService";
+// fetchDataRaw is mocked in setup.js
 import SolutionStore from "../store/SolutionStore";
 
 const SUBMISSION = {
@@ -219,6 +220,184 @@ describe("Сценарий 33: выбор победителя", () => {
   });
 });
 
+// ── 26. Сортировка решений ────────────────────────────────────────────────────
+
+describe("Сценарий 26: сортировка решений", () => {
+  it("setSortBy передаётся в params запроса", async () => {
+    api.fetchData.mockResolvedValue([SUBMISSION]);
+    store.setSortBy("ai_score");
+    await store.fetchSolutionsFiltered();
+    expect(api.fetchData.mock.calls[0][1].sort_by).toBe("ai_score");
+  });
+
+  it("setSortDir asc передаётся в params запроса", async () => {
+    api.fetchData.mockResolvedValue([SUBMISSION]);
+    store.setSortDir("asc");
+    await store.fetchSolutionsFiltered();
+    expect(api.fetchData.mock.calls[0][1].sort_dir).toBe("asc");
+  });
+
+  it("setSortBy сбрасывает кеш фильтров", () => {
+    store._lastFilterParams = { page: 1 };
+    store.setSortBy("ai_score");
+    expect(store._lastFilterParams).toBeNull();
+  });
+});
+
+// ── 30. Пагинация решений ─────────────────────────────────────────────────────
+
+describe("Сценарий 30: пагинация решений", () => {
+  it("setPage устанавливает номер страницы", () => {
+    store.setPage(3);
+    expect(store.page).toBe(3);
+  });
+
+  it("setLimit устанавливает лимит", () => {
+    store.setLimit(10);
+    expect(store.limit).toBe(10);
+  });
+
+  it("fetchSolutionsFiltered передаёт page и limit", async () => {
+    api.fetchData.mockResolvedValue([SUBMISSION]);
+    store.setPage(2);
+    store.setLimit(5);
+    await store.fetchSolutionsFiltered();
+    const params = api.fetchData.mock.calls[0][1];
+    expect(params.page).toBe(2);
+    expect(params.limit).toBe(5);
+  });
+});
+
+// ── 29b. Граничные случаи валидации формы ─────────────────────────────────────
+
+describe("Сценарий 29b: граничные случаи валидации формы решения", () => {
+  it("validateField annotation слишком короткая → ошибка", () => {
+    store.setFormField("annotation", "Кратко");
+    expect(store.form.annotation.error).not.toBe("");
+  });
+
+  it("validateField annotation максимальной длины → нет ошибки", () => {
+    store.setFormField("annotation", "А".repeat(200));
+    expect(store.form.annotation.error).toBe("");
+  });
+
+  it("validateField annotation слишком длинная → ошибка", () => {
+    store.setFormField("annotation", "А".repeat(201));
+    expect(store.form.annotation.error).not.toBe("");
+  });
+
+  it("validateField description минимальной длины → нет ошибки", () => {
+    store.setFormField("description", "D".repeat(100));
+    expect(store.form.description.error).toBe("");
+  });
+
+  it("validateField description слишком короткое → ошибка", () => {
+    store.setFormField("description", "D".repeat(50));
+    expect(store.form.description.error).not.toBe("");
+  });
+
+  it("resetForm очищает все поля и ошибки", () => {
+    store.setFormField("title", "Было название решения");
+    store.resetForm();
+    expect(store.form.title.value).toBe("");
+    expect(store.form.title.error).toBe("");
+  });
+});
+
+// ── 33b. Победитель с этапом ─────────────────────────────────────────────────
+
+describe("Сценарий 33b: выбор победителя с этапом (milestone)", () => {
+  it("selectWinner с stageId добавляет stage_id в URL", async () => {
+    api.sendData.mockResolvedValue({ id: 1, status: "finished" });
+    await store.selectWinner(1, 5, 3, 11);
+    expect(api.sendData).toHaveBeenCalledWith(
+      "/contests/1/winner?submission_id=5&executor_id=3&stage_id=11",
+      {},
+    );
+  });
+
+  it("selectWinner без stageId не добавляет stage_id в URL", async () => {
+    api.sendData.mockResolvedValue({ id: 1, status: "finished" });
+    await store.selectWinner(1, 5, 3);
+    const url = api.sendData.mock.calls[0][0];
+    expect(url).not.toContain("stage_id");
+  });
+});
+
+// ── 34. Оценка ИИ ─────────────────────────────────────────────────────────────
+
+describe("Сценарий 34: оценка ИИ (fetchEvaluation / triggerEvaluation)", () => {
+  it("fetchEvaluation при 404 возвращает false и не сохраняет данные", async () => {
+    api.fetchDataRaw.mockResolvedValue({ status: 404, data: null });
+    const result = await store.fetchEvaluation(5);
+    expect(result).toBe(false);
+    expect(store.evaluation).toBeNull();
+    expect(store.evaluationLoading).toBe(false);
+  });
+
+  it("fetchEvaluation успешно — возвращает true и сохраняет результат", async () => {
+    const evalData = {
+      compliance_score: 75,
+      passed_requirements: ["Требование 1"],
+      failed_requirements: [],
+      critical_issues: false,
+    };
+    api.fetchDataRaw.mockResolvedValue({ status: 200, data: evalData });
+    const result = await store.fetchEvaluation(5);
+    expect(result).toBe(true);
+    expect(store.evaluation).toEqual(evalData);
+    expect(store.evaluationLoading).toBe(false);
+  });
+
+  it("fetchEvaluation при сетевой ошибке возвращает false", async () => {
+    api.fetchDataRaw.mockRejectedValue(new Error("Network error"));
+    const result = await store.fetchEvaluation(5);
+    expect(result).toBe(false);
+    expect(store.evaluationLoading).toBe(false);
+  });
+
+  it("markEvaluationUnavailable устанавливает флаг evaluationUnavailable", () => {
+    store.markEvaluationUnavailable();
+    expect(store.evaluationUnavailable).toBe(true);
+  });
+
+  it("triggerEvaluation вызывает POST /submissions/{id}/evaluate", async () => {
+    api.sendData.mockResolvedValue({});
+    await store.triggerEvaluation(5);
+    expect(api.sendData).toHaveBeenCalledWith("/submissions/5/evaluate", {});
+  });
+
+  it("triggerEvaluation сбрасывает evaluation и evaluationUnavailable", async () => {
+    store.evaluation = { compliance_score: 50 };
+    store.evaluationUnavailable = true;
+    api.sendData.mockResolvedValue({});
+    await store.triggerEvaluation(5);
+    expect(store.evaluation).toBeNull();
+    expect(store.evaluationUnavailable).toBe(false);
+  });
+});
+
+// ── statusOptions getter ───────────────────────────────────────────────────────
+
+describe("statusOptions getter", () => {
+  it("возвращает массив из 5 опций", () => {
+    expect(store.statusOptions).toHaveLength(5);
+  });
+
+  it("каждая опция содержит value, label, color", () => {
+    for (const opt of store.statusOptions) {
+      expect(typeof opt.value).toBe("number");
+      expect(typeof opt.label).toBe("string");
+      expect(typeof opt.color).toBe("string");
+    }
+  });
+
+  it("первая опция — Новое (value=1)", () => {
+    expect(store.statusOptions[0].value).toBe(1);
+    expect(store.statusOptions[0].label).toBe("Новое");
+  });
+});
+
 // ── getStatus helper ──────────────────────────────────────────────────────────
 
 describe("getStatus helper", () => {
@@ -234,5 +413,64 @@ describe("getStatus helper", () => {
 
   it('неизвестный статус → "Неизвестно"', () => {
     expect(store.getStatus(99).label).toBe("Неизвестно");
+  });
+});
+
+// ── setSearchQuery и setAddedBefore null ──────────────────────────────────────
+
+describe("setSearchQuery и геттер", () => {
+  it("setSearchQuery сохраняет запрос и флаг", () => {
+    store.setSearchQuery("test query", true);
+    expect(store.searchQuery).toBe("test query");
+  });
+});
+
+describe("setAddedBefore с null", () => {
+  it("setAddedBefore(null) очищает значение", () => {
+    store.setAddedBefore("2026-01-01");
+    store.setAddedBefore(null);
+    expect(store.addedBefore).toBeNull();
+  });
+});
+
+// ── геттеры freelancerId, contestId, totalCount ───────────────────────────────
+
+describe("геттеры freelancerId, contestId, totalCount", () => {
+  it("setFreelancerId и геттер", () => {
+    store.setFreelancerId(10);
+    expect(store.freelancerId).toBe(10);
+  });
+
+  it("setContestId и геттер", () => {
+    store.setContestId(20);
+    expect(store.contestId).toBe(20);
+  });
+
+  it("totalCount начальное значение 0", () => {
+    expect(store.totalCount).toBe(0);
+  });
+});
+
+// ── cache hit в fetchSolutionsFiltered ───────────────────────────────────────
+
+describe("cache hit в fetchSolutionsFiltered", () => {
+  it("не делает запрос если фильтры не изменились и есть кеш", async () => {
+    const list = [{ id: 1, title: "S1" }];
+    api.fetchData.mockResolvedValue(list);
+    await store.fetchSolutionsFiltered();
+    vi.clearAllMocks();
+    // Same params, solutions already loaded — should use cache
+    await store.fetchSolutionsFiltered();
+    expect(api.fetchData).not.toHaveBeenCalled();
+  });
+});
+
+// ── fetchSolutionByNumber ошибка ──────────────────────────────────────────────
+
+describe("fetchSolutionByNumber ошибка", () => {
+  it("при ошибке возвращает null и не падает", async () => {
+    api.fetchData.mockRejectedValue(new Error("Not found"));
+    const result = await store.fetchSolutionByNumber(9999);
+    expect(result).toBeNull();
   });
 });
