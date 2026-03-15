@@ -1,6 +1,6 @@
 import React, { useEffect, useContext, useState, useCallback } from 'react';
 import { Context } from '../main.jsx';
-import { sendData, updateData, CONTEST_API_URL } from '../services/apiService.js';
+import { sendData, updateData } from '../services/apiService.js';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
@@ -66,21 +66,28 @@ const CreateContest = () => {
             const res = state ? await updateData(submitURL, data) : await sendData(submitURL, data);
             contest.resetForm();
 
-            // Upload TZ file if provided (overwrites tz_text extracted from file)
+            // Upload TZ file if provided
             if (res.id && tzFile) {
                 try {
-                    const token = localStorage.getItem('token');
                     const formData = new FormData();
                     formData.append('file', tzFile);
-                    await fetch(`${CONTEST_API_URL}/contests/${res.id}/tz-file`, {
-                        method: 'POST',
-                        headers: { Authorization: `Bearer ${token}` },
-                        body: formData,
-                    });
+                    await sendData(`/contests/${res.id}/tz-file`, formData, true);
                 } catch (e) {
                     console.error('TZ file upload failed:', e);
                 }
                 setTzFile(null);
+            }
+
+            // Upload general files if provided
+            if (res.id && files.length > 0) {
+                try {
+                    const formData = new FormData();
+                    files.forEach(f => formData.append('files', f));
+                    await sendData(`/contests/${res.id}/files`, formData, true);
+                } catch (e) {
+                    console.error('Files upload failed:', e);
+                }
+                setFiles([]);
             }
 
             if (!state && res.id && res.status === 'draft') {
