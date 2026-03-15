@@ -146,14 +146,15 @@ async def test_register_invalid_email():
 
 @pytest.mark.asyncio
 async def test_register_missing_role():
-    """Регистрация без поля role — должна вернуть 422."""
+    """Регистрация без поля role — role defaults to executor, returns 201."""
     async with httpx.AsyncClient() as c:
         r = await c.post(f"{USER_URL}/auth/register", json={
             "login": f"norole_{TS}",
             "email": f"norole_{TS}@test.com",
             "password": "Test1234!",
         })
-    assert r.status_code == 422
+    assert r.status_code == 201
+    assert r.json()["user"]["role"] == "executor"
 
 
 @pytest.mark.asyncio

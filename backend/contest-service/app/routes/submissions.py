@@ -288,6 +288,8 @@ async def update_status(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("customer", "admin")),
 ):
+    if status not in range(1, 6):
+        raise HTTPException(status_code=422, detail="Status must be between 1 and 5")
     result = await db.execute(select(Submission).where(Submission.id == submission_id))
     s = result.scalar_one_or_none()
     if not s:
