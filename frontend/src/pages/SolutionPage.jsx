@@ -25,18 +25,10 @@ const SolutionPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        let sol;
-        if (
-          solution.currentSolution &&
-          solution.currentSolution.number == number
-        ) {
-          sol = solution.currentSolution;
-        } else {
-          sol = await solution.fetchSolutionByNumber(number);
-          if (!sol) {
-            setError("Решение не найдено.");
-            return;
-          }
+        const sol = await solution.fetchSolutionByNumber(number);
+        if (!sol) {
+          setError("Решение не найдено.");
+          return;
         }
         setCurrentSolution(sol);
 

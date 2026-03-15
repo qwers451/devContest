@@ -24,21 +24,17 @@ const ContestPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (contest.currentContest && contest.currentContest.number == number) {
-            setCurrentContest(contest.currentContest);
-        } else {
-            const fetchContest = async () => {
-                const fetched = await contest.fetchOneContestByNumber(number);
-                if (fetched) {
-                    setCurrentContest(fetched);
-                    if (fetched.customer_id) user.fetchUserById(fetched.customer_id);
-                } else {
-                    setError('Конкурс не найден.');
-                }
-            };
-            fetchContest();
-        }
-    }, [number, contest.currentContest]);
+        const fetchContest = async () => {
+            const fetched = await contest.fetchOneContestByNumber(number);
+            if (fetched) {
+                setCurrentContest(fetched);
+                if (fetched.customer_id) user.fetchUserById(fetched.customer_id);
+            } else {
+                setError('Конкурс не найден.');
+            }
+        };
+        fetchContest();
+    }, [number]);
 
     useEffect(() => {
         if (currentContest?.customer_id) user.fetchUserById(currentContest.customer_id);
