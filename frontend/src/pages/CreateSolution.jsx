@@ -1,6 +1,6 @@
 import { useEffect, useContext, useState, useCallback } from 'react';
 import { Context } from '../main.jsx';
-import { sendData } from '../services/apiService.js';
+import { sendData, updateData } from '../services/apiService.js';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
@@ -50,15 +50,12 @@ const CreateSolution = () => {
             return;
         }
 
-        const data = {
-            contest_id: contestId,
-            title: solution.form.title.value,
-            annotation: solution.form.annotation.value,
-            description: solution.form.description.value
-        };
+        const data = state
+            ? { title: solution.form.title.value, annotation: solution.form.annotation.value, description: solution.form.description.value }
+            : { contest_id: contestId, title: solution.form.title.value, annotation: solution.form.annotation.value, description: solution.form.description.value };
 
         try {
-            const res = await sendData(submitURL, data);
+            const res = state ? await updateData(submitURL, data) : await sendData(submitURL, data);
             if (files.length > 0) {
                 const formData = new FormData();
                 files.forEach(file => formData.append('files', file));
