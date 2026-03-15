@@ -378,7 +378,7 @@ describe("Сценарий 13c: конкурс по ID", () => {
   it("fetchOneContestById возвращает конкурс и вызывает /contests/{id}", async () => {
     vi.mocked(api.fetchData).mockResolvedValue(CONTEST);
     const result = await store.fetchOneContestById(1);
-    expect(api.fetchData).toHaveBeenCalledWith("/contests/1");
+    expect(api.fetchData).toHaveBeenCalledWith("/contests/1", {}, { silent: true });
     expect(result.id).toBe(1);
   });
 

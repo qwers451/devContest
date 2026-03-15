@@ -24,7 +24,6 @@ const AppRouter = () => {
         }
     }, [contest]);
 
-    console.log("user", user)
     return (
         <Routes>
             {user.isAuth && authRoutes.map(({ path, element }) =>
