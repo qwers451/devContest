@@ -255,6 +255,13 @@ const SolutionPage = () => {
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 mb-4 text-sm">
           <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+          >
+            ← Назад
+          </button>
+          <span className="text-gray-300 dark:text-gray-600">/</span>
+          <button
             onClick={() => navigate(`/contest/${currentContest.number}/solutions`)}
             className="text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
           >
@@ -337,6 +344,26 @@ const SolutionPage = () => {
                         </p>
                       </div>
                     </div>
+                    {(isAdmin || isContestOwner) && !solution.evaluationLoading && (
+                      <button
+                        onClick={async () => {
+                          setEvalTriggering(true);
+                          try { await solution.triggerEvaluation(currentSolution.id); }
+                          catch { /* ignore */ } finally { setEvalTriggering(false); }
+                        }}
+                        disabled={evalTriggering}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold text-xs transition-colors flex-shrink-0"
+                      >
+                        {evalTriggering ? (
+                          <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                        ) : (
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
+                          </svg>
+                        )}
+                        Оценить
+                      </button>
+                    )}
                   </div>
                 ) : solution.evaluation && (() => {
                   const score = solution.evaluation.compliance_score;
@@ -659,36 +686,8 @@ const SolutionPage = () => {
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-2">
-                {(isAdmin || isContestOwner) && !solution.evaluation && !solution.evaluationLoading && (
-                  <button
-                    onClick={async () => {
-                      setEvalTriggering(true);
-                      try { await solution.triggerEvaluation(currentSolution.id); }
-                      catch { /* ignore */ } finally { setEvalTriggering(false); }
-                    }}
-                    disabled={evalTriggering}
-                    className={btnWarning}
-                  >
-                    {evalTriggering ? (
-                      <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    ) : (
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
-                      </svg>
-                    )}
-                    Оценить
-                  </button>
-                )}
                 {(isOwner || isAdmin) && (
                   <>
-                    <button
-                      onClick={() =>
-                        navigate(`/solution/${currentSolution.number}/reviews`)
-                      }
-                      className={btnInfo}
-                    >
-                      Отзывы
-                    </button>
                     <button
                       onClick={() =>
                         navigate(`/solution/${currentSolution.number}/edit`, {
@@ -709,14 +708,6 @@ const SolutionPage = () => {
                 )}
                 {isEmployer && (
                   <>
-                    <button
-                      onClick={() =>
-                        navigate(`/solution/${currentSolution.number}/reviews`)
-                      }
-                      className={btnInfo}
-                    >
-                      Отзывы
-                    </button>
                     <button
                       onClick={() => setShowStatusModal(true)}
                       className={btnWarning}
