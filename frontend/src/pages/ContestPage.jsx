@@ -21,6 +21,7 @@ const ContestPage = () => {
     const [draftStages, setDraftStages] = useState([]);
     const [savingStages, setSavingStages] = useState(false);
     const [uploadingTz, setUploadingTz] = useState(false);
+    const [uploadingFiles, setUploadingFiles] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -69,6 +70,23 @@ const ContestPage = () => {
             alert(err?.response?.data?.detail || 'Не удалось загрузить файл ТЗ');
         } finally {
             setUploadingTz(false);
+            e.target.value = '';
+        }
+    };
+
+    const handleUploadFiles = async (e) => {
+        const selected = Array.from(e.target.files || []);
+        if (!selected.length) return;
+        setUploadingFiles(true);
+        try {
+            const formData = new FormData();
+            selected.forEach(f => formData.append('files', f));
+            const updated = await sendData(`/contests/${currentContest.id}/files`, formData, true);
+            setCurrentContest(updated);
+        } catch (err) {
+            alert(err?.response?.data?.detail || 'Ошибка загрузки файлов');
+        } finally {
+            setUploadingFiles(false);
             e.target.value = '';
         }
     };
@@ -245,6 +263,43 @@ const ContestPage = () => {
                                     </pre>
                                 ) : (
                                     <p className="text-sm text-gray-400 italic">Техническое задание не заполнено. Загрузите PDF или DOCX.</p>
+                                )}
+                            </>
+                        )}
+
+                        {/* Contest files */}
+                        {(currentContest.files?.length > 0 || (isOwner || isAdmin)) && (
+                            <>
+                                <hr className="my-5 border-gray-100" />
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-base font-bold text-gray-800">Файлы</h3>
+                                    {(isOwner || isAdmin) && !isFinished && (
+                                        <label className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 font-medium transition-colors cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            {uploadingFiles ? 'Загрузка...' : '↑ Добавить файлы'}
+                                            <input
+                                                type="file"
+                                                multiple
+                                                className="hidden"
+                                                onChange={handleUploadFiles}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                                {currentContest.files?.length > 0 ? (
+                                    <ul className="space-y-1">
+                                        {currentContest.files.map((fileName, idx) => (
+                                            <li key={idx}>
+                                                <button
+                                                    onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/files/${fileName}`, fileName)}
+                                                    className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
+                                                >
+                                                    {fileName}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-gray-400 italic">Файлы не прикреплены.</p>
                                 )}
                             </>
                         )}

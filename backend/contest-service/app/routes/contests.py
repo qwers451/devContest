@@ -1,8 +1,10 @@
 import os
 from datetime import date, datetime, time, timezone
+from typing import List
 
 import aiofiles
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from sqlalchemy.orm.attributes import flag_modified
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import String, and_, case, cast, func, select
@@ -418,6 +420,56 @@ async def download_tz_file(
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="File not found on disk")
     return FileResponse(path, filename=contest.tz_filename)
+
+
+@router.post("/{contest_id}/files", response_model=ContestOut)
+async def upload_contest_files(
+    contest_id: int,
+    files: List[UploadFile] = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    result = await db.execute(select(Contest).options(*_relations()).where(Contest.id == contest_id))
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    if current_user["role"] not in ("admin",) and contest.customer_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    upload_dir = f"/app/uploads/contests/{contest_id}"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    existing = list(contest.files or [])
+    for file in files:
+        safe_name = os.path.basename(file.filename or "file")
+        dest = f"{upload_dir}/{safe_name}"
+        async with aiofiles.open(dest, "wb") as f:
+            await f.write(await file.read())
+        if safe_name not in existing:
+            existing.append(safe_name)
+
+    contest.files = existing
+    flag_modified(contest, "files")
+    await db.commit()
+    await db.refresh(contest)
+    return contest
+
+
+@router.get("/{contest_id}/files/{filename}")
+async def download_contest_file(
+    contest_id: int,
+    filename: str,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    result = await db.execute(select(Contest).where(Contest.id == contest_id))
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    path = f"/app/uploads/contests/{contest_id}/{filename}"
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path, filename=filename)
 
 
 @router.delete("/{contest_id}", status_code=204)
