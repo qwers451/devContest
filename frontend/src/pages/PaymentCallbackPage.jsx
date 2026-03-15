@@ -73,14 +73,14 @@ const PaymentCallbackPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-md text-center animate-fade-in">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 w-full max-w-md text-center animate-fade-in">
                 {status === 'pending' && (
                     <>
                         <div className="flex justify-center mb-4">
                             <div className="w-12 h-12 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900 mb-2">Обработка платежа</h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Обработка платежа</h2>
                     </>
                 )}
 

@@ -146,14 +146,14 @@ const CreateSolution = () => {
 
     if (error) return <div className="max-w-3xl mx-auto px-4 py-10 text-red-500">{error}</div>;
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white';
-    const inputErrCls = 'w-full px-4 py-2.5 rounded-xl border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-800 text-sm transition-all duration-200 bg-white';
-    const labelCls = 'block text-sm font-semibold text-gray-700 mb-1';
+    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700';
+    const inputErrCls = 'w-full px-4 py-2.5 rounded-xl border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700';
+    const labelCls = 'block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1';
 
     return (
-        <div className="min-h-screen bg-gray-50 py-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
             <div className="max-w-3xl mx-auto px-4">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
                     {state ? 'Редактирование решения' : 'Создание решения'}
                 </h1>
 
@@ -251,14 +251,14 @@ const CreateSolution = () => {
                         <button
                             type="button"
                             onClick={() => setShowPreview(true)}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all duration-200"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-all duration-200"
                         >
                             Предпросмотр
                         </button>
                         <button
                             type="button"
                             onClick={() => setShowHelp(true)}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all duration-200"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-all duration-200"
                         >
                             Справка
                         </button>
@@ -266,7 +266,7 @@ const CreateSolution = () => {
                             <button
                                 type="button"
                                 onClick={() => navigate(-1)}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-semibold text-sm transition-all duration-200"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-sm transition-all duration-200"
                             >
                                 Отменить редактирование
                             </button>
@@ -278,26 +278,26 @@ const CreateSolution = () => {
             {/* Preview Modal */}
             {showPreview && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowPreview(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in border border-transparent dark:border-gray-700" onClick={e => e.stopPropagation()}>
                         <div className="p-6">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-gray-900">Предпросмотр решения</h2>
-                                <button onClick={() => setShowPreview(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Предпросмотр решения</h2>
+                                <button onClick={() => setShowPreview(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">✕</button>
                             </div>
-                            <div className="bg-gray-50 rounded-xl p-5">
-                                <h1 className="text-2xl font-bold text-gray-900 mb-1">{solution.form.title.value || 'Без названия'}</h1>
-                                <p className="text-sm text-gray-500 mb-3">
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5">
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{solution.form.title.value || 'Без названия'}</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                                     Конкурс «{contest.currentContest?.title || 'Неизвестный конкурс'}» от {user.getById(contest.currentContest?.customer_id)?.login || 'Неизвестно'}
                                 </p>
-                                <hr className="my-4 border-gray-200" />
-                                <h3 className="text-base font-bold text-gray-800 mb-2">Описание</h3>
-                                <div className="prose prose-sm max-w-none">
+                                <hr className="my-4 border-gray-200 dark:border-gray-700" />
+                                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-2">Описание</h3>
+                                <div className="prose prose-sm dark:prose-invert max-w-none">
                                     <Markdown options={{ disableParsingRawHTML: true }}>{mdDescription}</Markdown>
                                 </div>
                                 {files.length > 0 && (
                                     <>
-                                        <hr className="my-4 border-gray-200" />
-                                        <h4 className="font-bold text-gray-800 mb-2">Файлы</h4>
+                                        <hr className="my-4 border-gray-200 dark:border-gray-700" />
+                                        <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Файлы</h4>
                                         <ul className="space-y-1">
                                             {files.map((file, idx) => (
                                                 <li key={idx} className="text-sm text-violet-600">{file.name}</li>
@@ -307,7 +307,7 @@ const CreateSolution = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="px-6 py-4 border-t border-gray-100">
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
                             <button onClick={() => setShowPreview(false)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors">
                                 Закрыть предпросмотр
                             </button>
@@ -319,13 +319,13 @@ const CreateSolution = () => {
             {/* Help Modal */}
             {showHelp && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowHelp(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-fade-in" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg animate-fade-in border border-transparent dark:border-gray-700" onClick={e => e.stopPropagation()}>
                         <div className="p-6">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-gray-900">Справка по оформлению</h2>
-                                <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Справка по оформлению</h2>
+                                <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">✕</button>
                             </div>
-                            <div className="text-sm text-gray-700 space-y-2">
+                            <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
                                 <p>Название: от {solution.form.title.rules.min} до {solution.form.title.rules.max} символов.</p>
                                 <p>Аннотация: от {solution.form.annotation.rules.min} до {solution.form.annotation.rules.max} символов.</p>
                                 <p>Описание: от {solution.form.description.rules.min} до {solution.form.description.rules.max} символов.</p>
@@ -336,10 +336,10 @@ const CreateSolution = () => {
                                         Подробнее
                                     </a>
                                 </p>
-                                <p>Пример вставки изображения: <code className="bg-gray-100 px-1 rounded">![alt](image.jpg)</code></p>
+                                <p>Пример вставки изображения: <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-1 rounded">![alt](image.jpg)</code></p>
                             </div>
                         </div>
-                        <div className="px-6 py-4 border-t border-gray-100">
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
                             <button onClick={() => setShowHelp(false)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors">
                                 Закрыть
                             </button>

@@ -87,6 +87,8 @@ export default class ContestStore {
     this.isLoading = false;
     this._employerId = null;
     this._lastFilterParams = null;
+    this._sortBy = "created_at";
+    this._sortDir = "desc";
     this._statistics = null;
     this.currentPage = 1;
     this.totalPages = 1;
@@ -260,6 +262,12 @@ export default class ContestStore {
     this.setMaxReward(max);
   }
 
+  setSortBy(val) { this._sortBy = val; this._lastFilterParams = null; }
+  setSortDir(val) { this._sortDir = val; this._lastFilterParams = null; }
+
+  get sortBy() { return this._sortBy; }
+  get sortDir() { return this._sortDir; }
+
   setEndBy(date) {
     if (!date) {
       this._endBy = null;
@@ -413,6 +421,8 @@ export default class ContestStore {
     if (rawParams.employerId) params.customer_id = rawParams.employerId;
     if (rawParams.endBy) params.endBy = rawParams.endBy;
     if (rawParams.endAfter) params.endAfter = rawParams.endAfter;
+    params.sort_by = this._sortBy;
+    params.sort_dir = this._sortDir;
 
     if (
       !this.hasFiltersChanged(params) &&
@@ -483,6 +493,8 @@ export default class ContestStore {
     this._endBy = null;
     this._endAfter = null;
     this._searchQuery = "";
+    this._sortBy = "created_at";
+    this._sortDir = "desc";
     this.fetchContestsFiltered();
   }
 

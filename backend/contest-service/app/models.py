@@ -107,6 +107,8 @@ class Submission(Base):
     description = Column(Text)
     files = Column(JSON, default=list)
     status = Column(Integer, default=1, nullable=False)
+    ai_score = Column(Float, nullable=True)
+    critical_issues = Column(Boolean, nullable=True)
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -118,6 +120,24 @@ class Submission(Base):
     reviews = relationship(
         "Review", back_populates="submission", cascade="all, delete-orphan"
     )
+    status_logs = relationship(
+        "SubmissionStatusLog", back_populates="submission", cascade="all, delete-orphan"
+    )
+
+
+class SubmissionStatusLog(Base):
+    __tablename__ = "submission_status_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    submission_id = Column(Integer, ForeignKey("submissions.id"), nullable=False, index=True)
+    old_status = Column(Integer, nullable=True)
+    new_status = Column(Integer, nullable=False)
+    changed_by_id = Column(Integer, nullable=True)
+    changed_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    submission = relationship("Submission", back_populates="status_logs")
 
 
 class Review(Base):
@@ -131,6 +151,7 @@ class Review(Base):
     number = Column(Integer, nullable=False)
     score = Column(Float, nullable=False)
     commentary = Column(Text)
+    files = Column(JSON, default=list)
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

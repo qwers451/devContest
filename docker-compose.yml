@@ -145,6 +145,7 @@ services:
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2-vision}
       EVALUATION_STUB: ${EVALUATION_STUB:-true}
+      CONTEST_SERVICE_URL: http://contest-service:8000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -190,16 +191,31 @@ services:
       payment-db:
         condition: service_healthy
 
+  # ─── API Gateway ─────────────────────────────────────────────────────────────
+
+  gateway:
+    image: docker.io/library/nginx:alpine
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      user-service:
+        condition: service_healthy
+      contest-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      evaluation-service:
+        condition: service_healthy
+
   # ─── Frontend ────────────────────────────────────────────────────────────────
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8001}
-        VITE_CONTEST_API_URL: ${VITE_CONTEST_API_URL:-http://localhost:8002}
-        VITE_IMPORT_EXPORT_API_URL: ${VITE_IMPORT_EXPORT_API_URL:-http://localhost:8002}
-        VITE_PAYMENT_API_URL: ${VITE_PAYMENT_API_URL:-http://localhost:8004}
+        VITE_GATEWAY_URL: ${VITE_GATEWAY_URL:-http://localhost:8080}
     ports:
       - "3000:80"
     depends_on:

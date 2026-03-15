@@ -118,6 +118,8 @@ async def list_contests(
     customer_id: int | None = None,
     endBy: date | None = None,
     endAfter: date | None = None,
+    sort_by: str = Query("created_at", regex="^(title|prizepool|created_at|ends_at)$"),
+    sort_dir: str = Query("desc", regex="^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),
 ):
     filters = []
@@ -153,10 +155,18 @@ async def list_contests(
         count_q = count_q.where(and_(*filters))
     total = (await db.execute(count_q)).scalar()
 
+    sort_col = {
+        "title": Contest.title,
+        "prizepool": Contest.prizepool,
+        "created_at": Contest.created_at,
+        "ends_at": Contest.ends_at,
+    }.get(sort_by, Contest.created_at)
+    order = sort_col.desc() if sort_dir == "desc" else sort_col.asc()
+
     q = select(Contest).options(*_relations())
     if filters:
         q = q.where(and_(*filters))
-    q = q.order_by(Contest.created_at.desc()).offset((page - 1) * limit).limit(limit)
+    q = q.order_by(order).offset((page - 1) * limit).limit(limit)
     items = (await db.execute(q)).scalars().all()
 
     return ContestListOut(

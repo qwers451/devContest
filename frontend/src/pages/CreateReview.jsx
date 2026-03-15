@@ -4,6 +4,8 @@ import { observer } from 'mobx-react-lite';
 import { Context } from '../main.jsx';
 import { sendData } from '../services/apiService.js';
 
+const ALLOWED_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/png', 'image/jpeg', 'image/jpg', 'application/zip', 'application/x-zip-compressed'];
+
 const CreateReview = () => {
     const { number } = useParams();
     const navigate = useNavigate();
@@ -15,6 +17,7 @@ const CreateReview = () => {
 
     const [score, setScore] = useState('');
     const [commentary, setCommentary] = useState('');
+    const [files, setFiles] = useState([]);
     const [submitError, setSubmitError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
@@ -41,6 +44,20 @@ const CreateReview = () => {
         }
     }, [loadingSolution, loadError, user.isAuth, user.user, navigate, number]);
 
+    const handleFilesChange = (e) => {
+        const selected = Array.from(e.target.files || []).filter(f => ALLOWED_TYPES.includes(f.type));
+        setFiles(prev => {
+            const merged = [...prev];
+            for (const f of selected) {
+                if (!merged.find(e => e.name === f.name)) merged.push(f);
+            }
+            return merged;
+        });
+        e.target.value = '';
+    };
+
+    const removeFile = (name) => setFiles(prev => prev.filter(f => f.name !== name));
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitError(null);
@@ -51,17 +68,25 @@ const CreateReview = () => {
         setSubmitting(true);
         try {
             const payload = { score: parseFloat(score), commentary: commentary.trim() };
-            await sendData(`/submissions/${currentSolution.id}/reviews`, payload);
+            const review = await sendData(`/submissions/${currentSolution.id}/reviews`, payload);
+
+            // Upload files if any
+            if (files.length > 0) {
+                const fd = new FormData();
+                files.forEach(f => fd.append('files', f));
+                await sendData(`/submissions/${currentSolution.id}/reviews/${review.number}/files`, fd, true);
+            }
+
             navigate(`/solution/${number}`);
         } catch (err) {
-            setSubmitError(err.response?.data?.error || 'Не удалось отправить отзыв');
+            setSubmitError(err.response?.data?.error || err.response?.data?.detail || 'Не удалось отправить отзыв');
         } finally {
             setSubmitting(false);
         }
     };
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white';
-    const labelCls = 'block text-sm font-semibold text-gray-700 mb-1';
+    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700';
+    const labelCls = 'block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1';
 
     if (loadingSolution) {
         return (
@@ -83,15 +108,15 @@ const CreateReview = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
             <div className="max-w-xl mx-auto px-4">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in">
-                    <h2 className="text-xl font-bold text-gray-900 mb-5">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 animate-fade-in">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-5">
                         Добавить отзыв к решению №{number}
                     </h2>
 
                     {submitError && (
-                        <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                        <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
                             {submitError}
                         </div>
                     )}
@@ -122,12 +147,39 @@ const CreateReview = () => {
                                 className={inputCls}
                             />
                         </div>
+                        <div>
+                            <label className={labelCls}>Файлы (необязательно)</label>
+                            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                                ↑ Добавить файлы
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept=".pdf,.docx,.png,.jpg,.jpeg,.zip"
+                                    onChange={handleFilesChange}
+                                    className="hidden"
+                                />
+                            </label>
+                            {files.length > 0 && (
+                                <ul className="mt-2 space-y-1">
+                                    {files.map(f => (
+                                        <li key={f.name} className="flex items-center gap-2 text-sm text-gray-600">
+                                            <span className="truncate max-w-xs">{f.name}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeFile(f.name)}
+                                                className="text-red-400 hover:text-red-600 text-xs flex-shrink-0"
+                                            >✕</button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
                         <div className="flex justify-between pt-2">
                             <button
                                 type="button"
                                 onClick={() => navigate(`/solution/${number}`)}
                                 disabled={submitting}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-colors disabled:opacity-60"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-colors disabled:opacity-60"
                             >
                                 Отмена
                             </button>

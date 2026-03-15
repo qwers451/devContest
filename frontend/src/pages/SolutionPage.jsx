@@ -5,7 +5,7 @@ import { observer } from "mobx-react-lite";
 import Markdown from "markdown-to-jsx";
 import ConfirmationModal from "../components/ConfirmationModal";
 import ChangeSolutionStatusModal from "../components/ChangeSolutionStatusModal";
-import { downloadFileOrZip, sendData, deleteData } from "../services/apiService.js";
+import { downloadFileOrZip, sendData, deleteData, fetchData } from "../services/apiService.js";
 
 const SolutionPage = () => {
   const { solution, contest, user, payment } = useContext(Context);
@@ -21,10 +21,12 @@ const SolutionPage = () => {
   const [milestoneError, setMilestoneError] = useState('');
   const [evalTriggering, setEvalTriggering] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [statusLog, setStatusLog] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadPageData = async () => {
       try {
         const sol = await solution.fetchSolutionByNumber(number);
         if (!sol) {
@@ -47,6 +49,10 @@ const SolutionPage = () => {
         // Load AI evaluation (non-blocking — may return 404 if not yet evaluated)
         solution.fetchEvaluation(sol.id);
 
+        // Load reviews and status log (non-blocking)
+        fetchData(`/submissions/${sol.id}/reviews`).then(setReviews).catch(() => {});
+        fetchData(`/submissions/${sol.id}/status-log`).then(setStatusLog).catch(() => {});
+
         const [execUser] = await Promise.all([
           user.fetchUserById(sol.executor_id),
           fetchedContest?.customer_id
@@ -59,7 +65,7 @@ const SolutionPage = () => {
         setError(err.message);
       }
     };
-    fetchData();
+    loadPageData();
   }, [number]);
 
   // Poll for evaluation result every 6s (max 20 attempts ≈ 2 min)
@@ -142,6 +148,7 @@ const SolutionPage = () => {
         newStatus,
       );
       setCurrentSolution(updatedSolution);
+      fetchData(`/submissions/${currentSolution.id}/status-log`).then(setStatusLog).catch(() => {});
     } catch (error) {
       console.error("Ошибка изменения статуса:", error);
     }
@@ -232,7 +239,7 @@ const SolutionPage = () => {
   const btnPrimary =
     "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors";
   const btnSecondary =
-    "inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-colors";
+    "inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-colors";
   const btnDanger =
     "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors";
   const btnInfo =
@@ -243,19 +250,33 @@ const SolutionPage = () => {
     "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition-colors";
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 mb-4 text-sm">
+          <button
+            onClick={() => navigate(`/contest/${currentContest.number}/solutions`)}
+            className="text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+          >
+            Решения
+          </button>
+          <span className="text-gray-300 dark:text-gray-600">/</span>
+          <span className="text-gray-700 dark:text-gray-300 font-medium truncate max-w-xs">
+            {currentSolution.title || "Без названия"}
+          </span>
+        </nav>
+
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in">
           {/* Header */}
-          <div className="px-6 py-5 border-b border-gray-100">
+          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900 leading-tight mb-1">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight mb-1">
                   {currentSolution.title || "Без названия"}
                 </h1>
-                <p className="text-sm text-gray-500 mb-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                   Конкурс «{currentContest.title}» от{" "}
-                  <span className="font-medium text-violet-600">
+                  <span className="font-medium text-violet-600 dark:text-violet-400">
                     @
                     {user.getById(currentContest.customer_id)?.login ||
                       "Неизвестно"}
@@ -272,14 +293,14 @@ const SolutionPage = () => {
                 </span>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-semibold text-gray-700">
+                <p className="font-semibold text-gray-700 dark:text-gray-300">
                   {freelancer?.login || "Неизвестный фрилансер"}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   Создано: {formatDate(currentSolution.created_at)}
                 </p>
                 {!isCreated && (
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
                     Обновлено: {formatDate(currentSolution.updated_at)}
                   </p>
                 )}
@@ -289,8 +310,8 @@ const SolutionPage = () => {
 
           {/* Body */}
           <div className="px-6 py-5">
-            <h2 className="text-lg font-bold text-gray-800 mb-3">Описание</h2>
-            <div className="prose prose-sm max-w-none text-gray-700">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">Описание</h2>
+            <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
               <Markdown options={{ disableParsingRawHTML: true }}>
                 {currentSolution.description}
               </Markdown>
@@ -299,100 +320,134 @@ const SolutionPage = () => {
             {/* AI Evaluation section */}
             {(solution.evaluation || solution.evaluationLoading || (shouldHaveEvaluation && !solution.evaluationUnavailable)) && (
               <>
-                <hr className="my-5 border-gray-100" />
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <h3 className="text-base font-bold text-gray-800">Автоматическая оценка ИИ</h3>
-                  <button
-                    onClick={async () => {
-                      setEvalTriggering(true);
-                      try {
-                        await solution.triggerEvaluation(currentSolution.id);
-                      } catch { /* ignore */ } finally {
-                        setEvalTriggering(false);
-                      }
-                    }}
-                    disabled={evalTriggering || solution.evaluationLoading}
-                    title="Запустить оценку заново"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs text-gray-500 font-medium transition-colors"
-                  >
-                    {evalTriggering ? (
-                      <span className="w-3 h-3 rounded-full border-2 border-gray-300 border-t-gray-500 animate-spin" />
-                    ) : '↻'}
-                    Оценить
-                  </button>
-                </div>
+                <hr className="my-5 border-gray-100 dark:border-gray-700" />
                 {(solution.evaluationLoading || (!solution.evaluation && shouldHaveEvaluation)) ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <div className="w-4 h-4 rounded-full border-2 border-violet-200 border-t-violet-500 animate-spin" />
-                    {solution.evaluationLoading ? 'Загружается…' : 'Оценка в процессе, проверяем каждые 6 сек…'}
-                  </div>
-                ) : solution.evaluation && (
-                  <div className="space-y-3">
-                    {/* Score row */}
-                    <div className="flex items-center gap-4">
-                      <div className={`flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white ${
-                        solution.evaluation.compliance_score >= 80 ? 'bg-emerald-500' :
-                        solution.evaluation.compliance_score >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                      }`}>
-                        {solution.evaluation.compliance_score}%
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-700">Соответствие требованиям ТЗ</p>
-                        {solution.evaluation.critical_issues ? (
-                          <p className="text-xs text-red-600 font-semibold mt-0.5">⚠ Обнаружены критические нарушения</p>
-                        ) : (
-                          <p className="text-xs text-emerald-600 mt-0.5">Критических нарушений нет</p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {solution.evaluation.passed_requirements.length} выполнено · {solution.evaluation.failed_requirements.length} не выполнено
+                  <div className="rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50/40 dark:bg-violet-900/10 px-5 py-4 flex items-center gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-violet-600 dark:text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-violet-800 dark:text-violet-300 text-sm">Автоматическая оценка ИИ</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="w-4 h-4 rounded-full border-2 border-violet-300 dark:border-violet-700 border-t-violet-600 dark:border-t-violet-400 animate-spin flex-shrink-0" />
+                        <p className="text-xs text-violet-500 dark:text-violet-400">
+                          {solution.evaluationLoading ? 'Загружается…' : 'Оценка выполняется, проверяем каждые 6 сек…'}
                         </p>
                       </div>
                     </div>
-
-                    {/* Requirements lists */}
-                    {solution.evaluation.passed_requirements.length > 0 && (
-                      <div className="bg-emerald-50 rounded-xl px-4 py-3">
-                        <p className="text-xs font-semibold text-emerald-700 mb-2">Выполненные требования</p>
-                        <ul className="space-y-1">
-                          {solution.evaluation.passed_requirements.map((r, i) => (
-                            <li key={i} className="text-xs text-gray-700 flex gap-2">
-                              <span className="text-emerald-500 flex-shrink-0 font-bold">✓</span>{r}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {solution.evaluation.failed_requirements.length > 0 && (
-                      <div className="bg-red-50 rounded-xl px-4 py-3">
-                        <p className="text-xs font-semibold text-red-600 mb-2">Невыполненные требования</p>
-                        <ul className="space-y-1">
-                          {solution.evaluation.failed_requirements.map((r, i) => (
-                            <li key={i} className="text-xs text-gray-700 flex gap-2">
-                              <span className="text-red-400 flex-shrink-0 font-bold">✗</span>{r}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    <p className="text-xs text-gray-400">Оценка сформирована автоматически · Окончательное решение принимает заказчик</p>
                   </div>
-                )}
+                ) : solution.evaluation && (() => {
+                  const score = solution.evaluation.compliance_score;
+                  const isHigh = score >= 80;
+                  const isMid = score >= 50;
+                  const scoreColor = isHigh ? 'text-emerald-600 dark:text-emerald-400' : isMid ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
+                  const scoreBg = isHigh ? 'bg-emerald-500' : isMid ? 'bg-amber-500' : 'bg-red-500';
+                  const borderColor = isHigh ? 'border-emerald-200 dark:border-emerald-800' : isMid ? 'border-amber-200 dark:border-amber-800' : 'border-red-200 dark:border-red-800';
+                  const bgColor = isHigh ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : isMid ? 'bg-amber-50/50 dark:bg-amber-900/10' : 'bg-red-50/50 dark:bg-red-900/10';
+                  const trackColor = isHigh ? 'bg-emerald-100 dark:bg-emerald-900/30' : isMid ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-red-100 dark:bg-red-900/30';
+                  return (
+                    <div className={`rounded-2xl border ${borderColor} ${bgColor} overflow-hidden`}>
+                      {/* Header with score */}
+                      <div className="px-5 py-4 flex items-center gap-4">
+                        <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center">
+                          <svg className="w-7 h-7 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">Оценка ИИ · соответствие ТЗ</p>
+                            <button
+                              onClick={async () => {
+                                setEvalTriggering(true);
+                                try { await solution.triggerEvaluation(currentSolution.id); }
+                                catch { /* ignore */ } finally { setEvalTriggering(false); }
+                              }}
+                              disabled={evalTriggering || solution.evaluationLoading}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors flex-shrink-0"
+                            >
+                              {evalTriggering ? <span className="w-2.5 h-2.5 rounded-full border-2 border-gray-300 border-t-gray-500 animate-spin" /> : '↻'}
+                              Переоценить
+                            </button>
+                          </div>
+                          {/* Score bar */}
+                          <div className="mt-2 flex items-center gap-3">
+                            <div className={`text-3xl font-black ${scoreColor}`}>{score}%</div>
+                            <div className="flex-1">
+                              <div className={`h-2.5 rounded-full ${trackColor} overflow-hidden`}>
+                                <div
+                                  className={`h-full rounded-full ${scoreBg} transition-all duration-700`}
+                                  style={{ width: `${score}%` }}
+                                />
+                              </div>
+                              <div className="flex items-center gap-3 mt-1">
+                                {solution.evaluation.critical_issues ? (
+                                  <span className="text-xs text-red-600 dark:text-red-400 font-semibold">⚠ Критические нарушения</span>
+                                ) : (
+                                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✓ Критических нарушений нет</span>
+                                )}
+                                <span className="text-xs text-gray-400 dark:text-gray-500">
+                                  {solution.evaluation.passed_requirements.length} вып. · {solution.evaluation.failed_requirements.length} не вып.
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Requirements lists */}
+                      {(solution.evaluation.passed_requirements.length > 0 || solution.evaluation.failed_requirements.length > 0) && (
+                        <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 grid gap-2 sm:grid-cols-2">
+                          {solution.evaluation.passed_requirements.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">Выполнено</p>
+                              <ul className="space-y-1">
+                                {solution.evaluation.passed_requirements.map((r, i) => (
+                                  <li key={i} className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed">
+                                    <span className="text-emerald-500 flex-shrink-0 font-bold mt-px">✓</span>{r}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {solution.evaluation.failed_requirements.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">Не выполнено</p>
+                              <ul className="space-y-1">
+                                {solution.evaluation.failed_requirements.map((r, i) => (
+                                  <li key={i} className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed">
+                                    <span className="text-red-400 flex-shrink-0 font-bold mt-px">✗</span>{r}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="px-5 py-2 border-t border-gray-100 dark:border-gray-700">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">Оценка сформирована автоматически · Окончательное решение принимает заказчик</p>
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )}
 
             {/* Milestone payments section */}
             {hasMilestones && (isContestOwner || isAdmin) && (
               <>
-                <hr className="my-5 border-gray-100" />
+                <hr className="my-5 border-gray-100 dark:border-gray-700" />
                 <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
-                  <h3 className="text-base font-bold text-gray-800">Поэтапная выплата</h3>
+                  <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Поэтапная выплата</h3>
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-500">
-                      Выплачено: <span className="font-semibold text-gray-700">{totalMilestonePaid.toLocaleString('ru-RU')} ₽</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Выплачено: <span className="font-semibold text-gray-700 dark:text-gray-300">{totalMilestonePaid.toLocaleString('ru-RU')} ₽</span>
                     </span>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-gray-500">
-                      Остаток эскроу: <span className={`font-semibold ${escrowRemaining > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>{escrowRemaining.toLocaleString('ru-RU')} ₽</span>
+                    <span className="text-gray-300 dark:text-gray-600">|</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Остаток эскроу: <span className={`font-semibold ${escrowRemaining > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>{escrowRemaining.toLocaleString('ru-RU')} ₽</span>
                     </span>
                   </div>
                 </div>
@@ -404,10 +459,10 @@ const SolutionPage = () => {
                     const paid = paidStageIds.has(stage.id);
                     const loading = milestoneLoading === stage.id;
                     return (
-                      <div key={stage.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50">
+                      <div key={stage.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-800 text-sm truncate">{stage.name}</p>
-                          <p className="text-xs text-gray-500">{stage.prize_amount.toLocaleString('ru-RU')} ₽</p>
+                          <p className="font-medium text-gray-800 dark:text-gray-200 text-sm truncate">{stage.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{stage.prize_amount.toLocaleString('ru-RU')} ₽</p>
                         </div>
                         {paid ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
@@ -441,11 +496,11 @@ const SolutionPage = () => {
 
             {(currentSolution.files?.length > 0 || isExecutor) && (
               <>
-                <hr className="my-5 border-gray-100" />
+                <hr className="my-5 border-gray-100 dark:border-gray-700" />
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-base font-bold text-gray-800">Файлы</h3>
+                  <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Файлы</h3>
                   {isExecutor && (
-                    <label className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 font-medium transition-colors cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <label className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
                       {uploadingFiles ? 'Загрузка...' : '↑ Добавить файлы'}
                       <input
                         type="file"
@@ -488,14 +543,87 @@ const SolutionPage = () => {
                     </button>
                   </>
                 ) : (
-                  <p className="text-sm text-gray-400 italic">Файлы не прикреплены.</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 italic">Файлы не прикреплены.</p>
                 )}
               </>
             )}
           </div>
 
+          {/* Reviews summary */}
+          {reviews.length > 0 && (
+            <>
+              <hr className="my-0 border-gray-100 dark:border-gray-700" />
+              <div className="px-6 py-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
+                    Отзывы ({reviews.length})
+                    {currentSolution.avg_score != null && (
+                      <span className="ml-2 text-sm font-normal text-amber-600 dark:text-amber-400">★ ср. {currentSolution.avg_score}</span>
+                    )}
+                  </h3>
+                  <button
+                    onClick={() => navigate(`/solution/${currentSolution.number}/reviews`)}
+                    className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium transition-colors"
+                  >
+                    Все отзывы →
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {reviews.slice(0, 3).map(r => (
+                    <div
+                      key={r.id}
+                      onClick={() => navigate(`/solution/${currentSolution.number}/review/${r.number}`)}
+                      className="cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-bold text-xs">
+                          {r.score} / 10
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {new Date(r.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                        {r.files?.length > 0 && (
+                          <span className="text-xs text-gray-400 dark:text-gray-500">📎 {r.files.length}</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{r.commentary}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Status history */}
+          {statusLog.length > 0 && (
+            <>
+              <hr className="my-0 border-gray-100 dark:border-gray-700" />
+              <div className="px-6 py-5">
+                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-3">История статусов</h3>
+                <div className="space-y-1">
+                  {statusLog.map((log, i) => {
+                    const fromStatus = solution.getStatus(log.old_status);
+                    const toStatus = solution.getStatus(log.new_status);
+                    return (
+                      <div key={log.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-gray-300 dark:text-gray-600 font-mono">{new Date(log.changed_at).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        {log.old_status != null && (
+                          <>
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">{fromStatus?.label || log.old_status}</span>
+                            <span className="text-gray-400 dark:text-gray-500">→</span>
+                          </>
+                        )}
+                        <span className="px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-semibold">{toStatus?.label || log.new_status}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+          <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex flex-wrap gap-2 justify-between">
               {/* Navigation buttons */}
               <div className="flex flex-wrap gap-2">
@@ -531,6 +659,26 @@ const SolutionPage = () => {
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-2">
+                {(isAdmin || isContestOwner) && !solution.evaluation && !solution.evaluationLoading && (
+                  <button
+                    onClick={async () => {
+                      setEvalTriggering(true);
+                      try { await solution.triggerEvaluation(currentSolution.id); }
+                      catch { /* ignore */ } finally { setEvalTriggering(false); }
+                    }}
+                    disabled={evalTriggering}
+                    className={btnWarning}
+                  >
+                    {evalTriggering ? (
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    ) : (
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
+                      </svg>
+                    )}
+                    Оценить
+                  </button>
+                )}
                 {(isOwner || isAdmin) && (
                   <>
                     <button
@@ -590,7 +738,10 @@ const SolutionPage = () => {
                         onClick={() => setShowWinnerModal(true)}
                         className={btnPrimary}
                       >
-                        🏆 {hasMilestones ? 'Завершить конкурс' : 'Выбрать победителем'}
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+                        </svg>
+                        {hasMilestones ? 'Завершить конкурс' : 'Выбрать победителем'}
                       </button>
                     )}
                   </>

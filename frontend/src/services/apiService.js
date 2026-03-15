@@ -1,36 +1,30 @@
 import axios from "axios";
 
+// ── Base URLs ─────────────────────────────────────────────────────────────────
+
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "";
+
+// Legacy per-service URLs (used as fallback when no gateway is configured)
 const USER_API_URL =
   import.meta.env.VITE_USER_API_URL || "http://localhost:8001";
 const CONTEST_API_URL =
   import.meta.env.VITE_CONTEST_API_URL || "http://localhost:8002";
-const IMPORT_EXPORT_API_URL =
-  import.meta.env.VITE_IMPORT_EXPORT_API_URL || CONTEST_API_URL;
 const PAYMENT_API_URL =
   import.meta.env.VITE_PAYMENT_API_URL || "http://localhost:8004";
 const EVAL_API_URL =
   import.meta.env.VITE_EVAL_API_URL || "http://localhost:8003";
 
-// Endpoints that belong to user-service
-const USER_ENDPOINTS = ["/auth/", "/users", "/profile"];
-// Endpoints that belong to payment-service
-const PAYMENT_ENDPOINTS = ["/payments", "/escrow", "/transactions", "/payouts", "/withdrawals"];
-// Endpoints that belong to evaluation-service
-const EVAL_ENDPOINTS = ["/evaluation"];
+// Endpoints that belong to each service (used when no gateway)
+const USER_ENDPOINTS    = ["/auth/", "/users"];
+const PAYMENT_ENDPOINTS = ["/payments", "/escrow", "/transactions", "/payouts", "/withdrawals", "/wallet"];
+const EVAL_ENDPOINTS    = ["/evaluation"];
 
-export { USER_API_URL, CONTEST_API_URL, IMPORT_EXPORT_API_URL, PAYMENT_API_URL, EVAL_API_URL };
+const IMPORT_EXPORT_API_URL =
+  import.meta.env.VITE_IMPORT_EXPORT_API_URL || CONTEST_API_URL;
 
-function isUserEndpoint(endpoint) {
-  return USER_ENDPOINTS.some((prefix) => endpoint.startsWith(prefix));
-}
+export { USER_API_URL, CONTEST_API_URL, IMPORT_EXPORT_API_URL, PAYMENT_API_URL, EVAL_API_URL, GATEWAY_URL };
 
-function isPaymentEndpoint(endpoint) {
-  return PAYMENT_ENDPOINTS.some((prefix) => endpoint.startsWith(prefix));
-}
-
-function isEvalEndpoint(endpoint) {
-  return EVAL_ENDPOINTS.some((prefix) => endpoint.startsWith(prefix));
-}
+// ── Axios client factory ──────────────────────────────────────────────────────
 
 function createClient(baseURL) {
   const client = axios.create({
@@ -49,17 +43,39 @@ function createClient(baseURL) {
   return client;
 }
 
-const userApi = createClient(USER_API_URL);
+// Single gateway client (used when VITE_GATEWAY_URL is set)
+const gatewayApi = createClient(GATEWAY_URL || CONTEST_API_URL);
+
+// Per-service clients (legacy fallback)
+const userApi    = createClient(USER_API_URL);
 const contestApi = createClient(CONTEST_API_URL);
-export const paymentApi = createClient(PAYMENT_API_URL);
-export const evalApi = createClient(EVAL_API_URL);
+const _paymentApi = createClient(PAYMENT_API_URL);
+const _evalApi   = createClient(EVAL_API_URL);
+
+// ── Client selection ──────────────────────────────────────────────────────────
 
 function getClient(endpoint) {
-  if (isUserEndpoint(endpoint)) return userApi;
-  if (isPaymentEndpoint(endpoint)) return paymentApi;
-  if (isEvalEndpoint(endpoint)) return evalApi;
+  if (GATEWAY_URL) return gatewayApi;
+  if (USER_ENDPOINTS.some((p) => endpoint.startsWith(p)))    return userApi;
+  if (PAYMENT_ENDPOINTS.some((p) => endpoint.startsWith(p))) return _paymentApi;
+  if (EVAL_ENDPOINTS.some((p) => endpoint.startsWith(p)))    return _evalApi;
   return contestApi;
 }
+
+function getBaseUrl(endpoint) {
+  if (GATEWAY_URL) return GATEWAY_URL;
+  if (USER_ENDPOINTS.some((p) => endpoint.startsWith(p)))    return USER_API_URL;
+  if (PAYMENT_ENDPOINTS.some((p) => endpoint.startsWith(p))) return PAYMENT_API_URL;
+  if (EVAL_ENDPOINTS.some((p) => endpoint.startsWith(p)))    return EVAL_API_URL;
+  return CONTEST_API_URL;
+}
+
+// Re-export for stores that use paymentApi / evalApi directly
+// When gateway is active they resolve to the gateway client
+export const paymentApi = GATEWAY_URL ? gatewayApi : _paymentApi;
+export const evalApi    = GATEWAY_URL ? gatewayApi : _evalApi;
+
+// ── API helpers ───────────────────────────────────────────────────────────────
 
 export const fetchData = async (endpoint, params = {}) => {
   try {
@@ -71,14 +87,21 @@ export const fetchData = async (endpoint, params = {}) => {
   }
 };
 
+/**
+ * Like fetchData but returns the raw axios response (including .status).
+ * Used where the caller needs to distinguish 200 vs 404 without throwing.
+ */
+export const fetchDataRaw = async (endpoint, params = {}) => {
+  const response = await getClient(endpoint).get(endpoint, {
+    params,
+    validateStatus: () => true,   // never throw on HTTP errors
+  });
+  return response;
+};
+
 export const sendData = async (endpoint, data = {}, isFile = false) => {
   if (isFile) {
-    // Use fetch for multipart uploads — axios with explicit Content-Type drops the boundary
-    let baseURL;
-    if (isUserEndpoint(endpoint)) baseURL = USER_API_URL;
-    else if (isPaymentEndpoint(endpoint)) baseURL = PAYMENT_API_URL;
-    else if (isEvalEndpoint(endpoint)) baseURL = EVAL_API_URL;
-    else baseURL = CONTEST_API_URL;
+    const baseURL = getBaseUrl(endpoint);
     const token = localStorage.getItem("token");
     const response = await fetch(`${baseURL}${endpoint}`, {
       method: "POST",
@@ -112,9 +135,7 @@ export const updateData = async (endpoint, data = {}) => {
 
 export const patchData = async (endpoint, data = {}, params = {}) => {
   try {
-    const response = await getClient(endpoint).patch(endpoint, data, {
-      params,
-    });
+    const response = await getClient(endpoint).patch(endpoint, data, { params });
     return response.data;
   } catch (error) {
     console.error(`Error patching data at ${endpoint}:`, error);
@@ -133,14 +154,7 @@ export const deleteData = async (endpoint, config = {}) => {
 };
 
 export const downloadFileOrZip = async (endpoint, filename) => {
-  // Use fetch instead of axios to avoid axios injecting Content-Type: application/json
-  // on GET requests, which can cause CORS preflight failures with FileResponse.
-  let baseURL;
-  if (isUserEndpoint(endpoint)) baseURL = USER_API_URL;
-  else if (isPaymentEndpoint(endpoint)) baseURL = PAYMENT_API_URL;
-  else if (isEvalEndpoint(endpoint)) baseURL = EVAL_API_URL;
-  else baseURL = CONTEST_API_URL;
-
+  const baseURL = getBaseUrl(endpoint);
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(`${baseURL}${endpoint}`, {

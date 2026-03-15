@@ -1,8 +1,10 @@
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 from datetime import datetime
+from app.config import settings
 from app.database import get_db
 from app.models import EvaluationResult
 from app.ollama_client import evaluate_submission
@@ -74,6 +76,18 @@ async def evaluate(data: EvaluateRequest, db: AsyncSession = Depends(get_db)):
 
     await db.commit()
     await db.refresh(record)
+
+    # Notify contest-service of the AI score
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.patch(
+                f"{settings.contest_service_url}/submissions/{data.submission_id}/ai-score",
+                params={"score": record.compliance_score, "critical_issues": str(record.critical_issues).lower()},
+                headers={"x-internal-secret": settings.internal_secret},
+            )
+    except Exception:
+        pass  # non-blocking
+
     return record
 
 

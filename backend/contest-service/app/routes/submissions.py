@@ -25,7 +25,7 @@ from app.clients import get_user, trigger_evaluation
 from app.file_text import extract_file_text
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
-from app.models import Contest, Review, Submission
+from app.models import Contest, Review, Submission, SubmissionStatusLog
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
@@ -67,6 +67,10 @@ class SubmissionOut(BaseModel):
     description: str | None
     files: list
     status: int
+    ai_score: float | None = None
+    critical_issues: bool | None = None
+    avg_score: float | None = None
+    last_review: "ReviewOut | None" = None
     created_at: datetime
     updated_at: datetime
     executor_login: str | None = None
@@ -80,6 +84,7 @@ async def _enrich_submissions(subs: list, db: AsyncSession) -> list[SubmissionOu
         return []
     contest_ids = list({s.contest_id for s in subs})
     executor_ids = list({s.executor_id for s in subs})
+    sub_ids = [s.id for s in subs]
 
     c_result = await db.execute(
         select(Contest.id, Contest.title).where(Contest.id.in_(contest_ids))
@@ -89,11 +94,33 @@ async def _enrich_submissions(subs: list, db: AsyncSession) -> list[SubmissionOu
     user_results = await asyncio.gather(*[get_user(uid) for uid in executor_ids])
     user_map = {u["id"]: u["login"] for u in user_results if u}
 
+    # avg_score per submission
+    avg_result = await db.execute(
+        select(Review.submission_id, func.avg(Review.score).label("avg"))
+        .where(Review.submission_id.in_(sub_ids))
+        .group_by(Review.submission_id)
+    )
+    avg_map = {row[0]: round(float(row[1]), 2) for row in avg_result}
+
+    # last review per submission (max id proxy for latest)
+    last_review_result = await db.execute(
+        select(Review)
+        .where(Review.submission_id.in_(sub_ids))
+        .order_by(Review.submission_id, Review.created_at.desc())
+    )
+    all_reviews = last_review_result.scalars().all()
+    last_review_map: dict = {}
+    for r in all_reviews:
+        if r.submission_id not in last_review_map:
+            last_review_map[r.submission_id] = ReviewOut.model_validate(r)
+
     return [
         SubmissionOut.model_validate(s).model_copy(
             update={
                 "executor_login": user_map.get(s.executor_id),
                 "contest_title": contest_map.get(s.contest_id),
+                "avg_score": avg_map.get(s.id),
+                "last_review": last_review_map.get(s.id),
             }
         )
         for s in subs
@@ -112,6 +139,7 @@ class ReviewOut(BaseModel):
     number: int
     score: float
     commentary: str | None
+    files: list = []
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -158,6 +186,8 @@ async def list_submissions(
     addedAfter: date | None = None,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
+    sort_by: str = Query("created_at", regex="^(title|created_at|status|ai_score)$"),
+    sort_dir: str = Query("desc", regex="^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
@@ -184,7 +214,14 @@ async def list_submissions(
         )
     if filters:
         q = q.where(and_(*filters))
-    q = q.order_by(Submission.created_at.desc()).offset((page - 1) * limit).limit(limit)
+    sort_col = {
+        "title": Submission.title,
+        "created_at": Submission.created_at,
+        "status": Submission.status,
+        "ai_score": Submission.ai_score,
+    }.get(sort_by, Submission.created_at)
+    order = sort_col.desc() if sort_dir == "desc" else sort_col.asc()
+    q = q.order_by(order).offset((page - 1) * limit).limit(limit)
     result = await db.execute(q)
     subs = result.scalars().all()
     return await _enrich_submissions(subs, db)
@@ -249,13 +286,20 @@ async def update_status(
     submission_id: int,
     status: int,
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(require_role("customer", "admin")),
+    current_user: dict = Depends(require_role("customer", "admin")),
 ):
     result = await db.execute(select(Submission).where(Submission.id == submission_id))
     s = result.scalar_one_or_none()
     if not s:
         raise HTTPException(status_code=404, detail="Submission not found")
+    old_status = s.status
     s.status = status
+    db.add(SubmissionStatusLog(
+        submission_id=submission_id,
+        old_status=old_status,
+        new_status=status,
+        changed_by_id=current_user["id"],
+    ))
     await db.commit()
     await db.refresh(s)
     return (await _enrich_submissions([s], db))[0]
@@ -521,3 +565,151 @@ async def delete_review(
         raise HTTPException(status_code=403, detail="Forbidden")
     await db.delete(review)
     await db.commit()
+
+# ─── Review Files ─────────────────────────────────────────────────────────────
+
+REVIEW_UPLOAD_DIR = "/app/uploads/reviews"
+
+
+@router.post("/{submission_id}/reviews/{review_number}/files", response_model=ReviewOut)
+async def upload_review_files(
+    submission_id: int,
+    review_number: int,
+    files: list[UploadFile] = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Review).where(
+            Review.submission_id == submission_id, Review.number == review_number
+        )
+    )
+    review = result.scalar_one_or_none()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    if review.reviewer_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    upload_dir = f"{REVIEW_UPLOAD_DIR}/{review.id}"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    existing = list(review.files or [])
+    for file in files:
+        safe_name = os.path.basename(file.filename or "file")
+        dest = f"{upload_dir}/{safe_name}"
+        async with aiofiles.open(dest, "wb") as f:
+            await f.write(await file.read())
+        if safe_name not in existing:
+            existing.append(safe_name)
+
+    review.files = existing
+    flag_modified(review, "files")
+    await db.commit()
+    await db.refresh(review)
+    return review
+
+
+@router.get("/{submission_id}/reviews/{review_number}/files/{filename}")
+async def download_review_file(
+    submission_id: int,
+    review_number: int,
+    filename: str,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Review).where(
+            Review.submission_id == submission_id, Review.number == review_number
+        )
+    )
+    review = result.scalar_one_or_none()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    path = f"{REVIEW_UPLOAD_DIR}/{review.id}/{filename}"
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path, filename=filename)
+
+
+@router.delete("/{submission_id}/reviews/{review_number}/files/{filename}", response_model=ReviewOut)
+async def delete_review_file(
+    submission_id: int,
+    review_number: int,
+    filename: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Review).where(
+            Review.submission_id == submission_id, Review.number == review_number
+        )
+    )
+    review = result.scalar_one_or_none()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    if review.reviewer_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    existing = list(review.files or [])
+    if filename in existing:
+        existing.remove(filename)
+    review.files = existing
+    flag_modified(review, "files")
+
+    path = f"{REVIEW_UPLOAD_DIR}/{review.id}/{filename}"
+    if os.path.isfile(path):
+        os.remove(path)
+
+    await db.commit()
+    await db.refresh(review)
+    return review
+
+
+# ─── Status Log ───────────────────────────────────────────────────────────────
+
+
+class StatusLogOut(BaseModel):
+    id: int
+    old_status: int | None
+    new_status: int
+    changed_by_id: int | None
+    changed_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+@router.get("/{submission_id}/status-log", response_model=list[StatusLogOut])
+async def get_status_log(
+    submission_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(SubmissionStatusLog)
+        .where(SubmissionStatusLog.submission_id == submission_id)
+        .order_by(SubmissionStatusLog.changed_at)
+    )
+    return result.scalars().all()
+
+
+# ─── AI Score (internal) ──────────────────────────────────────────────────────
+
+from app.dependencies import verify_internal
+
+
+@router.patch("/{submission_id}/ai-score", dependencies=[Depends(verify_internal)])
+async def set_ai_score(
+    submission_id: int,
+    score: float = Query(...),
+    critical_issues: bool | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Submission).where(Submission.id == submission_id))
+    s = result.scalar_one_or_none()
+    if not s:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    s.ai_score = score
+    if critical_issues is not None:
+        s.critical_issues = critical_issues
+    await db.commit()
+    return {"submission_id": submission_id, "ai_score": score, "critical_issues": critical_issues}

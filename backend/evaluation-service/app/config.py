@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.2-vision"
     evaluation_stub: bool = True  # set EVALUATION_STUB=false to use real Ollama
+    contest_service_url: str = "http://contest-service:8000"
 
     class Config:
         env_file = ".env"

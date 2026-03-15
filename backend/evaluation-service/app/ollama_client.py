@@ -73,7 +73,7 @@ async def _generate(prompt: str, images: list[str] | None = None) -> str:
         "model": settings.ollama_model,
         "prompt": prompt,
         "stream": False,
-        "options": {"num_ctx": 2048},
+        "options": {"num_ctx": 16384},
     }
     if images:
         payload["images"] = images
@@ -100,9 +100,17 @@ def _format_image_meta(image_meta: list[dict]) -> str:
 def _parse_result(raw: str, tz_text: str) -> dict:
     """Parse LLM JSON response into evaluation result dict."""
     try:
-        start = raw.index("{")
-        end = raw.rindex("}") + 1
-        data = json.loads(raw[start:end])
+        # Strip markdown code fences if model wrapped its answer
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            # Drop the opening fence line (```json or ```)
+            cleaned = cleaned[cleaned.index("\n") + 1:] if "\n" in cleaned else cleaned
+            # Drop the closing fence if present
+            if cleaned.rstrip().endswith("```"):
+                cleaned = cleaned.rstrip()[:-3].rstrip()
+        start = cleaned.index("{")
+        end = cleaned.rindex("}") + 1
+        data = json.loads(cleaned[start:end])
     except (ValueError, json.JSONDecodeError):
         return {
             "passed_requirements": [],

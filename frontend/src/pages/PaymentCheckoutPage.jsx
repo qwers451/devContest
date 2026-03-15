@@ -118,9 +118,9 @@ const PaymentCheckoutPage = () => {
 
     if (!contestId || !amount) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-                    <p className="text-gray-500">Некорректные параметры оплаты.</p>
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center">
+                    <p className="text-gray-500 dark:text-gray-400">Некорректные параметры оплаты.</p>
                     <button onClick={() => navigate('/')} className="mt-4 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm">
                         На главную
                     </button>
@@ -130,19 +130,19 @@ const PaymentCheckoutPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-md animate-fade-in">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Оплата призового фонда</h1>
-                <p className="text-gray-500 text-sm mb-6">Конкурс #{contestId}</p>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 w-full max-w-md animate-fade-in">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Оплата призового фонда</h1>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Конкурс #{contestId}</p>
 
                 {/* Amount */}
-                <div className="bg-gray-50 rounded-xl p-4 mb-6 text-center">
-                    <div className="text-3xl font-bold text-gray-900">{amount.toLocaleString('ru-RU')} ₽</div>
-                    <div className="text-sm text-gray-500 mt-1">будет заморожено в эскроу до выбора победителя</div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-6 text-center">
+                    <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{amount.toLocaleString('ru-RU')} ₽</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">будет заморожено в эскроу до выбора победителя</div>
                 </div>
 
                 {error && (
-                    <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                    <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
                         {error}
                     </div>
                 )}
@@ -150,7 +150,7 @@ const PaymentCheckoutPage = () => {
                 {/* Method not chosen yet */}
                 {method === null && balanceLoaded && (
                     <div className="space-y-3">
-                        <p className="text-sm font-semibold text-gray-700 mb-1">Выберите способ оплаты:</p>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Выберите способ оплаты:</p>
 
                         {/* Pay from balance */}
                         <button
@@ -158,15 +158,15 @@ const PaymentCheckoutPage = () => {
                             disabled={!hasBalance}
                             className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl border text-sm font-semibold transition-all ${
                                 hasBalance
-                                    ? 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'
-                                    : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                    ? 'border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/30'
+                                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
                             }`}
                         >
                             <span className="flex items-center gap-2">
                                 <span className="text-base">💼</span>
                                 Списать с баланса
                             </span>
-                            <span className={`text-xs font-mono ${hasBalance ? 'text-violet-600' : 'text-gray-400'}`}>
+                            <span className={`text-xs font-mono ${hasBalance ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400'}`}>
                                 {Number(payment.balance).toLocaleString('ru-RU')} ₽
                                 {!hasBalance && ' — недостаточно'}
                             </span>
@@ -175,7 +175,7 @@ const PaymentCheckoutPage = () => {
                         {/* Pay by card */}
                         <button
                             onClick={handlePayByCard}
-                            className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
+                            className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                         >
                             <span className="flex items-center gap-2">
                                 <span className="text-base">💳</span>
@@ -212,7 +212,7 @@ const PaymentCheckoutPage = () => {
                         </div>
 
                         {status === 'held' && (
-                            <div className="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm text-center">
+                            <div className="px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm text-center">
                                 Платёж подтверждён! {activating ? 'Активируем конкурс…' : 'Конкурс активирован.'}
                                 {contestNum && <span> Переход через 2 сек…</span>}
                             </div>
@@ -226,10 +226,10 @@ const PaymentCheckoutPage = () => {
                                 >
                                     Перейти к оплате на ЮКасса
                                 </a>
-                                <p className="text-xs text-gray-400 text-center">
+                                <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
                                     Страница обновится автоматически после оплаты.<br />
-                                    Тест: <code className="bg-gray-100 px-1 rounded">5555555555554477</code> — успех,{' '}
-                                    <code className="bg-gray-100 px-1 rounded">5555555555554444</code> — отказ
+                                    Тест: <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-1 rounded">5555555555554477</code> — успех,{' '}
+                                    <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-1 rounded">5555555555554444</code> — отказ
                                 </p>
                             </div>
                         )}

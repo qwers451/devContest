@@ -1,11 +1,10 @@
-import React, { useEffect, useContext, useState } from "react";
+import React, { useEffect, useContext } from "react";
 import { Context } from "../main.jsx";
 import ContestCard from "./ContestCard.jsx";
 import { observer } from "mobx-react-lite";
 
 const ContestsList = observer(() => {
   const { contest, user } = useContext(Context);
-  const [showLoader, setShowLoader] = useState(false);
 
   useEffect(() => {
     contest.fetchContestsFiltered(contest.currentPage);
@@ -23,16 +22,8 @@ const ContestsList = observer(() => {
     contest.fetchContestsFiltered(pageNumber);
   };
 
-  useEffect(() => {
-    if (contest.isLoading) {
-      setShowLoader(true);
-    } else {
-      const timer = setTimeout(() => setShowLoader(false), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [contest.isLoading]);
-
-  if (showLoader) {
+  // Show spinner only on initial empty load; during refetch keep showing stale data
+  if (contest.isLoading && contest.contests.length === 0) {
     return (
       <div className="flex justify-center items-center my-10">
         <div className="w-8 h-8 rounded-full border-4 border-violet-200 dark:border-violet-900 border-t-violet-600 dark:border-t-violet-500 animate-spin" />
@@ -40,7 +31,7 @@ const ContestsList = observer(() => {
     );
   }
 
-  if (contest.contests.length === 0) {
+  if (!contest.isLoading && contest.contests.length === 0) {
     return (
       <div className="text-center my-10 text-gray-500 dark:text-gray-400">
         Нет конкурсов по выбранным фильтрам

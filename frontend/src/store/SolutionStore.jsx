@@ -1,10 +1,10 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import {
   fetchData,
+  fetchDataRaw,
   deleteData,
   patchData,
   sendData,
-  evalApi,
 } from "../services/apiService";
 
 const baseForm = {
@@ -75,6 +75,8 @@ export default class SolutionStore {
     this._page = 1;
     this._limit = 2;
     this._totalCount = 0;
+    this._sortBy = "created_at";
+    this._sortDir = "desc";
     makeAutoObservable(this);
   }
 
@@ -177,6 +179,11 @@ export default class SolutionStore {
     return this._totalCount;
   }
 
+  setSortBy(val) { this._sortBy = val; this._lastFilterParams = null; }
+  setSortDir(val) { this._sortDir = val; this._lastFilterParams = null; }
+  get sortBy() { return this._sortBy; }
+  get sortDir() { return this._sortDir; }
+
   get statusOptions() {
     return Object.entries(this.statusMap).map(([value, data]) => ({
       value: parseInt(value),
@@ -203,6 +210,8 @@ export default class SolutionStore {
         params.addedBefore = this._addedBefore.toISOString().split("T")[0];
       if (this._addedAfter)
         params.addedAfter = this._addedAfter.toISOString().split("T")[0];
+      params.sort_by = this._sortBy;
+      params.sort_dir = this._sortDir;
 
       if (!this.hasFiltersChanged(params) && this._solutions.length > 0) {
         console.log("Using cached solutions");
@@ -231,6 +240,8 @@ export default class SolutionStore {
     this._selectedStatuses = [];
     this._addedBefore = null;
     this._addedAfter = null;
+    this._sortBy = "created_at";
+    this._sortDir = "desc";
     this.fetchSolutionsFiltered();
   }
 
@@ -354,7 +365,7 @@ export default class SolutionStore {
   async fetchEvaluation(submissionId) {
     runInAction(() => { this.evaluationLoading = true; this.evaluationUnavailable = false; });
     try {
-      const res = await evalApi.get(`/evaluation/${submissionId}`, { validateStatus: (s) => s === 200 || s === 404 });
+      const res = await fetchDataRaw(`/evaluation/${submissionId}`);
       if (res.status === 404) {
         runInAction(() => { this.evaluation = null; });
         return false;

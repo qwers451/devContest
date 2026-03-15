@@ -4,11 +4,11 @@ import { useSearchParams } from 'react-router-dom';
 import { Context } from '../main.jsx';
 
 const STATUS_LABELS = {
-    pending:  { label: 'В обработке', cls: 'bg-yellow-100 text-yellow-700' },
-    held:     { label: 'Оплачено',    cls: 'bg-emerald-100 text-emerald-700' },
-    released: { label: 'Завершён',    cls: 'bg-violet-100 text-violet-700' },
-    failed:   { label: 'Ошибка',      cls: 'bg-red-100 text-red-600' },
-    refunded: { label: 'Возвращено',  cls: 'bg-gray-100 text-gray-600' },
+    pending:  { label: 'В обработке', cls: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' },
+    held:     { label: 'Оплачено',    cls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
+    released: { label: 'Завершён',    cls: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' },
+    failed:   { label: 'Ошибка',      cls: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
+    refunded: { label: 'Возвращено',  cls: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400' },
 };
 
 const TX_LABELS = {
@@ -28,7 +28,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const WalletPage = () => {
-    const { payment, user } = useContext(Context);
+    const { payment, user, contest } = useContext(Context);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const isExecutor = user.user?.role === 'executor';
@@ -57,6 +57,7 @@ const WalletPage = () => {
     const [refundingId, setRefundingId] = useState(null);
     const [refundError, setRefundError] = useState('');
     const [refundSuccess, setRefundSuccess] = useState('');
+    const [contestTitles, setContestTitles] = useState({});
 
     const [topupRefundingId, setTopupRefundingId] = useState(null);
     const [topupRefundError, setTopupRefundError] = useState('');
@@ -107,6 +108,22 @@ const WalletPage = () => {
         if (isCustomer) payment.fetchHistory();
         payment.fetchWithdrawals();
     }, []);
+
+    // Fetch contest titles for payment history
+    useEffect(() => {
+        const ids = payment.history.map(p => p.contest_id).filter(Boolean);
+        if (!ids.length) return;
+        const missing = ids.filter(id => !contestTitles[id]);
+        if (!missing.length) return;
+        Promise.all(missing.map(id => contest.fetchOneContestById(id).then(c => [id, c?.title]).catch(() => [id, null])))
+            .then(entries => {
+                setContestTitles(prev => {
+                    const next = { ...prev };
+                    entries.forEach(([id, title]) => { if (title) next[id] = title; });
+                    return next;
+                });
+            });
+    }, [payment.history]);
 
     const handleTopup = async (e) => {
         e.preventDefault();
@@ -196,7 +213,7 @@ const WalletPage = () => {
         }
     };
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 text-sm bg-white transition-all';
+    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 dark:text-gray-100 text-sm bg-white dark:bg-gray-700 transition-all';
 
     const tabs = [
         { key: 'balance', label: 'Баланс' },
@@ -207,9 +224,9 @@ const WalletPage = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 py-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
             <div className="max-w-3xl mx-auto px-4">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6">Кошелёк</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Кошелёк</h1>
 
                 {/* Balance card */}
                 <div className="bg-gradient-to-br from-violet-600 to-violet-700 rounded-2xl p-6 mb-6 text-white shadow-lg">
@@ -253,15 +270,15 @@ const WalletPage = () => {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto">
+                <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
                     {tabs.map(t => (
                         <button
                             key={t.key}
                             onClick={() => setTab(t.key)}
                             className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
                                 tab === t.key
-                                    ? 'border-violet-600 text-violet-700'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    ? 'border-violet-600 text-violet-700 dark:text-violet-400'
+                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                         >
                             {t.label}
@@ -273,22 +290,22 @@ const WalletPage = () => {
                 {tab === 'balance' && (
                     <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-white rounded-2xl border border-gray-100 p-4">
-                                <div className="text-xs text-gray-400 mb-1">Доступно</div>
-                                <div className="text-2xl font-bold text-gray-900">
+                            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">Доступно</div>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                                     {Number(payment.balance).toLocaleString('ru-RU')} ₽
                                 </div>
                             </div>
-                            <div className="bg-white rounded-2xl border border-gray-100 p-4">
-                                <div className="text-xs text-gray-400 mb-1">Транзакций</div>
-                                <div className="text-2xl font-bold text-gray-900">
+                            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">Транзакций</div>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                                     {payment.walletTransactions.length}
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-blue-50 rounded-2xl border border-blue-100 p-4 text-sm text-blue-700">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 p-4 text-sm text-blue-700 dark:text-blue-300">
                             <strong>Как работает кошелёк:</strong>
-                            <ul className="mt-1 space-y-0.5 list-disc list-inside text-blue-600">
+                            <ul className="mt-1 space-y-0.5 list-disc list-inside text-blue-600 dark:text-blue-400">
                                 <li>Пополните баланс и используйте его для оплаты конкурсов</li>
                                 {isExecutor && <li>Выигрыш за конкурсы начисляется сюда автоматически</li>}
                                 <li>Выведите средства на карту в любой момент</li>
@@ -301,12 +318,12 @@ const WalletPage = () => {
                 {tab === 'transactions' && (
                     <div>
                         {topupRefundSuccess && (
-                            <div className="mb-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+                            <div className="mb-3 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm">
                                 {topupRefundSuccess}
                             </div>
                         )}
                         {topupRefundError && (
-                            <div className="mb-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                            <div className="mb-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
                                 {topupRefundError}
                             </div>
                         )}
@@ -332,13 +349,13 @@ const WalletPage = () => {
                                     const isCredit = tx.amount > 0;
                                     const canRefund = tx.tx_type === 'topup' && isCredit && tx.reference_id && !refundedIds.has(tx.reference_id);
                                     return (
-                                        <div key={tx.id} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between gap-3">
+                                        <div key={tx.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-between gap-3">
                                             <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-semibold text-gray-800">{cfg.label}</div>
+                                                <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">{cfg.label}</div>
                                                 {tx.description && (
-                                                    <div className="text-xs text-gray-400 mt-0.5 truncate">{tx.description}</div>
+                                                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{tx.description}</div>
                                                 )}
-                                                <div className="text-xs text-gray-400">
+                                                <div className="text-xs text-gray-400 dark:text-gray-500">
                                                     {new Date(tx.created_at).toLocaleDateString('ru-RU', {
                                                         day: '2-digit', month: 'long', year: 'numeric',
                                                     })}
@@ -352,7 +369,7 @@ const WalletPage = () => {
                                                     <button
                                                         onClick={() => handleTopupRefund(tx.reference_id)}
                                                         disabled={topupRefundingId === tx.reference_id}
-                                                        className="text-xs px-2.5 py-0.5 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                        className="text-xs px-2.5 py-0.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors disabled:opacity-50"
                                                     >
                                                         {topupRefundingId === tx.reference_id ? 'Возврат…' : 'Вернуть'}
                                                     </button>
@@ -371,12 +388,12 @@ const WalletPage = () => {
                 {tab === 'history' && (
                     <div>
                         {refundSuccess && (
-                            <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+                            <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm">
                                 {refundSuccess}
                             </div>
                         )}
                         {refundError && (
-                            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
                                 {refundError}
                             </div>
                         )}
@@ -394,38 +411,40 @@ const WalletPage = () => {
                                     return (
                                     <div
                                         key={p.id}
-                                        className={`rounded-2xl border p-4 flex items-center justify-between ${isFinished ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-100'}`}
+                                        className={`rounded-2xl border p-4 flex items-center justify-between ${isFinished ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700'}`}
                                     >
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 {isFinished && (
-                                                    <span className="text-gray-400" title="Конкурс завершён">🔒</span>
+                                                    <span className="text-gray-400 dark:text-gray-500" title="Конкурс завершён">🔒</span>
                                                 )}
-                                                <div className="text-sm font-semibold text-gray-800">
-                                                    Конкурс #{p.contest_id}
+                                                <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                    {contestTitles[p.contest_id]
+                                                        ? <span title={`Конкурс #${p.contest_id}`}>{contestTitles[p.contest_id]}</span>
+                                                        : `Конкурс #${p.contest_id}`}
                                                 </div>
                                             </div>
-                                            <div className="text-xs text-gray-400 mt-0.5">
+                                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                                                 {new Date(p.created_at).toLocaleDateString('ru-RU', {
                                                     day: '2-digit', month: 'long', year: 'numeric',
                                                 })}
                                             </div>
                                             {isFinished && (
-                                                <div className="text-xs text-gray-400 mt-1">
+                                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                                                     Средства выплачены исполнителю — возврат невозможен
                                                 </div>
                                             )}
                                         </div>
                                         <div className="text-right flex flex-col items-end gap-2">
                                             <StatusBadge status={p.status} />
-                                            <span className={`text-base font-bold ${isFinished || isRefunded ? 'text-gray-400' : 'text-gray-900'}`}>
+                                            <span className={`text-base font-bold ${isFinished || isRefunded ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
                                                 {Number(p.amount).toLocaleString('ru-RU')} ₽
                                             </span>
                                             {p.status === 'held' && (
                                                 <button
                                                     onClick={() => handleRefund(p.contest_id)}
                                                     disabled={refundingId === p.contest_id}
-                                                    className="text-xs px-3 py-1 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                    className="text-xs px-3 py-1 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors disabled:opacity-50"
                                                 >
                                                     {refundingId === p.contest_id ? 'Возврат…' : 'Вернуть'}
                                                 </button>
@@ -441,26 +460,26 @@ const WalletPage = () => {
 
                 {/* Withdraw from wallet (executor) */}
                 {tab === 'withdraw' && (
-                    <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                        <h2 className="text-base font-bold text-gray-800 mb-1">Вывести средства</h2>
-                        <p className="text-xs text-gray-400 mb-4">
-                            Баланс: <strong>{Number(payment.balance).toLocaleString('ru-RU')} ₽</strong>
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+                        <h2 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">Вывести средства</h2>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+                            Баланс: <strong className="dark:text-gray-300">{Number(payment.balance).toLocaleString('ru-RU')} ₽</strong>
                         </p>
 
                         {withdrawSuccess && (
-                            <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+                            <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm">
                                 {withdrawSuccess}
                             </div>
                         )}
                         {withdrawError && (
-                            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
                                 {withdrawError}
                             </div>
                         )}
 
                         <form onSubmit={handleWithdraw} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                     Сумма вывода (₽)
                                 </label>
                                 <input
@@ -474,7 +493,7 @@ const WalletPage = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                     Номер банковской карты
                                 </label>
                                 <input
@@ -485,7 +504,7 @@ const WalletPage = () => {
                                     className={inputCls}
                                     maxLength={19}
                                 />
-                                <p className="text-xs text-gray-400 mt-1">
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                                     Без номера карты — средства списываются с баланса без перевода.
                                 </p>
                             </div>
@@ -512,23 +531,23 @@ const WalletPage = () => {
                         ) : (
                             <div className="space-y-3">
                                 {payment.withdrawals.map(p => (
-                                    <div key={p.id} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between">
+                                    <div key={p.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-between">
                                         <div>
-                                            <div className="text-sm font-semibold text-gray-800">
+                                            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                                 {p.contest_id ? `Конкурс #${p.contest_id}` : 'Вывод с кошелька'}
                                             </div>
-                                            <div className="text-xs text-gray-400 mt-0.5">
+                                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                                                 {p.recipient_account
                                                     ? `Карта ****${p.recipient_account.slice(-4)}`
                                                     : 'Реквизиты не указаны'}
                                             </div>
-                                            <div className="text-xs text-gray-400">
+                                            <div className="text-xs text-gray-400 dark:text-gray-500">
                                                 {new Date(p.created_at).toLocaleDateString('ru-RU')}
                                             </div>
                                         </div>
                                         <div className="text-right flex flex-col items-end gap-1">
                                             <StatusBadge status={p.status} />
-                                            <span className="text-base font-bold text-gray-900">
+                                            <span className="text-base font-bold text-gray-900 dark:text-gray-100">
                                                 {Number(p.amount).toLocaleString('ru-RU')} ₽
                                             </span>
                                         </div>

@@ -176,14 +176,14 @@ const CreateContest = () => {
         return () => { contest.resetForm(); };
     }, []);
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white';
-    const inputErrCls = 'w-full px-4 py-2.5 rounded-xl border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-800 text-sm transition-all duration-200 bg-white';
-    const labelCls = 'block text-sm font-semibold text-gray-700 mb-1';
+    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700';
+    const inputErrCls = 'w-full px-4 py-2.5 rounded-xl border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700';
+    const labelCls = 'block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1';
 
     return (
-        <div className="min-h-screen bg-gray-50 py-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
             <div className="max-w-3xl mx-auto px-4">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
                     {state ? 'Редактировать конкурс' : 'Добавить конкурс'}
                 </h1>
 
@@ -203,13 +203,13 @@ const CreateContest = () => {
                                 <span className="text-gray-400">{typeDropdownOpen ? '▲' : '▼'}</span>
                             </button>
                             {typeDropdownOpen && (
-                                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg overflow-hidden">
                                     {contest.types.map(t => (
                                         <button
                                             key={t.id}
                                             type="button"
                                             onClick={() => { contest.setFormField('type', t.id); setTypeDropdownOpen(false); }}
-                                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+                                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-700 dark:hover:text-violet-400 transition-colors"
                                         >
                                             {t.name}
                                         </button>
@@ -278,7 +278,7 @@ const CreateContest = () => {
                             className={inputCls}
                         />
                         <div className="mt-2 flex items-center gap-3">
-                            <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-xs font-medium text-gray-600 transition-colors">
+                            <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors">
                                 <span>📎</span>
                                 <span>{tzFile ? tzFile.name : 'Загрузить ТЗ (PDF / DOCX)'}</span>
                                 <input
@@ -298,7 +298,7 @@ const CreateContest = () => {
                                 </button>
                             )}
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                             Необязательно. Текст или файл — используется для автоматической оценки решений с помощью LLaMA.
                             {tzFile && <span className="text-violet-600 ml-1">Текст из файла заменит введённый текст ТЗ.</span>}
                         </p>
@@ -334,25 +334,25 @@ const CreateContest = () => {
                     </div>
 
                     {/* Stages */}
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
                         <div className="flex justify-between items-center mb-3">
-                            <h3 className="text-base font-bold text-gray-800">Этапы конкурса</h3>
+                            <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Этапы конкурса</h3>
                             <button
                                 type="button"
                                 onClick={() => contest.addStage()}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-violet-200 text-violet-600 hover:bg-violet-50 text-xs font-medium transition-colors"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-violet-200 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 text-xs font-medium transition-colors"
                             >
                                 + Добавить этап
                             </button>
                         </div>
                         {contest.stages.length === 0 && (
-                            <p className="text-sm text-gray-400">Необязательно. Разбейте работу на части с отдельными дедлайнами.</p>
+                            <p className="text-sm text-gray-400 dark:text-gray-500">Необязательно. Разбейте работу на части с отдельными дедлайнами.</p>
                         )}
                         <div className="space-y-2">
                             {contest.stages.map((stage, index) => (
-                                <div key={index} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                                <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 border border-gray-100 dark:border-gray-600">
                                     <div className="flex items-start gap-2">
-                                        <span className="w-6 h-6 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                        <span className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                                             {stage.order}
                                         </span>
                                         <div className="flex-1 space-y-2">
@@ -360,19 +360,19 @@ const CreateContest = () => {
                                                 placeholder="Название этапа *"
                                                 value={stage.name}
                                                 onChange={e => contest.updateStage(index, 'name', e.target.value)}
-                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white"
+                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                             />
                                             <input
                                                 placeholder="Описание этапа (необязательно)"
                                                 value={stage.description}
                                                 onChange={e => contest.updateStage(index, 'description', e.target.value)}
-                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white"
+                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                             />
                                             <input
                                                 type="date"
                                                 value={stage.deadline}
                                                 onChange={e => contest.updateStage(index, 'deadline', e.target.value)}
-                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white"
+                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                             />
                                             <input
                                                 type="number"
@@ -380,7 +380,7 @@ const CreateContest = () => {
                                                 value={stage.prize_amount || ''}
                                                 onChange={e => contest.updateStage(index, 'prize_amount', parseInt(e.target.value) || 0)}
                                                 min={0}
-                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white"
+                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                             />
                                         </div>
                                         <button
@@ -452,14 +452,14 @@ const CreateContest = () => {
                         <button
                             type="button"
                             onClick={() => setShowPreview(true)}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all duration-200"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-all duration-200"
                         >
                             Предпросмотр
                         </button>
                         <button
                             type="button"
                             onClick={() => setShowHelp(true)}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all duration-200"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-all duration-200"
                         >
                             Справка
                         </button>
@@ -467,7 +467,7 @@ const CreateContest = () => {
                             <button
                                 type="button"
                                 onClick={() => navigate(-1)}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-semibold text-sm transition-all duration-200"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-sm transition-all duration-200"
                             >
                                 Отменить редактирование
                             </button>
@@ -479,51 +479,51 @@ const CreateContest = () => {
             {/* Preview Modal */}
             {showPreview && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowPreview(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in border border-transparent dark:border-gray-700" onClick={e => e.stopPropagation()}>
                         <div className="p-6">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-gray-900">Предпросмотр</h2>
-                                <button onClick={() => setShowPreview(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Предпросмотр</h2>
+                                <button onClick={() => setShowPreview(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">✕</button>
                             </div>
-                            <div className="bg-gray-50 rounded-xl p-5">
-                                <h1 className="text-2xl font-bold text-gray-900 mb-2">{contest.form.title.value || 'Без названия'}</h1>
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5">
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{contest.form.title.value || 'Без названия'}</h1>
                                 <div className="flex gap-2 mb-3">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                         {contest.form.type.value ? contest.getTypeNameById(contest.form.type.value) : 'Тип'}
                                     </span>
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                                         Активный
                                     </span>
                                 </div>
-                                <p className="text-sm text-gray-500 mb-1">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                                     До: {new Date(contest.form.endBy.value).toLocaleDateString('ru-RU')} &nbsp;|&nbsp;
                                     Приз: {contest.form.prizepool.value} руб.
                                 </p>
-                                <hr className="my-4 border-gray-200" />
-                                <h3 className="text-base font-bold text-gray-800 mb-2">Описание проекта</h3>
-                                <div className="prose prose-sm max-w-none">
+                                <hr className="my-4 border-gray-200 dark:border-gray-700" />
+                                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-2">Описание проекта</h3>
+                                <div className="prose prose-sm dark:prose-invert max-w-none">
                                     <Markdown options={{ disableParsingRawHTML: true }}>{mdDescription}</Markdown>
                                 </div>
                                 {contest.form.tz_text.value && (
                                     <>
-                                        <hr className="my-4 border-gray-200" />
-                                        <h4 className="font-bold text-gray-800 mb-2">Техническое задание</h4>
-                                        <pre className="whitespace-pre-wrap text-sm bg-white p-3 rounded-xl border border-gray-100">
+                                        <hr className="my-4 border-gray-200 dark:border-gray-700" />
+                                        <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Техническое задание</h4>
+                                        <pre className="whitespace-pre-wrap text-sm bg-white dark:bg-gray-700 dark:text-gray-200 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
                                             {contest.form.tz_text.value}
                                         </pre>
                                     </>
                                 )}
                                 {contest.stages.length > 0 && (
                                     <>
-                                        <hr className="my-4 border-gray-200" />
-                                        <h4 className="font-bold text-gray-800 mb-2">Этапы</h4>
+                                        <hr className="my-4 border-gray-200 dark:border-gray-700" />
+                                        <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Этапы</h4>
                                         {contest.stages.map((stage, i) => (
                                             <div key={i} className="flex items-start gap-2 mb-2">
-                                                <span className="w-5 h-5 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-xs font-bold flex-shrink-0">{stage.order}</span>
+                                                <span className="w-5 h-5 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-bold flex-shrink-0">{stage.order}</span>
                                                 <div>
-                                                    <strong className="text-sm">{stage.name || '(без названия)'}</strong>
-                                                    {stage.deadline && <span className="ml-2 text-xs text-gray-400">до {new Date(stage.deadline).toLocaleDateString('ru-RU')}</span>}
-                                                    {stage.description && <div className="text-xs text-gray-500">{stage.description}</div>}
+                                                    <strong className="text-sm dark:text-gray-200">{stage.name || '(без названия)'}</strong>
+                                                    {stage.deadline && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">до {new Date(stage.deadline).toLocaleDateString('ru-RU')}</span>}
+                                                    {stage.description && <div className="text-xs text-gray-500 dark:text-gray-400">{stage.description}</div>}
                                                 </div>
                                             </div>
                                         ))}
@@ -531,7 +531,7 @@ const CreateContest = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="px-6 py-4 border-t border-gray-100">
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
                             <button onClick={() => setShowPreview(false)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors">
                                 Закрыть предпросмотр
                             </button>
@@ -543,13 +543,13 @@ const CreateContest = () => {
             {/* Help Modal */}
             {showHelp && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowHelp(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-fade-in" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg animate-fade-in border border-transparent dark:border-gray-700" onClick={e => e.stopPropagation()}>
                         <div className="p-6">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-gray-900">Справка</h2>
-                                <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Справка</h2>
+                                <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">✕</button>
                             </div>
-                            <div className="text-sm text-gray-700 space-y-3">
+                            <div className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
                                 <p>Для создания конкурса распишите подробно всю информацию в поле "Полное описание" в формате Markdown.</p>
                                 <p>
                                     Справка:{' '}
@@ -557,12 +557,12 @@ const CreateContest = () => {
                                         markdownguide.org
                                     </a>
                                 </p>
-                                <p>Чтобы отобразить изображения загруженных файлов, укажите вместо ссылки название файла — <code className="bg-gray-100 px-1 rounded">![Image](image.png)</code></p>
+                                <p>Чтобы отобразить изображения загруженных файлов, укажите вместо ссылки название файла — <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-1 rounded">![Image](image.png)</code></p>
                                 <p><strong>Техническое задание</strong> — структурированные требования к работе. ИИ (LLaMA) автоматически оценит каждое решение по этим критериям.</p>
                                 <p><strong>Этапы</strong> — разбейте работу на части с отдельными дедлайнами. Необязательно.</p>
                             </div>
                         </div>
-                        <div className="px-6 py-4 border-t border-gray-100">
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
                             <button onClick={() => setShowHelp(false)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors">
                                 Закрыть справку
                             </button>
