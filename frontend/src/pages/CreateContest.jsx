@@ -138,25 +138,28 @@ const CreateContest = () => {
 
     const handleFilesChange = useCallback((newFiles) => {
         const allowedTypes = contest.form.files.allowedTypes;
-        const validFiles = Array.from(newFiles).filter(file => allowedTypes.includes(file.type));
+        const validNew = Array.from(newFiles).filter(file => allowedTypes.includes(file.type));
 
-        if (validFiles.length > contest.form.files.rules.max) {
-            contest.form.files.error = contest.formErrors.files;
-        } else {
-            contest.form.files.error = '';
-        }
-
-        const newMap = {};
-        validFiles.forEach(file => {
-            if (file.type.startsWith('image/')) {
-                newMap[file.name] = URL.createObjectURL(file);
+        setFiles(prev => {
+            const merged = [...prev];
+            for (const f of validNew) {
+                if (!merged.find(e => e.name === f.name)) merged.push(f);
             }
+            contest.form.files.error = merged.length > contest.form.files.rules.max
+                ? contest.formErrors.files : '';
+            return merged;
         });
 
-        Object.values(imagesMap).forEach(URL.revokeObjectURL);
-        setFiles(validFiles);
-        setImagesMap(newMap);
-    }, [imagesMap, contest]);
+        setImagesMap(prev => {
+            const updated = { ...prev };
+            validNew.forEach(file => {
+                if (file.type.startsWith('image/') && !prev[file.name]) {
+                    updated[file.name] = URL.createObjectURL(file);
+                }
+            });
+            return updated;
+        });
+    }, [contest]);
 
     useEffect(() => {
         return () => { Object.values(imagesMap).forEach(URL.revokeObjectURL); };
@@ -418,7 +421,16 @@ const CreateContest = () => {
                         />
                         {files.length > 0 && (
                             <ul className="mt-1.5 space-y-0.5">
-                                {files.map((f, i) => <li key={i} className="text-xs text-gray-500">+ {f.name}</li>)}
+                                {files.map((f, i) => (
+                                    <li key={i} className="flex items-center gap-2 text-xs text-gray-500">
+                                        <span>+ {f.name}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))}
+                                            className="text-red-400 hover:text-red-600 transition-colors"
+                                        >✕</button>
+                                    </li>
+                                ))}
                             </ul>
                         )}
                         {contest.form.files.error && (
