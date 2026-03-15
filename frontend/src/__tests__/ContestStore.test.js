@@ -248,6 +248,218 @@ describe("Сценарии 20–21: текущий этап", () => {
   });
 });
 
+// ── 15. Валидация формы конкурса ──────────────────────────────────────────────
+
+describe("Сценарий 15: валидация формы конкурса", () => {
+  it("validateForm возвращает false если поля пустые", () => {
+    expect(store.validateForm()).toBe(false);
+  });
+
+  it("validateField title слишком короткий → ошибка", () => {
+    store.setFormField("title", "abc");
+    expect(store.form.title.error).not.toBe("");
+  });
+
+  it("validateField title слишком длинный → ошибка", () => {
+    store.setFormField("title", "a".repeat(101));
+    expect(store.form.title.error).not.toBe("");
+  });
+
+  it("validateField title корректный → нет ошибки", () => {
+    store.setFormField("title", "Нормальное название конкурса");
+    expect(store.form.title.error).toBe("");
+  });
+
+  it("validateField annotation слишком короткая → ошибка", () => {
+    store.setFormField("annotation", "Кратко");
+    expect(store.form.annotation.error).not.toBe("");
+  });
+
+  it("validateField annotation корректная → нет ошибки", () => {
+    store.setFormField("annotation", "А".repeat(35));
+    expect(store.form.annotation.error).toBe("");
+  });
+
+  it("validateField prizepool нечисловое → ошибка", () => {
+    store.setFormField("prizepool", "abc");
+    expect(store.form.prizepool.error).not.toBe("");
+  });
+
+  it("validateField prizepool корректный → нет ошибки", () => {
+    store.setFormField("prizepool", "5000");
+    expect(store.form.prizepool.error).toBe("");
+  });
+
+  it("validateField endBy прошедшая дата → ошибка", () => {
+    store.setFormField("endBy", "2020-01-01");
+    expect(store.form.endBy.error).not.toBe("");
+  });
+
+  it("validateField type не задан → ошибка", () => {
+    store.validateField("type");
+    expect(store.form.type.error).not.toBe("");
+  });
+
+  it("validateField type задан → нет ошибки", () => {
+    store.form.type.value = { id: 1, name: "Статья" };
+    store.validateField("type");
+    expect(store.form.type.error).toBe("");
+  });
+});
+
+// ── 16. Управление этапами формы ─────────────────────────────────────────────
+
+describe("Сценарий 16: управление этапами формы", () => {
+  it("addStage добавляет этап с order = 1", () => {
+    store.addStage();
+    expect(store.stages).toHaveLength(1);
+    expect(store.stages[0].order).toBe(1);
+  });
+
+  it("addStage дважды → два этапа с разными order", () => {
+    store.addStage();
+    store.addStage();
+    expect(store.stages).toHaveLength(2);
+    expect(store.stages[1].order).toBe(2);
+  });
+
+  it("removeStage удаляет этап и пересчитывает order", () => {
+    store.addStage();
+    store.addStage();
+    store.addStage();
+    store.removeStage(1);
+    expect(store.stages).toHaveLength(2);
+    expect(store.stages[0].order).toBe(1);
+    expect(store.stages[1].order).toBe(2);
+  });
+
+  it("updateStage меняет поле нужного этапа", () => {
+    store.addStage();
+    store.updateStage(0, "name", "Первый этап");
+    expect(store.stages[0].name).toBe("Первый этап");
+  });
+
+  it("resetForm очищает форму и этапы", () => {
+    store.setFormField("title", "Название конкурса для проверки");
+    store.addStage();
+    store.resetForm();
+    expect(store.form.title.value).toBe("");
+    expect(store.stages).toHaveLength(0);
+  });
+});
+
+// ── 14b. Сортировка ───────────────────────────────────────────────────────────
+
+describe("Сценарий 14b: сортировка конкурсов", () => {
+  it("setSortBy передаётся в params запроса", async () => {
+    api.fetchData.mockResolvedValue(PAGINATED);
+    store.setSortBy("prizepool");
+    await store.fetchContestsFiltered();
+    expect(api.fetchData.mock.calls[0][1].sort_by).toBe("prizepool");
+  });
+
+  it("setSortDir asc передаётся в params запроса", async () => {
+    api.fetchData.mockResolvedValue(PAGINATED);
+    store.setSortDir("asc");
+    await store.fetchContestsFiltered();
+    expect(api.fetchData.mock.calls[0][1].sort_dir).toBe("asc");
+  });
+
+  it("setSortBy сбрасывает кеш фильтров", () => {
+    store._lastFilterParams = { page: 1 };
+    store.setSortBy("ends_at");
+    expect(store._lastFilterParams).toBeNull();
+  });
+});
+
+// ── 13c. Конкурс по ID ────────────────────────────────────────────────────────
+
+describe("Сценарий 13c: конкурс по ID", () => {
+  it("fetchOneContestById возвращает конкурс и вызывает /contests/{id}", async () => {
+    api.fetchData.mockResolvedValue(CONTEST);
+    const result = await store.fetchOneContestById(1);
+    expect(api.fetchData).toHaveBeenCalledWith("/contests/1");
+    expect(result.id).toBe(1);
+  });
+
+  it("fetchOneContestById при ошибке возвращает null", async () => {
+    api.fetchData.mockRejectedValue(new Error("Not found"));
+    const result = await store.fetchOneContestById(999);
+    expect(result).toBeNull();
+  });
+
+  it("fetchOneContest — алиас для fetchOneContestById", async () => {
+    api.fetchData.mockResolvedValue(CONTEST);
+    const result = await store.fetchOneContest(1);
+    expect(result.id).toBe(1);
+  });
+});
+
+// ── getStatus ─────────────────────────────────────────────────────────────────
+
+describe("getStatus helper конкурсов", () => {
+  it.each([
+    ["draft",     "Черновик"],
+    ["active",    "Активный"],
+    ["finished",  "Завершённый"],
+    ["cancelled", "Отменённый"],
+  ])('статус "%s" → "%s"', (key, label) => {
+    expect(store.getStatus(key)).toBe(label);
+  });
+
+  it("getStatus неизвестного статуса → undefined", () => {
+    expect(store.getStatus("unknown")).toBeUndefined();
+  });
+});
+
+// ── hasFiltersChanged ─────────────────────────────────────────────────────────
+
+describe("hasFiltersChanged", () => {
+  it("возвращает true если _lastFilterParams ещё не установлен", () => {
+    expect(store.hasFiltersChanged({ page: 1 })).toBe(true);
+  });
+
+  it("возвращает false если параметры не изменились", async () => {
+    api.fetchData.mockResolvedValue(PAGINATED);
+    await store.fetchContestsFiltered();
+    const params = api.fetchData.mock.calls[0][1];
+    expect(store.hasFiltersChanged(params)).toBe(false);
+  });
+
+  it("возвращает true если параметры изменились", async () => {
+    api.fetchData.mockResolvedValue(PAGINATED);
+    await store.fetchContestsFiltered();
+    expect(store.hasFiltersChanged({ page: 1, search: "new" })).toBe(true);
+  });
+});
+
+// ── 7b. Несколько одновременных фильтров ─────────────────────────────────────
+
+describe("Сценарий 7b: комбинированные фильтры", () => {
+  it("статус + тип + поиск одновременно передаются в params", async () => {
+    api.fetchData.mockResolvedValue(PAGINATED);
+    store.setSelectedStatuses(["active"]);
+    store.setSelectedTypes([{ id: 2, name: "Логотип" }]);
+    store.setSearchQuery("Заголовок");
+    await store.fetchContestsFiltered();
+    const params = api.fetchData.mock.calls[0][1];
+    expect(params.statuses).toBe("active");
+    expect(params.types).toBe("2");
+    expect(params.search).toBe("Заголовок");
+  });
+
+  it("resetFilters сбрасывает все фильтры включая sort", async () => {
+    api.fetchData.mockResolvedValue(PAGINATED);
+    store.setSelectedStatuses(["active"]);
+    store.setSortBy("prizepool");
+    store.setSortDir("asc");
+    store.resetFilters();
+    expect(store.sortBy).toBe("created_at");
+    expect(store.sortDir).toBe("desc");
+    expect(store.selectedStatuses).toHaveLength(0);
+  });
+});
+
 // ── 41. Статистика ────────────────────────────────────────────────────────────
 
 describe("Сценарий 41: статистика", () => {
@@ -269,5 +481,94 @@ describe("Сценарий 41: статистика", () => {
     api.fetchData.mockRejectedValue(new Error("Forbidden"));
     await expect(store.fetchStatistics()).resolves.toBeUndefined();
     expect(store.statistics).toBeNull();
+  });
+});
+
+// ── fetchContests ─────────────────────────────────────────────────────────────
+
+describe("fetchContests", () => {
+  it("загружает конкурсы и сохраняет в store", async () => {
+    const items = [{ id: 1, title: "Contest 1" }];
+    api.fetchData.mockResolvedValue({ items, pages: 3, total: 1 });
+    await store.fetchContests();
+    expect(api.fetchData).toHaveBeenCalledWith("/contests");
+    expect(store.contests).toEqual(items);
+  });
+
+  it("при ошибке не падает", async () => {
+    api.fetchData.mockRejectedValue(new Error("Network"));
+    await expect(store.fetchContests()).resolves.toBeUndefined();
+  });
+
+  it("при ответе без items устанавливает пустой массив", async () => {
+    api.fetchData.mockResolvedValue({});
+    await store.fetchContests();
+    expect(store.contests).toEqual([]);
+  });
+});
+
+// ── fetchContestsByPage ───────────────────────────────────────────────────────
+
+describe("fetchContestsByPage", () => {
+  it("загружает страницу конкурсов", async () => {
+    const items = [{ id: 2, title: "Contest 2" }];
+    api.fetchData.mockResolvedValue({ items, pages: 5, total: 10 });
+    await store.fetchContestsByPage(2);
+    expect(api.fetchData).toHaveBeenCalledWith("/contests", { page: 2 });
+    expect(store.contests).toEqual(items);
+    expect(store.totalPages).toBe(5);
+    expect(store.currentPage).toBe(2);
+  });
+
+  it("при ошибке не падает", async () => {
+    api.fetchData.mockRejectedValue(new Error("Network"));
+    await expect(store.fetchContestsByPage(1)).resolves.toBeUndefined();
+  });
+});
+
+// ── setters and getters ───────────────────────────────────────────────────────
+
+describe("setIsAuth и setCurrentContest", () => {
+  it("setIsAuth сохраняет значение", () => {
+    store.setIsAuth(true);
+    expect(store.isAuth).toBe(true);
+  });
+
+  it("setCurrentContest сохраняет конкурс", () => {
+    const c = { id: 9, title: "Test" };
+    store.setCurrentContest(c);
+    expect(store.currentContest).toEqual(c);
+  });
+});
+
+describe("setEndBy и setEndAfter — объект Date", () => {
+  it("setEndBy принимает объект Date", () => {
+    const d = new Date("2027-01-01");
+    store.setEndBy(d);
+    expect(store.endBy).toEqual(d);
+  });
+
+  it("setEndAfter принимает строку", () => {
+    store.setEndAfter("2027-06-01");
+    expect(store.endAfter).toEqual(new Date("2027-06-01"));
+  });
+
+  it("setEndAfter принимает объект Date", () => {
+    const d = new Date("2027-06-01");
+    store.setEndAfter(d);
+    expect(store.endAfter).toEqual(d);
+  });
+
+  it("setEndAfter с null очищает значение", () => {
+    store.setEndAfter("2027-01-01");
+    store.setEndAfter(null);
+    expect(store.endAfter).toBeNull();
+  });
+});
+
+describe("employerId геттер и сеттер", () => {
+  it("setEmployerId сохраняет id", () => {
+    store.setEmployerId(42);
+    expect(store.employerId).toBe(42);
   });
 });

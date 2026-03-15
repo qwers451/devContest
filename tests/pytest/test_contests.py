@@ -358,3 +358,128 @@ async def test_clear_current_stage(customer_token, contest):
         )
     assert r.status_code == 200
     assert r.json()["current_stage_id"] is None
+
+
+# ── 6b. Сортировка конкурсов ──────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_sort_by_prizepool_desc(customer_token, contest):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/contests",
+            params={"sort_by": "prizepool", "sort_dir": "desc"},
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 200
+    items = r.json()["items"]
+    prizes = [i["prizepool"] for i in items]
+    assert prizes == sorted(prizes, reverse=True)
+
+
+@pytest.mark.asyncio
+async def test_sort_by_prizepool_asc(customer_token, contest):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/contests",
+            params={"sort_by": "prizepool", "sort_dir": "asc"},
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 200
+    items = r.json()["items"]
+    prizes = [i["prizepool"] for i in items]
+    assert prizes == sorted(prizes)
+
+
+# ── 6c. Пагинация ────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_pagination_page_limit(customer_token):
+    """Запрос с limit=1 должен вернуть не более одного элемента."""
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/contests",
+            params={"page": 1, "limit": 1},
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data["items"]) <= 1
+
+
+@pytest.mark.asyncio
+async def test_pagination_beyond_last_page(customer_token):
+    """Запрос страницы за пределами — должен вернуть пустой items."""
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/contests",
+            params={"page": 99999},
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 200
+    assert r.json()["items"] == []
+
+
+# ── 13b. Несуществующий конкурс ───────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_get_contest_not_found(customer_token):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/contests/number/999999999",
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 404
+
+
+# ── 15b. Создание конкурса — валидация обязательных полей ─────────────────────
+
+@pytest.mark.asyncio
+async def test_create_contest_missing_title(customer_token, contest_type_id):
+    """Создание без title должно вернуть 422."""
+    async with httpx.AsyncClient() as c:
+        r = await c.post(
+            f"{CONTEST_URL}/contests",
+            json={
+                "prizepool": 1000,
+                "ends_at": future_date(10),
+                "type_id": contest_type_id,
+                "stages": [{"name": "Этап 1", "order": 1}],
+            },
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_contest_executor_forbidden(executor_token, contest_type_id):
+    """Executor не может создавать конкурсы."""
+    async with httpx.AsyncClient() as c:
+        r = await c.post(
+            f"{CONTEST_URL}/contests",
+            json={
+                "title": "Forbidden Contest",
+                "annotation": "A" * 30,
+                "description": "D" * 100,
+                "prizepool": 1000,
+                "ends_at": future_date(10),
+                "type_id": contest_type_id,
+                "stages": [{"name": "Этап 1", "order": 1}],
+            },
+            headers=auth_headers(executor_token),
+        )
+    assert r.status_code == 403
+
+
+# ── 8c. Список типов конкурсов ────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_list_contest_types(customer_token, contest_type_id):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/contest-types",
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 200
+    types = r.json()
+    assert isinstance(types, list)
+    assert any(t["id"] == contest_type_id for t in types)

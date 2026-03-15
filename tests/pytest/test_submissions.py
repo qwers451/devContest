@@ -355,3 +355,109 @@ async def test_delete_submission(executor_token, contest, admin_token):
             f"{CONTEST_URL}/submissions/{sid}", headers=auth_headers(executor_token)
         )
     assert dr.status_code == 204
+
+
+# ── 22b. Сортировка решений ───────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_sort_submissions_by_ai_score(executor_token, submission):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/submissions",
+            params={"sort_by": "ai_score", "sort_dir": "desc"},
+            headers=auth_headers(executor_token),
+        )
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+
+@pytest.mark.asyncio
+async def test_sort_submissions_created_at_asc(executor_token, submission):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/submissions",
+            params={"sort_by": "created_at", "sort_dir": "asc"},
+            headers=auth_headers(executor_token),
+        )
+    assert r.status_code == 200
+    items = r.json()
+    dates = [s["created_at"] for s in items]
+    assert dates == sorted(dates)
+
+
+# ── 28b. Несуществующее решение ───────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_get_submission_not_found(executor_token):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/submissions/number/999999999",
+            headers=auth_headers(executor_token),
+        )
+    assert r.status_code == 404
+
+
+# ── 32b. Невалидный статус решения ────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_update_submission_status_invalid(customer_token, submission):
+    """Статус 99 не входит в допустимые — должен вернуть 422 или 400."""
+    async with httpx.AsyncClient() as c:
+        r = await c.patch(
+            f"{CONTEST_URL}/submissions/{submission['id']}/status",
+            params={"status": 99},
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code in (400, 422)
+
+
+# ── 29b. Создание решения — валидация ────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_create_submission_missing_contest_id(executor_token):
+    """Создание без contest_id должно вернуть 422."""
+    async with httpx.AsyncClient() as c:
+        r = await c.post(
+            f"{CONTEST_URL}/submissions",
+            json={
+                "title": "No Contest",
+                "annotation": "A" * 30,
+                "description": "D" * 100,
+            },
+            headers=auth_headers(executor_token),
+        )
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_submission_customer_forbidden(customer_token, contest):
+    """Customer не может создавать решения."""
+    async with httpx.AsyncClient() as c:
+        r = await c.post(
+            f"{CONTEST_URL}/submissions",
+            json={
+                "contest_id": contest["id"],
+                "title": "Customer tries to submit",
+                "annotation": "A" * 30,
+                "description": "D" * 100,
+            },
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 403
+
+
+# ── 28c. Поле executor_login и contest_title в ответе ─────────────────────────
+
+@pytest.mark.asyncio
+async def test_submission_has_enriched_fields(executor_token, submission):
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/submissions/number/{submission['number']}",
+            headers=auth_headers(executor_token),
+        )
+    assert r.status_code == 200
+    data = r.json()
+    assert "executor_login" in data
+    assert data["executor_login"] is not None
+    assert "contest_title" in data
+    assert data["contest_title"] is not None
