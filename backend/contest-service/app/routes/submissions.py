@@ -216,6 +216,34 @@ async def get_submission(
     return (await _enrich_submissions([s], db))[0]
 
 
+class SubmissionUpdate(BaseModel):
+    title: str | None = None
+    annotation: str | None = None
+    description: str | None = None
+
+
+@router.put("/{submission_id}", response_model=SubmissionOut)
+async def update_submission(
+    submission_id: int,
+    data: SubmissionUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    result = await db.execute(select(Submission).where(Submission.id == submission_id))
+    s = result.scalar_one_or_none()
+    if not s:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    if s.executor_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    for field, value in data.model_dump(exclude_none=True).items():
+        setattr(s, field, value)
+
+    await db.commit()
+    await db.refresh(s)
+    return (await _enrich_submissions([s], db))[0]
+
+
 @router.patch("/{submission_id}/status", response_model=SubmissionOut)
 async def update_status(
     submission_id: int,
