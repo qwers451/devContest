@@ -472,6 +472,35 @@ async def download_contest_file(
     return FileResponse(path, filename=filename)
 
 
+@router.delete("/{contest_id}/files/{filename}", response_model=ContestOut)
+async def delete_contest_file(
+    contest_id: int,
+    filename: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    result = await db.execute(select(Contest).options(*_relations()).where(Contest.id == contest_id))
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    if current_user["role"] not in ("admin",) and contest.customer_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    existing = list(contest.files or [])
+    if filename in existing:
+        existing.remove(filename)
+    contest.files = existing
+    flag_modified(contest, "files")
+
+    path = f"/app/uploads/contests/{contest_id}/{filename}"
+    if os.path.isfile(path):
+        os.remove(path)
+
+    await db.commit()
+    result = await db.execute(select(Contest).options(*_relations()).where(Contest.id == contest_id))
+    return result.scalar_one()
+
+
 @router.delete("/{contest_id}", status_code=204)
 async def delete_contest(
     contest_id: int,

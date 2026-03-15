@@ -1,6 +1,6 @@
 import { useEffect, useContext, useState, useCallback } from 'react';
 import { Context } from '../main.jsx';
-import { sendData, updateData } from '../services/apiService.js';
+import { sendData, updateData, deleteData } from '../services/apiService.js';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
@@ -14,6 +14,7 @@ const CreateSolution = () => {
     const navigate = useNavigate();
 
     const [files, setFiles] = useState([]);
+    const [existingFiles, setExistingFiles] = useState([]);
     const [imagesMap, setImagesMap] = useState({});
     const [showPreview, setShowPreview] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
@@ -82,8 +83,19 @@ const CreateSolution = () => {
             solution.setFormField('title', solutionData.title);
             solution.setFormField('annotation', solutionData.annotation);
             solution.setFormField('description', solutionData.description);
+            setExistingFiles(solutionData.files || []);
         }
     }, [number, solutionData]);
+
+    const handleDeleteExistingFile = async (fileName) => {
+        if (!solutionData?.id) return;
+        try {
+            await deleteData(`/submissions/${solutionData.id}/files/${fileName}`);
+            setExistingFiles(prev => prev.filter(f => f !== fileName));
+        } catch (err) {
+            alert('Ошибка удаления файла');
+        }
+    };
 
     const handleFilesChange = useCallback((newFiles) => {
         const allowedTypes = solution.form.files.allowedTypes;
@@ -178,12 +190,31 @@ const CreateSolution = () => {
                     {/* Files */}
                     <div>
                         <label className={labelCls}>Файлы</label>
+                        {state && existingFiles.length > 0 && (
+                            <ul className="mb-2 space-y-1">
+                                {existingFiles.map((f, i) => (
+                                    <li key={i} className="flex items-center gap-2 text-sm">
+                                        <span className="text-gray-700">{f}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteExistingFile(f)}
+                                            className="text-red-400 hover:text-red-600 text-xs transition-colors"
+                                        >✕ удалить</button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                         <input
                             type="file"
                             multiple
                             onChange={e => handleFilesChange(e.target.files)}
                             className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
                         />
+                        {files.length > 0 && (
+                            <ul className="mt-1.5 space-y-0.5">
+                                {files.map((f, i) => <li key={i} className="text-xs text-gray-500">+ {f.name}</li>)}
+                            </ul>
+                        )}
                         {solution.form.files.error && <p className="text-red-500 text-xs mt-1">{solution.form.files.error}</p>}
                         <p className="text-xs text-gray-400 mt-1">
                             Поддерживаемые форматы: .zip, .png, .jpg, .jpeg, .gif, .pdf, .docx. Не более {solution.form.files.rules.max} файлов.

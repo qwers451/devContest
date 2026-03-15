@@ -1,6 +1,6 @@
 import React, { useEffect, useContext, useState, useCallback } from 'react';
 import { Context } from '../main.jsx';
-import { sendData, updateData } from '../services/apiService.js';
+import { sendData, updateData, deleteData } from '../services/apiService.js';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
@@ -15,6 +15,7 @@ const CreateContest = () => {
 
     const [tzFile, setTzFile] = useState(null);
     const [files, setFiles] = useState([]);
+    const [existingFiles, setExistingFiles] = useState([]);
     const [imagesMap, setImagesMap] = useState({});
     const [showPreview, setShowPreview] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
@@ -121,8 +122,19 @@ const CreateContest = () => {
             contest.setFormField('tz_text', contestData.tz_text || '');
             contest.setFormField('prizepool', contestData.prizepool);
             contest.setFormField('endBy', (new Date(contestData.ends_at)).toISOString().split('T')[0]);
+            setExistingFiles(contestData.files || []);
         }
     }, [id, contestData]);
+
+    const handleDeleteExistingFile = async (fileName) => {
+        if (!contestData?.id) return;
+        try {
+            await deleteData(`/contests/${contestData.id}/files/${fileName}`);
+            setExistingFiles(prev => prev.filter(f => f !== fileName));
+        } catch (err) {
+            alert('Ошибка удаления файла');
+        }
+    };
 
     const handleFilesChange = useCallback((newFiles) => {
         const allowedTypes = contest.form.files.allowedTypes;
@@ -384,12 +396,31 @@ const CreateContest = () => {
                     {/* Files */}
                     <div>
                         <label className={labelCls}>Файлы</label>
+                        {state && existingFiles.length > 0 && (
+                            <ul className="mb-2 space-y-1">
+                                {existingFiles.map((f, i) => (
+                                    <li key={i} className="flex items-center gap-2 text-sm">
+                                        <span className="text-gray-700">{f}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteExistingFile(f)}
+                                            className="text-red-400 hover:text-red-600 text-xs transition-colors"
+                                        >✕ удалить</button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                         <input
                             type="file"
                             multiple
                             onChange={e => handleFilesChange(e.target.files)}
                             className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
                         />
+                        {files.length > 0 && (
+                            <ul className="mt-1.5 space-y-0.5">
+                                {files.map((f, i) => <li key={i} className="text-xs text-gray-500">+ {f.name}</li>)}
+                            </ul>
+                        )}
                         {contest.form.files.error && (
                             <p className="text-red-500 text-xs mt-1">{contest.form.files.error}</p>
                         )}

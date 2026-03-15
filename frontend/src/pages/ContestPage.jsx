@@ -74,6 +74,15 @@ const ContestPage = () => {
         }
     };
 
+    const handleDeleteFile = async (fileName) => {
+        try {
+            const updated = await deleteData(`/contests/${currentContest.id}/files/${fileName}`);
+            setCurrentContest(updated);
+        } catch (err) {
+            alert('Ошибка удаления файла');
+        }
+    };
+
     const handleUploadFiles = async (e) => {
         const selected = Array.from(e.target.files || []);
         if (!selected.length) return;
@@ -288,13 +297,20 @@ const ContestPage = () => {
                                 {currentContest.files?.length > 0 ? (
                                     <ul className="space-y-1">
                                         {currentContest.files.map((fileName, idx) => (
-                                            <li key={idx}>
+                                            <li key={idx} className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/files/${fileName}`, fileName)}
                                                     className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
                                                 >
                                                     {fileName}
                                                 </button>
+                                                {(isOwner || isAdmin) && !isFinished && (
+                                                    <button
+                                                        onClick={() => handleDeleteFile(fileName)}
+                                                        className="text-red-400 hover:text-red-600 text-xs transition-colors"
+                                                        title="Удалить файл"
+                                                    >✕</button>
+                                                )}
                                             </li>
                                         ))}
                                     </ul>

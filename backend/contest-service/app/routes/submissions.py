@@ -356,6 +356,35 @@ async def upload_files(
     return (await _enrich_submissions([s], db))[0]
 
 
+@router.delete("/{submission_id}/files/{filename}", response_model=SubmissionOut)
+async def delete_file(
+    submission_id: int,
+    filename: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    result = await db.execute(select(Submission).where(Submission.id == submission_id))
+    s = result.scalar_one_or_none()
+    if not s:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    if s.executor_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    existing = list(s.files or [])
+    if filename in existing:
+        existing.remove(filename)
+    s.files = existing
+    flag_modified(s, "files")
+
+    path = f"{UPLOAD_DIR}/{submission_id}/{filename}"
+    if os.path.isfile(path):
+        os.remove(path)
+
+    await db.commit()
+    await db.refresh(s)
+    return (await _enrich_submissions([s], db))[0]
+
+
 @router.get("/{submission_id}/files/{filename}")
 async def download_file(
     submission_id: int,

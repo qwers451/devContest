@@ -5,7 +5,7 @@ import { observer } from "mobx-react-lite";
 import Markdown from "markdown-to-jsx";
 import ConfirmationModal from "../components/ConfirmationModal";
 import ChangeSolutionStatusModal from "../components/ChangeSolutionStatusModal";
-import { downloadFileOrZip, sendData } from "../services/apiService.js";
+import { downloadFileOrZip, sendData, deleteData } from "../services/apiService.js";
 
 const SolutionPage = () => {
   const { solution, contest, user, payment } = useContext(Context);
@@ -200,6 +200,15 @@ const SolutionPage = () => {
   };
 
   const isExecutor = user.user?.id === currentSolution?.executor_id;
+
+  const handleDeleteFile = async (fileName) => {
+    try {
+      const updated = await deleteData(`/submissions/${currentSolution.id}/files/${fileName}`);
+      setCurrentSolution(updated);
+    } catch (err) {
+      alert('Ошибка удаления файла');
+    }
+  };
 
   const handleUploadFiles = async (e) => {
     const selected = Array.from(e.target.files || []);
@@ -452,7 +461,7 @@ const SolutionPage = () => {
                   <>
                     <ul className="space-y-1 mb-3">
                       {currentSolution.files.map((fileName, index) => (
-                        <li key={index}>
+                        <li key={index} className="flex items-center gap-2">
                           <button
                             onClick={() =>
                               downloadFileOrZip(
@@ -464,6 +473,13 @@ const SolutionPage = () => {
                           >
                             {fileName}
                           </button>
+                          {(isExecutor || isAdmin) && (
+                            <button
+                              onClick={() => handleDeleteFile(fileName)}
+                              className="text-red-400 hover:text-red-600 text-xs transition-colors"
+                              title="Удалить файл"
+                            >✕</button>
+                          )}
                         </li>
                       ))}
                     </ul>
