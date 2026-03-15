@@ -26,6 +26,13 @@ const CreateSolution = () => {
 
     useEffect(() => {
         const fetch = async () => {
+            if (solutionData) {
+                // Edit mode: number in URL is the solution number, fetch contest by ID
+                const fetched = await contest.fetchOneContestById(solutionData.contest_id);
+                if (fetched) contest.setCurrentContest(fetched);
+                return;
+            }
+            // Create mode: number in URL is the contest number
             if (contest.currentContest && contest.currentContest.number == number) {
                 contest.setCurrentContest(contest.currentContest);
             } else {
@@ -38,7 +45,7 @@ const CreateSolution = () => {
             }
         };
         fetch();
-    }, [number, contest]);
+    }, [number, solutionData, contest]);
 
     const contestId = contest.currentContest?.id;
 
