@@ -64,6 +64,18 @@
     {
       "key": "customer_id",
       "value": ""
+    },
+    {
+      "key": "eval_submission_id",
+      "value": ""
+    },
+    {
+      "key": "live_contest_id",
+      "value": ""
+    },
+    {
+      "key": "live_submission_id",
+      "value": ""
     }
   ],
   "item": [
@@ -1110,6 +1122,480 @@
           "request": {
             "method": "DELETE",
             "url": "{{CONTEST_URL}}/contests/{{contest_id}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "43–48. Кошелёк и платежи",
+      "item": [
+        {
+          "name": "43. Баланс кошелька",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Есть поле balance', () => pm.expect(pm.response.json()).to.have.property('balance'));",
+                  "pm.test('balance — число', () => pm.expect(pm.response.json().balance).to.be.a('number'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{PAYMENT_URL}}/wallet/balance",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "44. Пополнение кошелька (stub)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Есть payment_id или status', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j).to.have.property('status');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{PAYMENT_URL}}/wallet/topup",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"amount\": 5000}"
+            }
+          }
+        },
+        {
+          "name": "45. Баланс увеличился после пополнения",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('balance > 0', () => pm.expect(pm.response.json().balance).to.be.above(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{PAYMENT_URL}}/wallet/balance",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "46. История транзакций кошелька",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Массив транзакций', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "pm.test('Есть хотя бы одна транзакция', () => pm.expect(pm.response.json().length).to.be.above(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{PAYMENT_URL}}/wallet/transactions",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "47. Вывод средств с кошелька (stub)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Есть поле amount', () => pm.expect(pm.response.json()).to.have.property('amount'));",
+                  "pm.test('Есть поле status', () => pm.expect(pm.response.json()).to.have.property('status'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{PAYMENT_URL}}/wallet/withdraw",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"amount\": 100}"
+            }
+          }
+        },
+        {
+          "name": "48. Статус платежа для конкурса",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 или 404', () => {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Есть amount', () => pm.expect(pm.response.json()).to.have.property('amount'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{PAYMENT_URL}}/payments/{{contest_id}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "49–50. AI Оценка",
+      "item": [
+        {
+          "name": "49. Запустить AI оценку решения",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.sendRequest({",
+                  "  url: pm.variables.get('CONTEST_URL') + '/submissions',",
+                  "  header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('admin_token') }",
+                  "}, function(err, res) {",
+                  "  if (!err && res.code === 200) {",
+                  "    const list = res.json();",
+                  "    if (Array.isArray(list) && list.length > 0) {",
+                  "      pm.collectionVariables.set('eval_submission_id', list[0].id);",
+                  "    }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202 или 200', () => {",
+                  "  pm.expect([200, 202]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{CONTEST_URL}}/submissions/{{eval_submission_id}}/evaluate",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "50. Получить результат AI оценки",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 или 404', () => {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Есть compliance_score', () => pm.expect(pm.response.json()).to.have.property('compliance_score'));",
+                  "  pm.test('Есть passed_requirements', () => pm.expect(pm.response.json()).to.have.property('passed_requirements'));",
+                  "  pm.test('Есть failed_requirements', () => pm.expect(pm.response.json()).to.have.property('failed_requirements'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{CONTEST_URL}}/evaluation/{{eval_submission_id}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "51–56. Доп. покрытие",
+      "item": [
+        {
+          "name": "51. Список типов конкурсов (GET /contest-types)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Массив типов', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "pm.test('Есть поля id и name', () => {",
+                  "  pm.expect(pm.response.json()[0]).to.have.property('id');",
+                  "  pm.expect(pm.response.json()[0]).to.have.property('name');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{CONTEST_URL}}/contest-types",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "52. Конкурс по ID (GET /contests/{id})",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.sendRequest({",
+                  "  url: pm.variables.get('CONTEST_URL') + '/contests?page=1',",
+                  "  header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('admin_token') }",
+                  "}, function(err, res) {",
+                  "  if (!err && res.code === 200) {",
+                  "    const data = res.json();",
+                  "    const items = data.items || [];",
+                  "    if (items.length > 0) {",
+                  "      pm.collectionVariables.set('live_contest_id', items[0].id);",
+                  "    }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Поле id совпадает', () => pm.expect(pm.response.json().id).to.eql(parseInt(pm.collectionVariables.get('live_contest_id'))));",
+                  "pm.test('Есть title', () => pm.expect(pm.response.json()).to.have.property('title'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{CONTEST_URL}}/contests/{{live_contest_id}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "53. Решение по ID (GET /submissions/{id})",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.sendRequest({",
+                  "  url: pm.variables.get('CONTEST_URL') + '/submissions',",
+                  "  header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('admin_token') }",
+                  "}, function(err, res) {",
+                  "  if (!err && res.code === 200) {",
+                  "    const list = res.json();",
+                  "    if (Array.isArray(list) && list.length > 0) {",
+                  "      pm.collectionVariables.set('live_submission_id', list[0].id);",
+                  "    }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Поле id совпадает', () => pm.expect(pm.response.json().id).to.eql(parseInt(pm.collectionVariables.get('live_submission_id'))));",
+                  "pm.test('Есть title', () => pm.expect(pm.response.json()).to.have.property('title'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{CONTEST_URL}}/submissions/{{live_submission_id}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "54. Профиль пользователя по ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Есть email', () => pm.expect(pm.response.json()).to.have.property('email'));",
+                  "pm.test('Есть login', () => pm.expect(pm.response.json()).to.have.property('login'));",
+                  "pm.test('Есть role', () => pm.expect(pm.response.json()).to.have.property('role'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{USER_URL}}/users/{{customer_id}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "55. Регистрация с дубликатом логина → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{USER_URL}}/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"dup@test.ru\",\"login\":\"customer1\",\"password\":\"test1234\",\"role\":\"customer\"}"
+            }
+          }
+        },
+        {
+          "name": "56. Изменить статус → недопустимый статус → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{CONTEST_URL}}/submissions/{{submission_id}}/status?status=99",
             "header": [
               {
                 "key": "Authorization",

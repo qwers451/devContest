@@ -1,0 +1,499 @@
+import React, { useEffect, useContext, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Context } from '../context';
+import { observer } from 'mobx-react-lite';
+import Markdown from 'markdown-to-jsx';
+import { deleteData, sendData, downloadFileOrZip } from '../services/apiService.js';
+
+const statusConfig = {
+    active:    { label: 'Активный',    cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+    draft:     { label: 'Черновик',    cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
+    finished:  { label: 'Завершённый', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
+    cancelled: { label: 'Отменённый', cls: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
+};
+
+const TrophyIcon = () => (
+    <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/>
+        <path d="M12 17c-3.31 0-6-2.69-6-6V4h12v7c0 3.31-2.69 6-6 6z"/>
+        <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+    </svg>
+);
+
+const ContestPage = () => {
+    const { contest, user } = useContext(Context);
+    const { number } = useParams();
+    const [currentContest, setCurrentContest] = useState(null);
+    const [error, setError] = useState(null);
+    const [editingStages, setEditingStages] = useState(false);
+    const [draftStages, setDraftStages] = useState([]);
+    const [savingStages, setSavingStages] = useState(false);
+    const [uploadingTz, setUploadingTz] = useState(false);
+    const [uploadingFiles, setUploadingFiles] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchContest = async () => {
+            const fetched = await contest.fetchOneContestByNumber(number);
+            if (fetched) {
+                setCurrentContest(fetched);
+                if (fetched.customer_id) user.fetchUserById(fetched.customer_id);
+            } else {
+                setError('Конкурс не найден.');
+            }
+        };
+        fetchContest();
+    }, [number]);
+
+    useEffect(() => {
+        if (currentContest?.customer_id) user.fetchUserById(currentContest.customer_id);
+    }, [currentContest?.customer_id]);
+
+    useEffect(() => {
+        contest.fetchTypes();
+    }, []);
+
+    if (error) return <div className="max-w-5xl mx-auto px-4 py-10 text-red-500">{error}</div>;
+    if (!currentContest) return (
+        <div className="flex justify-center items-center min-h-64">
+            <div className="w-8 h-8 rounded-full border-4 border-violet-200 dark:border-violet-800 border-t-violet-600 dark:border-t-violet-400 animate-spin" />
+        </div>
+    );
+
+    const isAdmin = user.user && user.user.role === 'admin';
+    const isOwner = user.getCurrentUserId() === currentContest.customer_id;
+    const isFreelancer = user.user && user.user.role === 'executor';
+    const isFinished = currentContest.status === 'finished';
+
+    const handleTzFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingTz(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const updated = await sendData(`/contests/${currentContest.id}/tz-file`, formData, true);
+            setCurrentContest(updated);
+        } catch (err) {
+            alert(err?.response?.data?.detail || 'Не удалось загрузить файл ТЗ');
+        } finally {
+            setUploadingTz(false);
+            e.target.value = '';
+        }
+    };
+
+    const handleDeleteFile = async (fileName) => {
+        try {
+            const updated = await deleteData(`/contests/${currentContest.id}/files/${fileName}`);
+            setCurrentContest(updated);
+        } catch (err) {
+            alert('Ошибка удаления файла');
+        }
+    };
+
+    const handleUploadFiles = async (e) => {
+        const selected = Array.from(e.target.files || []);
+        if (!selected.length) return;
+        setUploadingFiles(true);
+        try {
+            const formData = new FormData();
+            selected.forEach(f => formData.append('files', f));
+            const updated = await sendData(`/contests/${currentContest.id}/files`, formData, true);
+            setCurrentContest(updated);
+        } catch (err) {
+            alert(err?.response?.data?.detail || 'Ошибка загрузки файлов');
+        } finally {
+            setUploadingFiles(false);
+            e.target.value = '';
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm('Вы точно хотите удалить этот конкурс?')) return;
+        try {
+            await deleteData(`/contests/${currentContest.id}`);
+            navigate('/');
+        } catch (e) {
+            console.error(e);
+            alert('Не удалось удалить конкурс');
+        }
+    };
+
+    const sortedStages = [...(currentContest.stages || [])].sort((a, b) => a.order - b.order);
+
+    const activeStageId = currentContest.current_stage_id ?? (() => {
+        if (sortedStages.length === 0) return null;
+        const now = new Date();
+        const upcoming = sortedStages.filter(s => s.deadline && new Date(s.deadline) >= now);
+        return upcoming.length > 0 ? upcoming[0].id : sortedStages[sortedStages.length - 1].id;
+    })();
+
+    const handleSetCurrentStage = async (stageId) => {
+        try {
+            const newId = (currentContest.current_stage_id === stageId) ? null : stageId;
+            const updated = await contest.setCurrentStage(currentContest.id, newId);
+            setCurrentContest(updated);
+        } catch (e) {
+            console.error(e);
+            alert('Не удалось изменить текущий этап');
+        }
+    };
+
+    const startEditingStages = () => {
+        setDraftStages(sortedStages.map(s => ({
+            ...s,
+            deadline: s.deadline ? s.deadline.slice(0, 10) : '',
+        })));
+        setEditingStages(true);
+    };
+
+    const addDraftStage = () => {
+        setDraftStages(prev => [...prev, { name: '', description: '', deadline: '', order: prev.length + 1 }]);
+    };
+
+    const removeDraftStage = (idx) => {
+        setDraftStages(prev => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, order: i + 1 })));
+    };
+
+    const updateDraftStage = (idx, field, value) => {
+        setDraftStages(prev => prev.map((s, i) => i === idx ? { ...s, [field]: value } : s));
+    };
+
+    const saveStages = async () => {
+        setSavingStages(true);
+        try {
+            const payload = draftStages
+                .filter(s => s.name.trim())
+                .map((s, i) => ({
+                    name: s.name,
+                    description: s.description || undefined,
+                    deadline: s.deadline ? new Date(s.deadline).toISOString() : undefined,
+                    order: i + 1,
+                }));
+            const updated = await contest.updateStages(currentContest.id, payload);
+            setCurrentContest(updated);
+            setEditingStages(false);
+        } catch (e) {
+            console.error(e);
+            alert('Не удалось сохранить этапы');
+        } finally {
+            setSavingStages(false);
+        }
+    };
+
+    const status = statusConfig[currentContest.status] || statusConfig.draft;
+    const typeName = contest.getTypeNameById(currentContest.type_id);
+
+    const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 dark:text-gray-200 text-sm bg-white dark:bg-gray-700';
+    const btnSecondary = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors';
+
+    return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
+            <div className="max-w-4xl mx-auto px-4">
+                {/* Breadcrumb */}
+                <nav className="flex items-center gap-2 mb-4 text-sm">
+                    <button
+                        onClick={() => navigate('/contests')}
+                        className="text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                    >
+                        Конкурсы
+                    </button>
+                    <span className="text-gray-300 dark:text-gray-600">/</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium truncate max-w-xs">{currentContest.title}</span>
+                </nav>
+
+                {/* Main Card */}
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in">
+                    {/* Header */}
+                    <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="flex-1 min-w-0">
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight mb-2">
+                                    {currentContest.title}
+                                </h1>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${status.cls}`}>
+                                        {status.label}
+                                    </span>
+                                    {typeName && (
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                            {typeName}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                                    {Number(currentContest.prizepool).toLocaleString('ru')} ₽
+                                </div>
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                    До {new Date(currentContest.ends_at).toLocaleDateString('ru-RU')}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            Создатель: <span className="font-medium text-violet-600 dark:text-violet-400">
+                                @{user.getById(currentContest.customer_id)?.login || '...'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Body */}
+                    <div className="px-6 py-5">
+                        {/* Winner block */}
+                        {isFinished && (
+                            <div className="mb-5 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3">
+                                <span className="text-emerald-600 dark:text-emerald-400"><TrophyIcon /></span>
+                                <div>
+                                    <p className="font-semibold text-emerald-800 dark:text-emerald-300 text-sm">Конкурс завершён — победитель выбран!</p>
+                                    {currentContest.winner && (
+                                        <button
+                                            onClick={() => navigate(`/solution/${currentContest.winner.submission_id}`)}
+                                            className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 font-medium text-sm underline mt-0.5"
+                                        >
+                                            Перейти к победившему решению
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Description */}
+                        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">Описание проекта</h2>
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                            <Markdown options={{ disableParsingRawHTML: true }}>
+                                {currentContest.description || ''}
+                            </Markdown>
+                        </div>
+
+                        {/* Technical specification */}
+                        {(currentContest.tz_text || (isOwner || isAdmin)) && (
+                            <>
+                                <hr className="my-5 border-gray-100 dark:border-gray-700" />
+                                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Техническое задание</h3>
+                                    {currentContest.tz_filename && (
+                                        <button
+                                            onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/tz-file`, currentContest.tz_filename)}
+                                            className={btnSecondary}
+                                        >
+                                            ↓ {currentContest.tz_filename}
+                                        </button>
+                                    )}
+                                    {(isOwner || isAdmin) && !isFinished && (
+                                        <label className={`${btnSecondary} cursor-pointer ${uploadingTz ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            {uploadingTz ? 'Загрузка...' : '↑ PDF / DOCX'}
+                                            <input type="file" accept=".pdf,.docx" className="hidden" onChange={handleTzFileUpload} />
+                                        </label>
+                                    )}
+                                </div>
+                                {currentContest.tz_text ? (
+                                    <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                                        {currentContest.tz_text}
+                                    </pre>
+                                ) : (
+                                    <p className="text-sm text-gray-400 dark:text-gray-500 italic">Техническое задание не заполнено. Загрузите PDF или DOCX.</p>
+                                )}
+                            </>
+                        )}
+
+                        {/* Contest files */}
+                        {(currentContest.files?.length > 0 || (isOwner || isAdmin)) && (
+                            <>
+                                <hr className="my-5 border-gray-100 dark:border-gray-700" />
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Файлы</h3>
+                                    {(isOwner || isAdmin) && !isFinished && (
+                                        <label className={`${btnSecondary} cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            {uploadingFiles ? 'Загрузка...' : '↑ Добавить файлы'}
+                                            <input type="file" multiple className="hidden" onChange={handleUploadFiles} />
+                                        </label>
+                                    )}
+                                </div>
+                                {currentContest.files?.length > 0 ? (
+                                    <ul className="space-y-1">
+                                        {currentContest.files.map((fileName, idx) => (
+                                            <li key={idx} className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/files/${fileName}`, fileName)}
+                                                    className="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium hover:underline"
+                                                >
+                                                    {fileName}
+                                                </button>
+                                                {(isOwner || isAdmin) && !isFinished && (
+                                                    <button
+                                                        onClick={() => handleDeleteFile(fileName)}
+                                                        className="text-red-400 hover:text-red-600 dark:hover:text-red-400 text-xs transition-colors"
+                                                        title="Удалить файл"
+                                                    >✕</button>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-gray-400 dark:text-gray-500 italic">Файлы не прикреплены.</p>
+                                )}
+                            </>
+                        )}
+
+                        {/* Stages */}
+                        {(sortedStages.length > 0 || ((isOwner || isAdmin) && !isFinished)) && (
+                            <>
+                                <hr className="my-5 border-gray-100 dark:border-gray-700" />
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Этапы конкурса</h3>
+                                    {(isOwner || isAdmin) && !isFinished && !editingStages && (
+                                        <button onClick={startEditingStages} className={btnSecondary}>
+                                            Редактировать этапы
+                                        </button>
+                                    )}
+                                </div>
+
+                                {editingStages ? (
+                                    <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-gray-50 dark:bg-gray-800">
+                                        {draftStages.map((stage, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 mb-2 flex-wrap">
+                                                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 w-5">{idx + 1}.</span>
+                                                <input
+                                                    placeholder="Название этапа"
+                                                    value={stage.name}
+                                                    onChange={e => updateDraftStage(idx, 'name', e.target.value)}
+                                                    className={`flex-1 min-w-32 ${inputCls}`}
+                                                />
+                                                <input
+                                                    type="date"
+                                                    value={stage.deadline}
+                                                    onChange={e => updateDraftStage(idx, 'deadline', e.target.value)}
+                                                    className={`w-36 ${inputCls}`}
+                                                />
+                                                <input
+                                                    placeholder="Описание (необязательно)"
+                                                    value={stage.description || ''}
+                                                    onChange={e => updateDraftStage(idx, 'description', e.target.value)}
+                                                    className={`flex-1 min-w-32 ${inputCls}`}
+                                                />
+                                                <button
+                                                    onClick={() => removeDraftStage(idx)}
+                                                    className="p-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs transition-colors"
+                                                >✕</button>
+                                            </div>
+                                        ))}
+                                        <div className="flex gap-2 mt-3">
+                                            <button
+                                                onClick={addDraftStage}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-violet-200 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 text-xs font-medium transition-colors"
+                                            >
+                                                + Добавить этап
+                                            </button>
+                                            <button
+                                                onClick={saveStages}
+                                                disabled={savingStages}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold transition-colors disabled:opacity-60"
+                                            >
+                                                {savingStages ? 'Сохранение...' : 'Сохранить'}
+                                            </button>
+                                            <button
+                                                onClick={() => setEditingStages(false)}
+                                                className={btnSecondary}
+                                            >
+                                                Отмена
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {sortedStages.length === 0 && (
+                                            <p className="text-sm text-gray-400 dark:text-gray-500">Этапы не добавлены. Нажмите «Редактировать этапы», чтобы добавить.</p>
+                                        )}
+                                        {sortedStages.map((stage) => {
+                                            const isActive = stage.id === activeStageId;
+                                            const isManual = currentContest.current_stage_id != null;
+                                            return (
+                                                <div
+                                                    key={stage.id}
+                                                    className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800' : 'bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700'}`}
+                                                >
+                                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isActive ? 'bg-emerald-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                                                        {stage.order}
+                                                    </span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{stage.name}</span>
+                                                            {isActive && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+                                                                    Текущий {isManual ? '' : '(авто)'}
+                                                                </span>
+                                                            )}
+                                                            {stage.deadline && (
+                                                                <span className="text-xs text-gray-400 dark:text-gray-500">
+                                                                    до {new Date(stage.deadline).toLocaleDateString('ru-RU')}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {stage.description && (
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{stage.description}</p>
+                                                        )}
+                                                    </div>
+                                                    {(isOwner || isAdmin) && !isFinished && (
+                                                        <button
+                                                            onClick={() => handleSetCurrentStage(stage.id)}
+                                                            className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isActive && isManual ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                                        >
+                                                            {isActive && isManual ? '✓ Текущий' : 'Назначить'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                    </div>
+
+                    {/* Footer actions */}
+                    {(isFreelancer && !isFinished) && (
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                            <button
+                                onClick={() => navigate(`/contest/${currentContest.number}/create-solution`)}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-all duration-200 shadow-sm"
+                            >
+                                Отправить решение
+                            </button>
+                        </div>
+                    )}
+
+                    {(isAdmin || isOwner) && (
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex flex-wrap gap-2">
+                            <button
+                                onClick={() => navigate(`/contest/${currentContest.number}/solutions`)}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
+                            >
+                                Решения
+                            </button>
+                            {isOwner && !isFinished && (
+                                <button
+                                    onClick={() => navigate(`/contest/edit/${currentContest.number}`, { state: JSON.parse(JSON.stringify(currentContest)) })}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 font-semibold text-sm transition-colors"
+                                >
+                                    Редактировать
+                                </button>
+                            )}
+                            {isAdmin && (
+                                <button
+                                    onClick={handleDelete}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors"
+                                >
+                                    Удалить
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default observer(ContestPage);
