@@ -386,9 +386,6 @@ async def upload_tz_file(
         raise HTTPException(status_code=422, detail="Only PDF and DOCX files are supported")
 
     data = await file.read()
-    text = extract_file_text(fname, data)
-    if not text:
-        raise HTTPException(status_code=422, detail="Could not extract text from file")
 
     upload_dir = f"/app/uploads/contests/{contest_id}"
     os.makedirs(upload_dir, exist_ok=True)
@@ -396,7 +393,9 @@ async def upload_tz_file(
     async with aiofiles.open(dest, "wb") as f:
         await f.write(data)
 
-    contest.tz_text = text
+    text = extract_file_text(fname, data)
+    if text:
+        contest.tz_text = text
     contest.tz_filename = fname
     await db.commit()
     await db.refresh(contest)

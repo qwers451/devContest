@@ -10,7 +10,19 @@ def extract_text_pdf(data: bytes) -> str:
 def extract_text_docx(data: bytes) -> str:
     from docx import Document
     doc = Document(io.BytesIO(data))
-    return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    parts = []
+    # Paragraphs at document level
+    for p in doc.paragraphs:
+        if p.text.strip():
+            parts.append(p.text)
+    # Paragraphs inside tables
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    if p.text.strip():
+                        parts.append(p.text)
+    return "\n".join(parts)
 
 
 def extract_file_text(filename: str, data: bytes) -> str | None:
