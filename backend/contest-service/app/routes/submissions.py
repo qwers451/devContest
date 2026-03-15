@@ -4,6 +4,8 @@ import os
 import struct
 from datetime import date, datetime, time, timezone
 
+from sqlalchemy.orm.attributes import flag_modified
+
 import aiofiles
 from fastapi import (
     APIRouter,
@@ -336,16 +338,18 @@ async def upload_files(
     upload_dir = f"{UPLOAD_DIR}/{submission_id}"
     os.makedirs(upload_dir, exist_ok=True)
 
-    saved = []
+    existing = list(s.files or [])
     for file in files:
         safe_name = os.path.basename(file.filename or "file")
         dest = f"{upload_dir}/{safe_name}"
         async with aiofiles.open(dest, "wb") as f:
             content = await file.read()
             await f.write(content)
-        saved.append(safe_name)
+        if safe_name not in existing:
+            existing.append(safe_name)
 
-    s.files = saved
+    s.files = existing
+    flag_modified(s, "files")
     await db.commit()
     await db.refresh(s)
 

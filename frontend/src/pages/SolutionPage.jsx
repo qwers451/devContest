@@ -5,7 +5,7 @@ import { observer } from "mobx-react-lite";
 import Markdown from "markdown-to-jsx";
 import ConfirmationModal from "../components/ConfirmationModal";
 import ChangeSolutionStatusModal from "../components/ChangeSolutionStatusModal";
-import { downloadFileOrZip } from "../services/apiService.js";
+import { downloadFileOrZip, sendData } from "../services/apiService.js";
 
 const SolutionPage = () => {
   const { solution, contest, user, payment } = useContext(Context);
@@ -20,6 +20,7 @@ const SolutionPage = () => {
   const [milestoneLoading, setMilestoneLoading] = useState(null);
   const [milestoneError, setMilestoneError] = useState('');
   const [evalTriggering, setEvalTriggering] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -195,6 +196,25 @@ const SolutionPage = () => {
         `/submissions/${currentSolution.id}/files/${fileName}`,
         fileName,
       );
+    }
+  };
+
+  const isExecutor = user.user?.id === currentSolution?.executor_id;
+
+  const handleUploadFiles = async (e) => {
+    const selected = Array.from(e.target.files || []);
+    if (!selected.length) return;
+    setUploadingFiles(true);
+    try {
+      const formData = new FormData();
+      selected.forEach(f => formData.append('files', f));
+      const updated = await sendData(`/submissions/${currentSolution.id}/files`, formData, true);
+      setCurrentSolution(updated);
+    } catch (err) {
+      alert(err?.response?.data?.detail || 'Ошибка загрузки файлов');
+    } finally {
+      setUploadingFiles(false);
+      e.target.value = '';
     }
   };
 
@@ -410,32 +430,50 @@ const SolutionPage = () => {
               </>
             )}
 
-            {currentSolution.files && currentSolution.files.length > 0 && (
+            {(currentSolution.files?.length > 0 || isExecutor) && (
               <>
                 <hr className="my-5 border-gray-100" />
-                <h3 className="text-base font-bold text-gray-800 mb-2">
-                  Файлы
-                </h3>
-                <ul className="space-y-1 mb-3">
-                  {currentSolution.files.map((fileName, index) => (
-                    <li key={index}>
-                      <button
-                        onClick={() =>
-                          downloadFileOrZip(
-                            `/submissions/${currentSolution.id}/files/${fileName}`,
-                            fileName,
-                          )
-                        }
-                        className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
-                      >
-                        {fileName}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <button onClick={handleDownloadAll} className={btnSuccess}>
-                  Скачать всё
-                </button>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-base font-bold text-gray-800">Файлы</h3>
+                  {isExecutor && (
+                    <label className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 font-medium transition-colors cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
+                      {uploadingFiles ? 'Загрузка...' : '↑ Добавить файлы'}
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        accept=".zip,.png,.jpg,.jpeg,.gif,.pdf,.docx"
+                        onChange={handleUploadFiles}
+                      />
+                    </label>
+                  )}
+                </div>
+                {currentSolution.files?.length > 0 ? (
+                  <>
+                    <ul className="space-y-1 mb-3">
+                      {currentSolution.files.map((fileName, index) => (
+                        <li key={index}>
+                          <button
+                            onClick={() =>
+                              downloadFileOrZip(
+                                `/submissions/${currentSolution.id}/files/${fileName}`,
+                                fileName,
+                              )
+                            }
+                            className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
+                          >
+                            {fileName}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <button onClick={handleDownloadAll} className={btnSuccess}>
+                      Скачать всё
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Файлы не прикреплены.</p>
+                )}
               </>
             )}
           </div>
