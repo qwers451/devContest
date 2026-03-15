@@ -30,6 +30,33 @@ from app.models import Contest, Review, Submission, SubmissionStatusLog
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
 UPLOAD_DIR = "/app/uploads"
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Разрешённые типы файлов: сигнатура (magic bytes) → MIME
+ALLOWED_SIGNATURES: list[tuple[bytes, str]] = [
+    (b"\x89PNG",    "image/png"),
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"%PDF",       "application/pdf"),
+    (b"PK\x03\x04", "application/zip"),
+    (b"PK\x05\x06", "application/zip"),
+    # docx/xlsx тоже zip-контейнеры
+]
+
+def _check_file(filename: str, content: bytes) -> None:
+    """Проверяет размер и тип файла по magic bytes. Бросает HTTPException при нарушении."""
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Файл «{filename}» превышает допустимый размер 10 МБ",
+        )
+    sig = content[:4]
+    for magic, _ in ALLOWED_SIGNATURES:
+        if sig.startswith(magic):
+            return
+    raise HTTPException(
+        status_code=415,
+        detail=f"Недопустимый тип файла «{filename}». Разрешены: PDF, PNG, JPEG, ZIP/DOCX",
+    )
 
 
 def _png_size(data: bytes) -> tuple[int, int] | None:
@@ -415,9 +442,10 @@ async def upload_files(
     existing = list(s.files or [])
     for file in files:
         safe_name = os.path.basename(file.filename or "file")
+        content = await file.read()
+        _check_file(safe_name, content)
         dest = f"{upload_dir}/{safe_name}"
         async with aiofiles.open(dest, "wb") as f:
-            content = await file.read()
             await f.write(content)
         if safe_name not in existing:
             existing.append(safe_name)

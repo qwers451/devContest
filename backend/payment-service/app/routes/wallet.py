@@ -2,8 +2,10 @@ import asyncio
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +16,7 @@ from app.models import Payment, PaymentStatus, PaymentType, Payout, WalletTxType
 from app.wallet_helpers import credit_wallet, debit_wallet, get_or_create_wallet
 
 router = APIRouter(prefix="/wallet", tags=["wallet"])
+limiter = Limiter(key_func=get_remote_address)
 
 
 def _yk_configured() -> bool:
@@ -157,7 +160,9 @@ async def get_balance(
 
 
 @router.post("/topup")
+@limiter.limit("10/minute")
 async def topup_wallet(
+    request: Request,
     data: TopupWalletRequest,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -306,7 +311,9 @@ async def get_wallet_transactions(
 
 
 @router.post("/withdraw", response_model=PayoutOut)
+@limiter.limit("5/minute")
 async def withdraw_from_wallet(
+    request: Request,
     data: WithdrawWalletRequest,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),

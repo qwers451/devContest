@@ -1,7 +1,13 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from app.config import settings
 from app.database import create_tables
+
+limiter = Limiter(key_func=get_remote_address)
 from app.routes.escrow import router as escrow_router
 from app.routes.payments import router as payments_router
 from app.routes.transactions import router as transactions_router
@@ -15,10 +21,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Payment Service", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

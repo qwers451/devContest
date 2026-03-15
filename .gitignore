@@ -16,3 +16,4 @@ frontend/dist/
 
 # Local tooling
 .claude/
+certs/

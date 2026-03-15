@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     yookassa_secret_key: str = ""
     yookassa_return_url: str = "http://localhost:5173/payment/callback"
     frontend_url: str = "http://localhost:5173"
+    allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
     contest_service_url: str = "http://contest-service:8000"
 
     class Config:

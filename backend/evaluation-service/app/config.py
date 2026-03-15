@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.2-vision"
     evaluation_stub: bool = False  # set EVALUATION_STUB=true to use stub mode
     contest_service_url: str = "http://contest-service:8000"
+    allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     class Config:
         env_file = ".env"
