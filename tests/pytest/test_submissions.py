@@ -183,31 +183,40 @@ async def test_edit_submission(executor_token, submission):
 
 @pytest.mark.asyncio
 async def test_upload_file(executor_token, submission):
-    file_content = b"Hello from test file"
+    # Minimal valid PNG (1x1 pixel)
+    file_content = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00"
+        b"\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{CONTEST_URL}/submissions/{submission['id']}/files",
-            files={"files": ("test.txt", io.BytesIO(file_content), "text/plain")},
+            files={"files": ("test.png", io.BytesIO(file_content), "image/png")},
             headers=auth_headers(executor_token),
         )
     assert r.status_code == 200
     data = r.json()
-    assert "test.txt" in data["files"]
+    assert "test.png" in data["files"]
 
 
 @pytest.mark.asyncio
 async def test_download_file(executor_token, submission):
-    # Upload first, then download
-    file_content = b"Download me"
+    # Upload PNG, then download
+    file_content = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00"
+        b"\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
     async with httpx.AsyncClient() as c:
         up = await c.post(
             f"{CONTEST_URL}/submissions/{submission['id']}/files",
-            files={"files": ("dl_test.txt", io.BytesIO(file_content), "text/plain")},
+            files={"files": ("dl_test.png", io.BytesIO(file_content), "image/png")},
             headers=auth_headers(executor_token),
         )
         assert up.status_code == 200
         r = await c.get(
-            f"{CONTEST_URL}/submissions/{submission['id']}/files/dl_test.txt",
+            f"{CONTEST_URL}/submissions/{submission['id']}/files/dl_test.png",
             headers=auth_headers(executor_token),
         )
     assert r.status_code == 200

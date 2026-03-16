@@ -71,6 +71,7 @@ class ContestOut(BaseModel):
     prizepool: int
     status: str
     type_id: int | None
+    template_id: int | None = None
     files: list
     created_at: datetime
     ends_at: datetime

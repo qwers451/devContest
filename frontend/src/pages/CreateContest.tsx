@@ -1,10 +1,17 @@
 import React, { useEffect, useContext, useState, useCallback } from 'react';
 import { Context } from '../context';
-import { sendData, updateData, deleteData } from '../services/apiService.js';
+import { sendData, updateData, deleteData, fetchData } from '../services/apiService.js';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
 import { PAYMENT_CHECKOUT_ROUTE } from '../utils/consts.js';
+
+interface ContestTemplate {
+    id: number;
+    name: string;
+    description: string | null;
+    tz_template: string | null;
+}
 
 const CreateContest = () => {
     const { contest, user, payment } = useContext(Context);
@@ -23,11 +30,16 @@ const CreateContest = () => {
     const [state, setState] = useState(false);
     const [submitURL, setSubmitURL] = useState('/contests');
     const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+    const [templates, setTemplates] = useState<ContestTemplate[]>([]);
+    const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
 
     const regex = /(!\[[^\]]*\])\(([^)]+)\)/g;
 
     useEffect(() => {
         contest.fetchTypes();
+        fetchData('/contest-templates').then((data: ContestTemplate[]) => {
+            if (Array.isArray(data)) setTemplates(data);
+        }).catch(() => {});
     }, []);
 
     const handleSubmit = async (event) => {
@@ -266,6 +278,42 @@ const CreateContest = () => {
                             <p className="text-red-500 text-xs mt-1">{contest.form.description.error}</p>
                         )}
                     </div>
+
+                    {/* TZ Template selector */}
+                    {templates.length > 0 && (
+                        <div>
+                            <label className={labelCls}>Шаблон ТЗ</label>
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setTemplateDropdownOpen(o => !o)}
+                                    className={`${inputCls} text-left flex justify-between items-center`}
+                                >
+                                    <span className="text-gray-400">Выберите шаблон для автозаполнения ТЗ</span>
+                                    <span className="text-gray-400">{templateDropdownOpen ? '▲' : '▼'}</span>
+                                </button>
+                                {templateDropdownOpen && (
+                                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg overflow-hidden">
+                                        {templates.map(t => (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (t.tz_template) contest.setFormField('tz_text', t.tz_template);
+                                                    setTemplateDropdownOpen(false);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                                            >
+                                                <div className="text-sm font-medium text-gray-700 dark:text-gray-200">{t.name}</div>
+                                                {t.description && <div className="text-xs text-gray-400 dark:text-gray-500">{t.description}</div>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Шаблон заполнит поле ТЗ — вы можете отредактировать его под свою задачу.</p>
+                        </div>
+                    )}
 
                     {/* TZ text */}
                     <div>

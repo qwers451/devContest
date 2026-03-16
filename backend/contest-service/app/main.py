@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import create_tables
 from app.routes.contest_types import router as types_router
+from app.routes.contest_templates import router as templates_router
 from app.routes.contests import router as contests_router
 from app.routes.submissions import router as submissions_router
 from app.routes.statistics import router as statistics_router
@@ -26,6 +27,7 @@ app.add_middleware(
 )
 
 app.include_router(types_router)
+app.include_router(templates_router)
 app.include_router(contests_router)
 app.include_router(submissions_router)
 app.include_router(statistics_router)

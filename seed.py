@@ -397,6 +397,94 @@ if admin_id and admin_token:
     print(f"  admin     → баланс: {bal} ₽")
 
 
+# ── Contest Templates ──────────────────────────────────────────────────────────
+
+print("\n=== Creating contest templates ===")
+
+template_ids = {}
+_, existing_templates = get(f"{CONTEST_API}/contest-templates")
+if isinstance(existing_templates, list):
+    for t in existing_templates:
+        template_ids[t["name"]] = t["id"]
+
+TEMPLATES = [
+    {
+        "name": "Логотип",
+        "description": "Шаблон ТЗ для конкурса на разработку логотипа",
+        "tz_template": (
+            "Цветовая схема: [укажите цвета, например #FF0000 и #FFFFFF]\n"
+            "Стиль: [минималистичный / детализированный / плоский / объёмный]\n"
+            "Форма: [квадрат / круг / горизонтальный / вертикальный]\n"
+            "Наличие текста на логотипе: [да / нет; если да — укажите текст]\n"
+            "Форматы файлов: [SVG, PNG 512×512, PNG 1024×1024]\n"
+            "Использование: [сайт / мобильное приложение / печать]\n"
+            "Дополнительные требования: [опишите здесь]"
+        ),
+    },
+    {
+        "name": "Статья",
+        "description": "Шаблон ТЗ для конкурса на написание статьи",
+        "tz_template": (
+            "Тема: [укажите тему]\n"
+            "Объём: от [X] до [Y] слов\n"
+            "Структура: введение, [N] разделов, заключение\n"
+            "Стиль изложения: [официальный / разговорный / научно-популярный]\n"
+            "Ключевые слова: [слово1, слово2, ...]\n"
+            "Целевая аудитория: [опишите читателя]\n"
+            "Призыв к действию в конце: [да / нет]\n"
+            "Дополнительные требования: [ссылки, иллюстрации и т.д.]"
+        ),
+    },
+    {
+        "name": "Код",
+        "description": "Шаблон ТЗ для конкурса на разработку программного кода",
+        "tz_template": (
+            "Язык программирования: [Python / JavaScript / другой]\n"
+            "Фреймворк / библиотеки: [если требуется]\n"
+            "Функциональность:\n"
+            "  - [требование 1]\n"
+            "  - [требование 2]\n"
+            "  - [требование 3]\n"
+            "База данных: [если требуется — укажите СУБД]\n"
+            "Тесты: [да / нет]\n"
+            "Документация: [README / комментарии в коде / Swagger]\n"
+            "Формат сдачи: ZIP-архив с исходным кодом"
+        ),
+    },
+    {
+        "name": "Баннер",
+        "description": "Шаблон ТЗ для конкурса на разработку баннера",
+        "tz_template": (
+            "Размеры: [ширина]×[высота] пикселей\n"
+            "Форматы файлов: [PNG / JPEG]\n"
+            "Цветовая схема: [укажите цвета]\n"
+            "Текст на баннере: [заголовок, подзаголовок]\n"
+            "Призыв к действию (CTA): [текст кнопки или слогана]\n"
+            "Стиль: [корпоративный / яркий / минималистичный]\n"
+            "Дополнительные требования: [опишите здесь]"
+        ),
+    },
+]
+
+for tmpl in TEMPLATES:
+    if tmpl["name"] in template_ids:
+        print(f"  {tmpl['name']} → already exists id={template_ids[tmpl['name']]}")
+        continue
+    if not admin_token:
+        print(f"  {tmpl['name']} → SKIP (no admin token)")
+        continue
+    status, t = post(f"{CONTEST_API}/contest-templates", tmpl, admin_token)
+    if status == 201:
+        template_ids[tmpl["name"]] = t["id"]
+        print(f"  {tmpl['name']} → id={t['id']}")
+    else:
+        print(f"  {tmpl['name']} → FAIL {status} {t}")
+
+logo_template = template_ids.get("Логотип")
+article_template = template_ids.get("Статья")
+code_template = template_ids.get("Код")
+banner_template = template_ids.get("Баннер")
+
 # ── Contest Types ──────────────────────────────────────────────────────────────
 
 print("\n=== Creating contest types ===")
