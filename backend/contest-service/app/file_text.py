@@ -1,4 +1,14 @@
 import io
+import zipfile
+
+CODE_EXTENSIONS = {
+    ".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".c", ".cpp", ".h",
+    ".cs", ".go", ".rs", ".rb", ".php", ".swift", ".kt", ".scala",
+    ".html", ".css", ".scss", ".json", ".yaml", ".yml", ".toml",
+    ".md", ".txt", ".sh", ".sql",
+}
+_MAX_ZIP_FILE_BYTES = 50_000  # per file
+_MAX_ZIP_TOTAL_BYTES = 200_000
 
 
 def extract_text_pdf(data: bytes) -> str:
@@ -27,14 +37,39 @@ def extract_text_docx(data: bytes) -> str:
     return "\n".join(parts)
 
 
+def extract_text_zip(data: bytes) -> str:
+    parts = []
+    total = 0
+    with zipfile.ZipFile(io.BytesIO(data)) as zf:
+        for info in zf.infolist():
+            if info.is_dir():
+                continue
+            ext = "." + info.filename.rsplit(".", 1)[-1].lower() if "." in info.filename else ""
+            if ext not in CODE_EXTENSIONS:
+                continue
+            file_data = zf.read(info.filename)[:_MAX_ZIP_FILE_BYTES]
+            try:
+                text = file_data.decode("utf-8", errors="replace")
+            except Exception:
+                continue
+            parts.append(f"=== {info.filename} ===\n{text}")
+            total += len(text)
+            if total >= _MAX_ZIP_TOTAL_BYTES:
+                parts.append("... (truncated)")
+                break
+    return "\n\n".join(parts)
+
+
 def extract_file_text(filename: str, data: bytes) -> str | None:
-    """Extract plain text from PDF or DOCX file. Returns None for unsupported formats."""
+    """Extract plain text from PDF, DOCX, or ZIP file. Returns None for unsupported formats."""
     name = filename.lower()
     try:
         if name.endswith(".pdf"):
             return extract_text_pdf(data)
         elif name.endswith(".docx"):
             return extract_text_docx(data)
+        elif name.endswith(".zip"):
+            return extract_text_zip(data)
     except Exception:
         pass
     return None

@@ -4,11 +4,27 @@ import httpx
 
 from app.config import settings
 
-# Single-step prompt: extract requirements from TZ and evaluate each one.
-# Outputs per-requirement scores so compliance_score is computed deterministically in Python.
-_EVALUATE_PROMPT = """Ты — эксперт по оценке технических заданий. Твоя задача:
-1. Извлечь все конкретные и проверяемые требования из технического задания.
-2. Проверить каждое требование по представленной работе и выставить оценку.
+# Step 1: extract requirements from TZ
+_EXTRACT_PROMPT = """Ты — эксперт по техническим заданиям. Извлеки все конкретные и проверяемые требования из технического задания.
+
+Правила:
+- Извлекай только конкретные требования (не пересказывай общее описание).
+- Каждое требование — одно чёткое условие.
+- Отмечай ключевые требования флагом is_critical: true.
+
+Техническое задание:
+{tz_text}
+
+Ответь ТОЛЬКО валидным JSON-объектом (никакого текста вне JSON):
+{{
+  "requirements": [
+    {{"text": "текст требования", "is_critical": false}},
+    ...
+  ]
+}}"""
+
+# Step 2 (text): evaluate submission against extracted requirements
+_EVALUATE_PROMPT = """Ты — эксперт по оценке конкурсных работ. Проверь работу исполнителя по списку требований.
 
 Оценка за каждое требование:
   100 — требование явно выполнено
@@ -16,13 +32,11 @@ _EVALUATE_PROMPT = """Ты — эксперт по оценке техничес
     0 — требование не выполнено
 
 Правила:
-- Извлекай только конкретные требования (не пересказывай общее описание).
 - Комментарий — одна фраза на русском языке: что именно есть или чего нет в работе.
-- compliance_score = среднее арифметическое всех score (целое число 0–100).
-- critical_issues = true если хотя бы одно КЛЮЧЕВОЕ требование имеет score = 0.
+- critical_issues = true если хотя бы одно требование с is_critical: true имеет score = 0.
 
-Техническое задание:
-{tz_text}
+Требования:
+{requirements_json}
 
 Работа исполнителя:
 {submission_text}
@@ -33,27 +47,25 @@ _EVALUATE_PROMPT = """Ты — эксперт по оценке техничес
     {{"text": "текст требования", "score": 100, "comment": "краткий комментарий на русском"}},
     ...
   ],
-  "compliance_score": <целое число 0-100>,
   "critical_issues": <true или false>
 }}"""
 
-_EVALUATE_VISION_PROMPT = """Ты — эксперт по оценке технических заданий. Твоя задача:
-1. Извлечь все конкретные и проверяемые требования из технического задания.
-2. Проверить каждое требование по описанию работы И по прикреплённым изображениям.
+# Step 2 (vision): evaluate submission with images against extracted requirements
+_EVALUATE_VISION_PROMPT = """Ты — эксперт по оценке конкурсных работ. Проверь работу исполнителя по списку требований.
+Анализируй описание работы, метаданные файлов И прикреплённые изображения.
 
 Оценка за каждое требование:
   100 — требование явно выполнено
    50 — выполнено частично или сложно проверить
     0 — требование не выполнено
 
-Для требований к размерам изображений — используй метаданные файлов (точные пиксели).
-Для требований к цветам, стилю, CTA — смотри на изображения.
+Для требований к размерам — используй метаданные файлов (точные пиксели).
+Для требований к цветам, стилю, визуальным элементам — смотри на изображения.
 Комментарий — одна фраза на русском языке.
-compliance_score = среднее арифметическое всех score (целое число 0–100).
-critical_issues = true если хотя бы одно КЛЮЧЕВОЕ требование имеет score = 0.
+critical_issues = true если хотя бы одно требование с is_critical: true имеет score = 0.
 
-Техническое задание:
-{tz_text}
+Требования:
+{requirements_json}
 
 Описание работы и метаданные файлов:
 {submission_text}
@@ -64,15 +76,14 @@ critical_issues = true если хотя бы одно КЛЮЧЕВОЕ треб
     {{"text": "текст требования", "score": 100, "comment": "краткий комментарий на русском"}},
     ...
   ],
-  "compliance_score": <целое число 0-100>,
   "critical_issues": <true или false>
 }}"""
 
 
-async def _generate(prompt: str, images: list[str] | None = None) -> str:
+async def _generate(prompt: str, images: list[str] | None = None, model: str | None = None) -> str:
     """Call Ollama API. Pass base64-encoded images for vision evaluation."""
     payload: dict = {
-        "model": settings.ollama_model,
+        "model": model or settings.ollama_model,
         "prompt": prompt,
         "stream": False,
         "options": {"num_ctx": 16384},
@@ -88,6 +99,21 @@ async def _generate(prompt: str, images: list[str] | None = None) -> str:
         return resp.json()["response"]
 
 
+def _parse_json(raw: str) -> dict | None:
+    """Strip markdown fences and parse JSON. Returns None on failure."""
+    try:
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned[cleaned.index("\n") + 1:] if "\n" in cleaned else cleaned
+            if cleaned.rstrip().endswith("```"):
+                cleaned = cleaned.rstrip()[:-3].rstrip()
+        start = cleaned.index("{")
+        end = cleaned.rindex("}") + 1
+        return json.loads(cleaned[start:end])
+    except (ValueError, json.JSONDecodeError):
+        return None
+
+
 def _format_image_meta(image_meta: list[dict]) -> str:
     lines = []
     for m in image_meta:
@@ -99,46 +125,34 @@ def _format_image_meta(image_meta: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _parse_result(raw: str, tz_text: str) -> dict:
-    """Parse LLM JSON response into evaluation result dict."""
-    try:
-        # Strip markdown code fences if model wrapped its answer
-        cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            # Drop the opening fence line (```json or ```)
-            cleaned = cleaned[cleaned.index("\n") + 1 :] if "\n" in cleaned else cleaned
-            # Drop the closing fence if present
-            if cleaned.rstrip().endswith("```"):
-                cleaned = cleaned.rstrip()[:-3].rstrip()
-        start = cleaned.index("{")
-        end = cleaned.rindex("}") + 1
-        data = json.loads(cleaned[start:end])
-    except (ValueError, json.JSONDecodeError):
-        return {
-            "passed_requirements": [],
-            "failed_requirements": [f"Ошибка разбора ответа модели: {raw[:200]}"],
-            "compliance_score": 0,
-            "critical_issues": True,
-        }
-
+def _build_result(data: dict, extracted_reqs: list[dict]) -> dict:
+    """Build evaluation result from step-2 response and step-1 requirements."""
     reqs = data.get("requirements", [])
     if not reqs:
         return {
             "passed_requirements": [],
-            "failed_requirements": ["Модель не смогла извлечь требования из ТЗ"],
+            "failed_requirements": ["Модель не смогла оценить требования"],
             "compliance_score": 0,
             "critical_issues": True,
         }
 
+    # Map is_critical from step 1 by position
+    critical_flags = [r.get("is_critical", False) for r in extracted_reqs]
+
     passed = []
     failed = []
     scores = []
+    has_critical_fail = False
 
-    for r in reqs:
+    for i, r in enumerate(reqs):
         text = r.get("text", "")
         score = r.get("score", 0)
         comment = r.get("comment", "")
         scores.append(score)
+
+        is_critical = critical_flags[i] if i < len(critical_flags) else False
+        if is_critical and score == 0:
+            has_critical_fail = True
 
         if score >= 70:
             passed.append(text if not comment else f"{text} — {comment}")
@@ -146,14 +160,13 @@ def _parse_result(raw: str, tz_text: str) -> dict:
             label = "частично" if score == 50 else "не выполнено"
             failed.append(f"{text} — {comment or label}")
 
-    # Compute score in Python, ignore LLM's own compliance_score to avoid hallucination
     compliance_score = round(sum(scores) / len(scores)) if scores else 0
 
     return {
         "passed_requirements": passed,
         "failed_requirements": failed,
         "compliance_score": compliance_score,
-        "critical_issues": data.get("critical_issues", compliance_score < 50),
+        "critical_issues": has_critical_fail or data.get("critical_issues", compliance_score < 50),
     }
 
 
@@ -174,6 +187,24 @@ async def evaluate_submission(
             "critical_issues": False,
         }
 
+    # Step 1: extract requirements from TZ (text model)
+    extract_raw = await _generate(
+        _EXTRACT_PROMPT.format(tz_text=tz_text),
+        model=settings.ollama_model,
+    )
+    extract_data = _parse_json(extract_raw)
+    if not extract_data or not extract_data.get("requirements"):
+        return {
+            "passed_requirements": [],
+            "failed_requirements": ["Модель не смогла извлечь требования из ТЗ"],
+            "compliance_score": 0,
+            "critical_issues": True,
+        }
+
+    extracted_reqs = extract_data["requirements"]
+    requirements_json = json.dumps(extracted_reqs, ensure_ascii=False, indent=2)
+
+    # Step 2: evaluate submission (vision model if images present, text model otherwise)
     if images:
         meta_section = (
             f"\n\nМетаданные прикреплённых изображений:\n{_format_image_meta(image_meta)}"
@@ -181,18 +212,27 @@ async def evaluate_submission(
             else ""
         )
         prompt = _EVALUATE_VISION_PROMPT.format(
-            tz_text=tz_text,
-            submission_text=(submission_text or "(описание отсутствует)")
-            + meta_section,
+            requirements_json=requirements_json,
+            submission_text=(submission_text or "(описание отсутствует)") + meta_section,
         )
+        eval_raw = await _generate(prompt, images=images, model=settings.ollama_vision_model)
     else:
         prompt = _EVALUATE_PROMPT.format(
-            tz_text=tz_text,
+            requirements_json=requirements_json,
             submission_text=submission_text or "(описание отсутствует)",
         )
+        eval_raw = await _generate(prompt, model=settings.ollama_model)
 
-    raw = await _generate(prompt, images=images or None)
-    return _parse_result(raw, tz_text)
+    eval_data = _parse_json(eval_raw)
+    if not eval_data:
+        return {
+            "passed_requirements": [],
+            "failed_requirements": [f"Ошибка разбора ответа модели: {eval_raw[:200]}"],
+            "compliance_score": 0,
+            "critical_issues": True,
+        }
+
+    return _build_result(eval_data, extracted_reqs)
 
 
 # Keep for backward compatibility (not used directly anymore)
