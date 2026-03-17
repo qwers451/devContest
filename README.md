@@ -154,7 +154,6 @@
   PYTEST_CONTEST_URL=http://localhost:8002 \
   python3 -m pytest
   ```
-  *Примечание: фикстуры ждут готовности `user-service` и `contest-service` перед стартом тестов.*
 
 ### 3. API-тесты (Postman / Newman)
 Коллекция запросов для проверки всех эндпоинтов API.
