@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Context } from "../context";
 import { observer } from "mobx-react-lite";
+import { BsSun, BsMoon, BsWallet2 } from "react-icons/bs";
 import {
   CONTESTS_ROUTE,
   ADMIN_ROUTE,
@@ -12,35 +13,6 @@ import {
   PROFILE_ROUTE,
   WALLET_ROUTE,
 } from "../utils/consts.js";
-
-const SunIcon = () => (
-  <svg
-    className="w-4 h-4"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-  </svg>
-);
-
-const MoonIcon = () => (
-  <svg
-    className="w-4 h-4"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-  </svg>
-);
 
 const NavBar = observer(() => {
   const { user, payment } = useContext(Context);
@@ -202,7 +174,7 @@ const NavBar = observer(() => {
             className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-all"
             title={isDark ? "Светлая тема" : "Тёмная тема"}
           >
-            {isDark ? <SunIcon /> : <MoonIcon />}
+            {isDark ? <BsSun size={16} /> : <BsMoon size={16} />}
           </button>
           {user.isAuth ? (
             <>
@@ -211,10 +183,7 @@ const NavBar = observer(() => {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900 transition-colors group"
                 title="Кошелёк"
               >
-                <svg className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="5" width="20" height="14" rx="3" />
-                  <path d="M16 12a2 2 0 0 1 0 4h-2v-4h2z" />
-                </svg>
+                <BsWallet2 className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
                 <span className="text-sm font-bold text-violet-700 dark:text-violet-300 tabular-nums">
                   {Number(payment.balance).toLocaleString("ru-RU")} ₽
                 </span>
@@ -272,10 +241,7 @@ const NavBar = observer(() => {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 text-sm font-bold text-violet-700 dark:text-violet-300"
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="3" />
-                <path d="M16 12a2 2 0 0 1 0 4h-2v-4h2z" />
-              </svg>
+              <BsWallet2 className="w-3.5 h-3.5" />
               {Number(payment.balance).toLocaleString("ru-RU")} ₽
             </NavLink>
           )}
@@ -284,7 +250,7 @@ const NavBar = observer(() => {
             onClick={toggleTheme}
             className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 text-left"
           >
-            {isDark ? <SunIcon /> : <MoonIcon />}
+            {isDark ? <BsSun size={16} /> : <BsMoon size={16} />}
             {isDark ? "Светлая тема" : "Тёмная тема"}
           </button>
           {user.isAuth ? (

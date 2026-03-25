@@ -4,6 +4,7 @@ import { Context } from '../context';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
 import { deleteData, sendData, downloadFileOrZip } from '../services/apiService.js';
+import { BsTrophy } from 'react-icons/bs';
 
 const statusConfig = {
     active:    { label: 'Активный',    cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
@@ -11,14 +12,6 @@ const statusConfig = {
     finished:  { label: 'Завершённый', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
     cancelled: { label: 'Отменённый', cls: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
 };
-
-const TrophyIcon = () => (
-    <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/>
-        <path d="M12 17c-3.31 0-6-2.69-6-6V4h12v7c0 3.31-2.69 6-6 6z"/>
-        <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-    </svg>
-);
 
 const ContestPage = () => {
     const { contest, user } = useContext(Context);
@@ -243,7 +236,7 @@ const ContestPage = () => {
                         {/* Winner block */}
                         {isFinished && (
                             <div className="mb-5 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3">
-                                <span className="text-emerald-600 dark:text-emerald-400"><TrophyIcon /></span>
+                                <span className="text-emerald-600 dark:text-emerald-400"><BsTrophy className="w-5 h-5" /></span>
                                 <div>
                                     <p className="font-semibold text-emerald-800 dark:text-emerald-300 text-sm">Конкурс завершён — победитель выбран!</p>
                                     {currentContest.winner && (

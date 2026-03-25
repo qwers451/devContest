@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "../context";
 import { SOLUTION_ROUTE } from "../utils/consts.js";
+import { BsCpu } from "react-icons/bs";
 
 const statusStyles = {
   1: {
@@ -127,9 +128,7 @@ const SolutionCard = observer(
             {/* AI score bar */}
             {hasAiScore && (
               <div className={`mt-3 rounded-lg border ${aiColor.border} px-3 py-2 flex items-center gap-3`}>
-                <svg className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
-                </svg>
+                <BsCpu className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span className={`text-xs font-bold ${aiColor.text}`}>{score}%</span>

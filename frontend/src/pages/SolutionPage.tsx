@@ -6,6 +6,7 @@ import Markdown from "markdown-to-jsx";
 import ConfirmationModal from "../components/ConfirmationModal";
 import ChangeSolutionStatusModal from "../components/ChangeSolutionStatusModal";
 import { downloadFileOrZip, sendData, deleteData, fetchData } from "../services/apiService.js";
+import { BsCpu, BsTrophy } from "react-icons/bs";
 
 const SolutionPage = () => {
   const { solution, contest, user, payment } = useContext(Context);
@@ -348,9 +349,7 @@ const SolutionPage = () => {
                 {(solution.evaluationLoading || (!solution.evaluation && shouldHaveEvaluation)) ? (
                   <div className="rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50/40 dark:bg-violet-900/10 px-5 py-4 flex items-center gap-4">
                     <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-violet-600 dark:text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
-                      </svg>
+                      <BsCpu className="w-6 h-6 text-violet-600 dark:text-violet-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-violet-800 dark:text-violet-300 text-sm">Автоматическая оценка ИИ</p>
@@ -374,9 +373,7 @@ const SolutionPage = () => {
                         {evalTriggering ? (
                           <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                         ) : (
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
-                          </svg>
+                          <BsCpu className="w-3.5 h-3.5" />
                         )}
                         Оценить
                       </button>
@@ -396,9 +393,7 @@ const SolutionPage = () => {
                       {/* Header with score */}
                       <div className="px-5 py-4 flex items-center gap-4">
                         <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center">
-                          <svg className="w-7 h-7 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>
-                          </svg>
+                          <BsCpu className="w-7 h-7 text-gray-500 dark:text-gray-400" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -742,9 +737,7 @@ const SolutionPage = () => {
                         onClick={() => setShowWinnerModal(true)}
                         className={btnPrimary}
                       >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
-                        </svg>
+                        <BsTrophy className="w-4 h-4" />
                         {hasMilestones ? 'Завершить конкурс' : 'Выбрать победителем'}
                       </button>
                     )}

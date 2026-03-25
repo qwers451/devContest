@@ -3,6 +3,7 @@ services:
 
   user-db:
     image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: user_db
       POSTGRES_USER: user_svc
@@ -19,6 +20,7 @@ services:
 
   contest-db:
     image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: contest_db
       POSTGRES_USER: contest_svc
@@ -35,6 +37,7 @@ services:
 
   evaluation-db:
     image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: evaluation_db
       POSTGRES_USER: eval_svc
@@ -51,6 +54,7 @@ services:
 
   payment-db:
     image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: payment_db
       POSTGRES_USER: payment_svc
@@ -80,6 +84,7 @@ services:
 
   user-service:
     build: ./backend/user-service
+    restart: unless-stopped
     ports:
       - "8001:8000"
     environment:
@@ -102,6 +107,7 @@ services:
 
   contest-service:
     build: ./backend/contest-service
+    restart: unless-stopped
     ports:
       - "8002:8000"
     environment:
@@ -136,6 +142,7 @@ services:
 
   evaluation-service:
     build: ./backend/evaluation-service
+    restart: unless-stopped
     ports:
       - "8003:8000"
     environment:
@@ -165,6 +172,7 @@ services:
 
   payment-service:
     build: ./backend/payment-service
+    restart: unless-stopped
     ports:
       - "8004:8000"
     environment:
@@ -173,8 +181,8 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
-      YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL:-http://localhost:5173/payment/callback}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL:-http://localhost:3000/payment/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CONTEST_SERVICE_URL: http://contest-service:8000
     healthcheck:
       test:
@@ -195,6 +203,7 @@ services:
 
   gateway:
     image: docker.io/library/nginx:alpine
+    restart: unless-stopped
     ports:
       - "8080:8080"
     volumes:
@@ -212,6 +221,7 @@ services:
   # ─── Frontend ────────────────────────────────────────────────────────────────
 
   frontend:
+    restart: unless-stopped
     build:
       context: ./frontend
       args:
@@ -228,6 +238,7 @@ services:
 
   tests:
     image: python:3.12-slim
+    restart: unless-stopped
     profiles: ["tests"]
     working_dir: /workspace
     environment:

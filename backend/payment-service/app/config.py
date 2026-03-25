@@ -8,8 +8,8 @@ class Settings(BaseSettings):
     internal_secret: str
     yookassa_shop_id: str = ""
     yookassa_secret_key: str = ""
-    yookassa_return_url: str = "http://localhost:5173/payment/callback"
-    frontend_url: str = "http://localhost:5173"
+    yookassa_return_url: str = "http://localhost:3000/payment/callback"
+    frontend_url: str = "http://localhost:3000"
     allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
     contest_service_url: str = "http://contest-service:8000"
 

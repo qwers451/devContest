@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p /app/uploads
+RUN mkdir -p /app/uploads && adduser --disabled-password --no-create-home appuser && chown -R appuser:appuser /app/uploads
+USER appuser
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
