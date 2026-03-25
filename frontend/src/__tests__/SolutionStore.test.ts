@@ -1,10 +1,5 @@
-/**
- * Vitest unit tests for SolutionStore
- * Covers scenarios 22–33 (solution list, filters, management)
- */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as api from "../services/apiService";
-// fetchDataRaw is mocked in setup.js
 import SolutionStore from "../store/SolutionStore";
 
 const SUBMISSION = {
@@ -30,7 +25,6 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-// ── 22–23. Список решений ─────────────────────────────────────────────────────
 
 describe("Сценарии 22–23: список решений", () => {
   it("fetchSolutionsFiltered сохраняет список в store", async () => {
@@ -61,7 +55,6 @@ describe("Сценарии 22–23: список решений", () => {
   });
 });
 
-// ── 24. Фильтр по статусу ─────────────────────────────────────────────────────
 
 describe("Сценарий 24: фильтр по статусу решения", () => {
   it("setSelectedStatuses сохраняет значения", () => {
@@ -77,7 +70,6 @@ describe("Сценарий 24: фильтр по статусу решения",
   });
 });
 
-// ── 25. Фильтр по дате ────────────────────────────────────────────────────────
 
 describe("Сценарий 25: фильтр по дате добавления", () => {
   it("setAddedBefore сохраняет дату", () => {
@@ -102,7 +94,6 @@ describe("Сценарий 25: фильтр по дате добавления",
   });
 });
 
-// ── 27. Сброс фильтров ────────────────────────────────────────────────────────
 
 describe("Сценарий 27: сброс фильтров решений", () => {
   it("resetFilters очищает все фильтры и вызывает fetch", async () => {
@@ -116,7 +107,6 @@ describe("Сценарий 27: сброс фильтров решений", () =
   });
 });
 
-// ── 28. Решение по номеру ─────────────────────────────────────────────────────
 
 describe("Сценарий 28: решение по номеру", () => {
   it("fetchSolutionByNumber возвращает решение и сохраняет в store", async () => {
@@ -135,7 +125,6 @@ describe("Сценарий 28: решение по номеру", () => {
   });
 });
 
-// ── 29. Создание (валидация формы) ────────────────────────────────────────────
 
 describe("Сценарий 29: валидация формы решения", () => {
   it("validateForm возвращает false если поля пустые", () => {
@@ -158,7 +147,6 @@ describe("Сценарий 29: валидация формы решения", ()
   });
 });
 
-// ── 32. Изменение статуса ─────────────────────────────────────────────────────
 
 describe("Сценарий 32: изменение статуса решения", () => {
   it("updateSolutionStatus вызывает PATCH с нужными параметрами", async () => {
@@ -189,7 +177,6 @@ describe("Сценарий 32: изменение статуса решения"
   });
 });
 
-// ── 31. Удаление решения ──────────────────────────────────────────────────────
 
 describe("Сценарий 31: удаление решения", () => {
   it("deleteSolutionById вызывает DELETE и сбрасывает currentSolution", async () => {
@@ -206,7 +193,6 @@ describe("Сценарий 31: удаление решения", () => {
   });
 });
 
-// ── 33. Выбор победителя ──────────────────────────────────────────────────────
 
 describe("Сценарий 33: выбор победителя", () => {
   it("selectWinner вызывает POST /contests/{id}/winner", async () => {
@@ -220,7 +206,6 @@ describe("Сценарий 33: выбор победителя", () => {
   });
 });
 
-// ── 26. Сортировка решений ────────────────────────────────────────────────────
 
 describe("Сценарий 26: сортировка решений", () => {
   it("setSortBy передаётся в params запроса", async () => {
@@ -244,7 +229,6 @@ describe("Сценарий 26: сортировка решений", () => {
   });
 });
 
-// ── 30. Пагинация решений ─────────────────────────────────────────────────────
 
 describe("Сценарий 30: пагинация решений", () => {
   it("setPage устанавливает номер страницы", () => {
@@ -268,7 +252,6 @@ describe("Сценарий 30: пагинация решений", () => {
   });
 });
 
-// ── 29b. Граничные случаи валидации формы ─────────────────────────────────────
 
 describe("Сценарий 29b: граничные случаи валидации формы решения", () => {
   it("validateField annotation слишком короткая → ошибка", () => {
@@ -304,7 +287,6 @@ describe("Сценарий 29b: граничные случаи валидаци
   });
 });
 
-// ── 33b. Победитель с этапом ─────────────────────────────────────────────────
 
 describe("Сценарий 33b: выбор победителя с этапом (milestone)", () => {
   it("selectWinner с stageId добавляет stage_id в URL", async () => {
@@ -324,7 +306,6 @@ describe("Сценарий 33b: выбор победителя с этапом 
   });
 });
 
-// ── 34. Оценка ИИ ─────────────────────────────────────────────────────────────
 
 describe("Сценарий 34: оценка ИИ (fetchEvaluation / triggerEvaluation)", () => {
   it("fetchEvaluation при 404 возвращает false и не сохраняет данные", async () => {
@@ -377,7 +358,6 @@ describe("Сценарий 34: оценка ИИ (fetchEvaluation / triggerEvalu
   });
 });
 
-// ── statusOptions getter ───────────────────────────────────────────────────────
 
 describe("statusOptions getter", () => {
   it("возвращает массив из 5 опций", () => {
@@ -398,7 +378,6 @@ describe("statusOptions getter", () => {
   });
 });
 
-// ── getStatus helper ──────────────────────────────────────────────────────────
 
 describe("getStatus helper", () => {
   it.each([
@@ -416,7 +395,6 @@ describe("getStatus helper", () => {
   });
 });
 
-// ── setSearchQuery и setAddedBefore null ──────────────────────────────────────
 
 describe("setSearchQuery и геттер", () => {
   it("setSearchQuery сохраняет запрос и флаг", () => {
@@ -433,7 +411,6 @@ describe("setAddedBefore с null", () => {
   });
 });
 
-// ── геттеры freelancerId, contestId, totalCount ───────────────────────────────
 
 describe("геттеры freelancerId, contestId, totalCount", () => {
   it("setFreelancerId и геттер", () => {
@@ -451,7 +428,6 @@ describe("геттеры freelancerId, contestId, totalCount", () => {
   });
 });
 
-// ── cache hit в fetchSolutionsFiltered ───────────────────────────────────────
 
 describe("cache hit в fetchSolutionsFiltered", () => {
   it("не делает запрос если фильтры не изменились и есть кеш", async () => {
@@ -459,13 +435,11 @@ describe("cache hit в fetchSolutionsFiltered", () => {
     vi.mocked(api.fetchData).mockResolvedValue(list);
     await store.fetchSolutionsFiltered();
     vi.clearAllMocks();
-    // Same params, solutions already loaded — should use cache
     await store.fetchSolutionsFiltered();
     expect(api.fetchData).not.toHaveBeenCalled();
   });
 });
 
-// ── fetchSolutionByNumber ошибка ──────────────────────────────────────────────
 
 describe("fetchSolutionByNumber ошибка", () => {
   it("при ошибке возвращает null и не падает", async () => {

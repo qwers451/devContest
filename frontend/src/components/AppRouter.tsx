@@ -32,7 +32,6 @@ const AppRouter = () => {
             {publicRoutes.map(({ path, element }) =>
                 <Route key={path} path={path} element={element} exact />
             )}
-            {/*перенаправление по умолчанию*/}
             <Route path="*" element={<Navigate to={CONTESTS_ROUTE} />} />
         </Routes>
     );

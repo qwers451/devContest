@@ -1,7 +1,6 @@
 import axios from "axios";
 import { IMPORT_EXPORT_API_URL, sendData } from "../../services/apiService";
 
-// Экспорт всех данных
 export const exportData = async (): Promise<void> => {
   try {
     const response = await axios.get(
@@ -26,7 +25,6 @@ export const exportData = async (): Promise<void> => {
   }
 };
 
-// Импорт данных из файла
 export const importData = async (file: File): Promise<unknown> => {
   try {
     const formData = new FormData();

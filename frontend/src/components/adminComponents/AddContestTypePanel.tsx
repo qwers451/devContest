@@ -5,7 +5,6 @@ const AddContestTypePanel = () => {
     const [showModal, setShowModal] = useState(false);
 
     const handleTypeAdded = () => {
-        // тип добавлен — модалка закроется автоматически
     };
 
     return (

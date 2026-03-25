@@ -1,6 +1,3 @@
-/**
- * Vitest unit tests for UserStore
- */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as api from "../services/apiService";
 import UserStore from "../store/UserStore";
@@ -13,7 +10,6 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-// ── Конструктор ───────────────────────────────────────────────────────────────
 
 describe("Конструктор UserStore", () => {
   it("по умолчанию isAuth=false, user={}", () => {
@@ -35,7 +31,6 @@ describe("Конструктор UserStore", () => {
   });
 });
 
-// ── setIsAuth ─────────────────────────────────────────────────────────────────
 
 describe("setIsAuth", () => {
   it("устанавливает true и сохраняет в localStorage", () => {
@@ -52,7 +47,6 @@ describe("setIsAuth", () => {
   });
 });
 
-// ── setUser ───────────────────────────────────────────────────────────────────
 
 describe("setUser", () => {
   it("обновляет _user и localStorage", () => {
@@ -63,7 +57,6 @@ describe("setUser", () => {
   });
 });
 
-// ── setUsers / setUserById ─────────────────────────────────────────────────────
 
 describe("setUsers и setUserById", () => {
   it("setUsers сохраняет карту пользователей", () => {
@@ -86,7 +79,6 @@ describe("setUsers и setUserById", () => {
   });
 });
 
-// ── getById / getCurrentUserId ────────────────────────────────────────────────
 
 describe("getById и getCurrentUserId", () => {
   it("getById возвращает пользователя по id", () => {
@@ -108,7 +100,6 @@ describe("getById и getCurrentUserId", () => {
   });
 });
 
-// ── fetchUserById ─────────────────────────────────────────────────────────────
 
 describe("fetchUserById", () => {
   it("загружает пользователя и сохраняет в кеш", async () => {
@@ -127,7 +118,6 @@ describe("fetchUserById", () => {
   });
 });
 
-// ── fetchUsers ────────────────────────────────────────────────────────────────
 
 describe("fetchUsers", () => {
   it("загружает список и строит карту по id", async () => {

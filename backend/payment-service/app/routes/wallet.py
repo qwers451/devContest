@@ -32,7 +32,6 @@ async def _yk_create_wallet_payment(
     Configuration.account_id = settings.yookassa_shop_id
     Configuration.secret_key = settings.yookassa_secret_key
 
-    # Return URL: frontend /wallet page with payment_id so frontend can poll status
     wallet_return_url = (
         f"{settings.frontend_url.rstrip('/')}/wallet"
         f"?wallet_topup=1&payment_id={payment_id_hint}"
@@ -57,7 +56,6 @@ async def _yk_create_wallet_payment(
 
 
 async def _yk_verify_payment(yk_payment_id: str) -> str | None:
-    """Re-fetch payment from YooKassa and return its status. Returns None on error."""
     try:
         from yookassa import Configuration
         from yookassa import Payment as YKPayment
@@ -98,9 +96,6 @@ async def _yk_create_payout_local(
         return None
 
 
-# ─── Schemas ─────────────────────────────────────────────────────────────────
-
-
 class WalletBalanceOut(BaseModel):
     balance: float
     currency: str = "RUB"
@@ -118,7 +113,7 @@ class InternalCreditRequest(BaseModel):
 
 class WithdrawWalletRequest(BaseModel):
     amount: float
-    card_number: str | None = None  # тест: 5555555555554477
+    card_number: str | None = None
 
 
 class WalletTransactionOut(BaseModel):
@@ -145,15 +140,11 @@ class PayoutOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ─── Endpoints ────────────────────────────────────────────────────────────────
-
-
 @router.get("/balance", response_model=WalletBalanceOut)
 async def get_balance(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Return current user's wallet balance (creates wallet if first visit)."""
     wallet = await get_or_create_wallet(current_user["id"], db)
     await db.commit()
     return {"balance": float(wallet.balance), "currency": "RUB"}
@@ -167,11 +158,9 @@ async def topup_wallet(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Initiate wallet top-up via YooKassa (stub in dev mode — auto-credits immediately)."""
     if data.amount <= 0:
         raise HTTPException(status_code=400, detail="Сумма должна быть больше нуля")
 
-    # Create payment record first (with placeholder yk_id) to get the DB id
     payment = Payment(
         contest_id=None,
         customer_id=current_user["id"],
@@ -183,7 +172,7 @@ async def topup_wallet(
         redirect_url=None,
     )
     db.add(payment)
-    await db.flush()  # get payment.id before calling YooKassa
+    await db.flush()
 
     if _yk_configured():
         try:
@@ -204,7 +193,6 @@ async def topup_wallet(
     await db.commit()
     await db.refresh(payment)
 
-    # Stub mode: auto-credit wallet immediately
     if not _yk_configured():
         await _confirm_wallet_topup(payment.id, db)
         await db.refresh(payment)
@@ -223,7 +211,6 @@ async def refund_wallet_topup(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Refund a wallet top-up payment. Debits wallet balance, returns funds via YooKassa or stub."""
     result = await db.execute(
         select(Payment).where(
             Payment.id == payment_id,
@@ -236,9 +223,11 @@ async def refund_wallet_topup(
     if payment.wallet_user_id != current_user["id"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not your payment")
     if payment.status != PaymentStatus.held:
-        raise HTTPException(status_code=409, detail=f"Cannot refund payment in status '{payment.status}'")
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot refund payment in status '{payment.status}'",
+        )
 
-    # Debit wallet (raises 400 if insufficient balance)
     await debit_wallet(
         current_user["id"],
         float(payment.amount),
@@ -252,8 +241,10 @@ async def refund_wallet_topup(
     if _yk_configured() and yk_id and not yk_id.startswith("wallet_stub_"):
         try:
             import asyncio
+
             from yookassa import Configuration
             from yookassa import Refund as YKRefund
+
             Configuration.account_id = settings.yookassa_shop_id
             Configuration.secret_key = settings.yookassa_secret_key
             payload = {
@@ -261,6 +252,7 @@ async def refund_wallet_topup(
                 "amount": {"value": f"{float(payment.amount):.2f}", "currency": "RUB"},
             }
             import uuid as _uuid
+
             await asyncio.to_thread(YKRefund.create, payload, str(_uuid.uuid4()))
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"YooKassa refund error: {e}")
@@ -269,7 +261,11 @@ async def refund_wallet_topup(
     payment.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(payment)
-    return {"payment_id": payment.id, "status": payment.status, "amount": float(payment.amount)}
+    return {
+        "payment_id": payment.id,
+        "status": payment.status,
+        "amount": float(payment.amount),
+    }
 
 
 @router.post("/internal/credit", dependencies=[Depends(verify_internal)])
@@ -277,7 +273,6 @@ async def internal_credit_wallet(
     data: InternalCreditRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Directly credit a user's wallet (for seeding/testing)."""
     if data.amount <= 0:
         raise HTTPException(status_code=400, detail="Сумма должна быть больше нуля")
 
@@ -298,7 +293,6 @@ async def get_wallet_transactions(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Wallet transaction history for current user."""
     from app.models import WalletTransaction
 
     result = await db.execute(
@@ -318,11 +312,9 @@ async def withdraw_from_wallet(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Withdraw funds from wallet balance to a bank card."""
     if data.amount <= 0:
         raise HTTPException(status_code=400, detail="Сумма должна быть больше нуля")
 
-    # Debit wallet (raises 400 if insufficient balance)
     await debit_wallet(
         current_user["id"],
         data.amount,
@@ -344,7 +336,6 @@ async def withdraw_from_wallet(
             if yk.get("status") == "succeeded":
                 paid_at = datetime.now(timezone.utc)
     else:
-        # Stub: immediate success
         yk_payout_id = f"wallet_payout_stub_{current_user['id']}_{uuid.uuid4().hex[:8]}"
         paid_at = datetime.now(timezone.utc)
 
@@ -375,7 +366,6 @@ async def internal_credit_wallet(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(verify_internal),
 ):
-    """Internal endpoint: directly credit a user's wallet. Used by seed and admin tools."""
     wallet = await credit_wallet(
         data.user_id,
         data.amount,
@@ -393,7 +383,6 @@ async def get_wallet_payment_status(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Poll the status of a wallet top-up payment after returning from YooKassa."""
     result = await db.execute(
         select(Payment)
         .where(
@@ -407,7 +396,6 @@ async def get_wallet_payment_status(
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
 
-    # If still pending and YooKassa is configured — re-fetch live status to auto-confirm
     if (
         payment.status == PaymentStatus.pending
         and _yk_configured()
@@ -424,7 +412,12 @@ async def get_wallet_payment_status(
                 await asyncio.to_thread(
                     YKPayment.capture,
                     payment.yookassa_payment_id,
-                    {"amount": {"value": f"{float(payment.amount):.2f}", "currency": "RUB"}},
+                    {
+                        "amount": {
+                            "value": f"{float(payment.amount):.2f}",
+                            "currency": "RUB",
+                        }
+                    },
                 )
             except Exception as e:
                 print(f"[wallet] YooKassa capture failed: {e}")
@@ -443,20 +436,13 @@ async def get_wallet_payment_status(
     }
 
 
-# ─── Internal helper ──────────────────────────────────────────────────────────
-
-
 async def _confirm_wallet_topup(payment_id: int, db: AsyncSession) -> None:
-    """Mark wallet topup payment as held and credit the user's wallet.
-    Uses SELECT FOR UPDATE to prevent double-credit on concurrent requests."""
     result = await db.execute(
         select(Payment)
         .where(Payment.id == payment_id)
         .with_for_update(skip_locked=True)
     )
     payment = result.scalar_one_or_none()
-    # skip_locked returns nothing if another transaction holds the lock;
-    # also bail if already confirmed
     if not payment or payment.status != PaymentStatus.pending:
         return
 

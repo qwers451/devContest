@@ -12,13 +12,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import EscrowAccount, Payment, PaymentStatus, PaymentType, Payout, Transaction, WalletTxType
+from app.models import (
+    EscrowAccount,
+    Payment,
+    PaymentStatus,
+    PaymentType,
+    Payout,
+    Transaction,
+    WalletTxType,
+)
 from app.wallet_helpers import credit_wallet, debit_wallet
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
-
-# ─── YooKassa helpers ─────────────────────────────────────────────────────────
 
 def _yk_configured() -> bool:
     return bool(settings.yookassa_shop_id and settings.yookassa_secret_key)
@@ -64,7 +70,9 @@ async def _yk_capture_payment(yk_payment_id: str, amount: float) -> dict:
     return result.dict() if hasattr(result, "dict") else dict(result)
 
 
-async def _yk_create_payout(amount: float, contest_id: int, executor_id: int, card_number: str | None) -> dict | None:
+async def _yk_create_payout(
+    amount: float, contest_id: int, executor_id: int, card_number: str | None
+) -> dict | None:
     if not card_number:
         return None
     try:
@@ -132,17 +140,15 @@ async def _notify_contest_service_activate(contest_id: int) -> None:
         print(f"[payment-service] Failed to notify contest-service: {e}")
 
 
-# ─── Schemas ──────────────────────────────────────────────────────────────────
-
 class TopupRequest(BaseModel):
     contest_id: int
     amount: float
-    use_balance: bool = False  # if True — deduct from wallet instead of YooKassa
+    use_balance: bool = False
 
 
 class WithdrawRequest(BaseModel):
     contest_id: int
-    card_number: str | None = None  # тест: 5555555555554477
+    card_number: str | None = None
 
 
 class PaymentOut(BaseModel):
@@ -170,25 +176,23 @@ class PayoutOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ─── Endpoints ────────────────────────────────────────────────────────────────
-
 @router.post("/topup", response_model=PaymentOut)
 async def topup(
     data: TopupRequest,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Customer initiates payment for a contest.
-    use_balance=True: deduct from wallet (instant, no YooKassa redirect).
-    use_balance=False: create YooKassa payment, return redirect_url."""
 
-    existing = await db.execute(select(Payment).where(Payment.contest_id == data.contest_id))
+    existing = await db.execute(
+        select(Payment).where(Payment.contest_id == data.contest_id)
+    )
     payment = existing.scalar_one_or_none()
 
     if payment and payment.status == PaymentStatus.held:
-        raise HTTPException(status_code=409, detail="Payment already completed for this contest")
+        raise HTTPException(
+            status_code=409, detail="Payment already completed for this contest"
+        )
 
-    # ── Pay from wallet balance ────────────────────────────────────────────────
     if data.use_balance:
         await debit_wallet(
             current_user["id"],
@@ -200,11 +204,13 @@ async def topup(
         )
 
         if payment and payment.status == PaymentStatus.pending:
-            # Upgrade existing pending payment to held
             payment.status = PaymentStatus.held
             payment.paid_at = datetime.now(timezone.utc)
             payment.updated_at = datetime.now(timezone.utc)
-            payment.yookassa_payment_id = payment.yookassa_payment_id or f"wallet_{data.contest_id}_{uuid.uuid4().hex[:8]}"
+            payment.yookassa_payment_id = (
+                payment.yookassa_payment_id
+                or f"wallet_{data.contest_id}_{uuid.uuid4().hex[:8]}"
+            )
         else:
             payment = Payment(
                 contest_id=data.contest_id,
@@ -219,7 +225,6 @@ async def topup(
             db.add(payment)
             await db.flush()
 
-        # Create escrow if not exists
         escrow_result = await db.execute(
             select(EscrowAccount).where(EscrowAccount.contest_id == data.contest_id)
         )
@@ -245,7 +250,6 @@ async def topup(
         asyncio.create_task(_notify_contest_service_activate(data.contest_id))
         return payment
 
-    # ── Pay via YooKassa ───────────────────────────────────────────────────────
     if payment and payment.status == PaymentStatus.pending and payment.redirect_url:
         return payment
 
@@ -254,15 +258,21 @@ async def topup(
 
     if _yk_configured():
         try:
-            yk = await _yk_create_payment(data.amount, data.contest_id, current_user["id"])
+            yk = await _yk_create_payment(
+                data.amount, data.contest_id, current_user["id"]
+            )
             yk_payment_id = yk.get("id")
             confirmation = yk.get("confirmation") or {}
-            redirect_url = confirmation.get("confirmation_url") or confirmation.get("redirect_url")
+            redirect_url = confirmation.get("confirmation_url") or confirmation.get(
+                "redirect_url"
+            )
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"YooKassa error: {e}")
     else:
         yk_payment_id = f"stub_{data.contest_id}_{uuid.uuid4().hex[:8]}"
-        redirect_url = f"{settings.yookassa_return_url}?contest_id={data.contest_id}&stub=1"
+        redirect_url = (
+            f"{settings.yookassa_return_url}?contest_id={data.contest_id}&stub=1"
+        )
 
     if payment:
         payment.yookassa_payment_id = yk_payment_id
@@ -310,7 +320,6 @@ async def get_payment(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
-    """Poll contest payment status. When YooKassa is configured, re-fetches live status."""
     result = await db.execute(
         select(Payment).where(Payment.contest_id == contest_id).with_for_update()
     )
@@ -318,19 +327,26 @@ async def get_payment(
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
 
-    # If still pending — try to sync live YooKassa status
-    if payment.status == PaymentStatus.pending and _yk_configured() and payment.yookassa_payment_id:
+    if (
+        payment.status == PaymentStatus.pending
+        and _yk_configured()
+        and payment.yookassa_payment_id
+    ):
         try:
             from yookassa import Configuration
             from yookassa import Payment as YKPayment
 
             Configuration.account_id = settings.yookassa_shop_id
             Configuration.secret_key = settings.yookassa_secret_key
-            yk_obj = await asyncio.to_thread(YKPayment.find_one, payment.yookassa_payment_id)
+            yk_obj = await asyncio.to_thread(
+                YKPayment.find_one, payment.yookassa_payment_id
+            )
             yk_status = getattr(yk_obj, "status", None)
 
             if yk_status == "waiting_for_capture":
-                await _yk_capture_payment(payment.yookassa_payment_id, float(payment.amount))
+                await _yk_capture_payment(
+                    payment.yookassa_payment_id, float(payment.amount)
+                )
                 await _confirm_payment(payment.id, db)
                 await db.refresh(payment)
             elif yk_status == "succeeded":
@@ -352,7 +368,6 @@ async def withdraw(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Legacy: executor requests payout for a won contest (checks escrow released_to)."""
     if current_user["role"] not in ("executor", "admin"):
         raise HTTPException(status_code=403, detail="Only executors can withdraw")
 
@@ -362,8 +377,13 @@ async def withdraw(
     escrow = escrow_result.scalar_one_or_none()
     if not escrow:
         raise HTTPException(status_code=404, detail="Escrow not found")
-    if escrow.released_to != current_user["id"] and escrow.status != PaymentStatus.released:
-        raise HTTPException(status_code=403, detail="No released escrow for this executor")
+    if (
+        escrow.released_to != current_user["id"]
+        and escrow.status != PaymentStatus.released
+    ):
+        raise HTTPException(
+            status_code=403, detail="No released escrow for this executor"
+        )
 
     existing_payout = await db.execute(
         select(Payout).where(
@@ -380,7 +400,9 @@ async def withdraw(
     paid_at = None
 
     if _yk_configured() and data.card_number:
-        yk = await _yk_create_payout(amount, data.contest_id, current_user["id"], data.card_number)
+        yk = await _yk_create_payout(
+            amount, data.contest_id, current_user["id"], data.card_number
+        )
         if yk:
             yk_payout_id = yk.get("id")
             if yk.get("status") == "succeeded":
@@ -423,9 +445,6 @@ async def refund_payment(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Refund a held contest payment back to the original payment method.
-    Only the customer who made the payment (or admin) can request a refund.
-    If paid from wallet — credits the wallet balance back instead."""
     result = await db.execute(select(Payment).where(Payment.contest_id == contest_id))
     payment = result.scalar_one_or_none()
     if not payment:
@@ -433,24 +452,31 @@ async def refund_payment(
     if payment.customer_id != current_user["id"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not your payment")
     if payment.status != PaymentStatus.held:
-        raise HTTPException(status_code=409, detail=f"Cannot refund payment in status '{payment.status}'")
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot refund payment in status '{payment.status}'",
+        )
 
-    # Check escrow not already released to executor
     escrow_result = await db.execute(
         select(EscrowAccount).where(EscrowAccount.contest_id == contest_id)
     )
     escrow = escrow_result.scalar_one_or_none()
     if escrow and escrow.status == PaymentStatus.released:
-        raise HTTPException(status_code=409, detail="Escrow already released to executor — cannot refund")
+        raise HTTPException(
+            status_code=409,
+            detail="Escrow already released to executor — cannot refund",
+        )
     if escrow and float(escrow.released_amount) > 0:
-        raise HTTPException(status_code=409, detail="Milestone payments have been made — cannot refund")
+        raise HTTPException(
+            status_code=409, detail="Milestone payments have been made — cannot refund"
+        )
 
     yk_id = payment.yookassa_payment_id or ""
     is_wallet_payment = yk_id.startswith("wallet_")
 
     if is_wallet_payment:
-        # Paid from wallet — return funds to wallet balance
         from app.wallet_helpers import credit_wallet
+
         await credit_wallet(
             payment.customer_id,
             float(payment.amount),
@@ -464,7 +490,6 @@ async def refund_payment(
             await _yk_create_refund(yk_id, float(payment.amount))
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"YooKassa refund error: {e}")
-    # else stub mode — just mark refunded, no real money movement
 
     payment.status = PaymentStatus.refunded
     payment.updated_at = datetime.now(timezone.utc)
@@ -481,17 +506,12 @@ async def refund_payment(
     db.add(tx)
     await db.commit()
     await db.refresh(payment)
-    # Cancel the contest so it disappears from active listings
     await _notify_contest_service_cancel(contest_id)
     return payment
 
 
 @router.post("/webhook")
 async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db)):
-    """YooKassa sends payment notifications here.
-    When YooKassa is configured: re-fetches payment from API to verify status (prevents spoofing).
-    In stub mode: trusts the payload (local dev only).
-    """
     body = await request.body()
     try:
         event = json.loads(body)
@@ -511,7 +531,6 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
     if not payment:
         return {"ok": True}
 
-    # ── Determine real status — re-fetch from YooKassa API ────────────────────
     if _yk_configured():
         try:
             from yookassa import Configuration
@@ -523,12 +542,10 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
             yk_status = getattr(yk_obj, "status", None)
         except Exception as e:
             print(f"[webhook] YooKassa re-fetch failed: {e}")
-            return {"ok": True}  # ignore if we can't verify
+            return {"ok": True}
     else:
-        # Stub / local dev: trust payload event type
         yk_status = event.get("event", "").removeprefix("payment.")
 
-    # ── Handle verified status ────────────────────────────────────────────────
     if yk_status == "waiting_for_capture":
         if _yk_configured():
             try:
@@ -551,15 +568,13 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
 async def _confirm_by_type(payment_id: int, payment_type: PaymentType, db) -> None:
     if payment_type == PaymentType.wallet_topup:
         from app.routes.wallet import _confirm_wallet_topup
+
         await _confirm_wallet_topup(payment_id, db)
     else:
         await _confirm_payment(payment_id, db)
 
 
-# ─── Internal helper ──────────────────────────────────────────────────────────
-
 async def _confirm_payment(payment_id: int, db: AsyncSession) -> None:
-    """Mark contest payment as held, create escrow, notify contest-service."""
     result = await db.execute(select(Payment).where(Payment.id == payment_id))
     payment = result.scalar_one_or_none()
     if not payment or payment.status == PaymentStatus.held:

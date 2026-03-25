@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     internal_secret: str
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.2-vision"
-    evaluation_stub: bool = False  # set EVALUATION_STUB=true to use stub mode
+    evaluation_stub: bool = False
     contest_service_url: str = "http://contest-service:8000"
     allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 

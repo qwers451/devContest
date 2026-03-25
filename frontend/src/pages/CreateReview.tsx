@@ -70,7 +70,6 @@ const CreateReview = () => {
             const payload = { score: parseFloat(score), commentary: commentary.trim() };
             const review = await sendData(`/submissions/${currentSolution.id}/reviews`, payload);
 
-            // Upload files if any
             if (files.length > 0) {
                 const fd = new FormData();
                 files.forEach(f => fd.append('files', f));

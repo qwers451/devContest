@@ -1,12 +1,19 @@
 import httpx
+
 from app.config import settings
 
 
-async def release_escrow(contest_id: int, executor_id: int, contest_title: str | None = None) -> dict:
+async def release_escrow(
+    contest_id: int, executor_id: int, contest_title: str | None = None
+) -> dict:
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(
             f"{settings.payment_service_url}/escrow/release",
-            json={"contest_id": contest_id, "executor_id": executor_id, "contest_title": contest_title},
+            json={
+                "contest_id": contest_id,
+                "executor_id": executor_id,
+                "contest_title": contest_title,
+            },
             headers={"x-internal-secret": settings.internal_secret},
         )
         resp.raise_for_status()
@@ -14,8 +21,12 @@ async def release_escrow(contest_id: int, executor_id: int, contest_title: str |
 
 
 async def release_stage_escrow(
-    contest_id: int, stage_id: int, executor_id: int, amount: float,
-    stage_name: str | None = None, contest_title: str | None = None,
+    contest_id: int,
+    stage_id: int,
+    executor_id: int,
+    amount: float,
+    stage_name: str | None = None,
+    contest_title: str | None = None,
 ) -> dict:
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(
@@ -35,7 +46,6 @@ async def release_stage_escrow(
 
 
 async def check_escrow_held(contest_id: int) -> bool:
-    """Returns True if payment for this contest is held in payment-service."""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(
@@ -75,7 +85,7 @@ async def trigger_evaluation(
             resp.raise_for_status()
             return resp.json()
     except Exception:
-        return None  # evaluation failure does not block submission
+        return None
 
 
 async def get_user(user_id: int) -> dict | None:

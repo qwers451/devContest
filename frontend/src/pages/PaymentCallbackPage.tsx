@@ -3,10 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "../context";
 
-/**
- * Return URL after YooKassa checkout.
- * Polls payment status until held/failed, then activates contest and redirects.
- */
 const PaymentCallbackPage = () => {
   const { payment, contest } = useContext(Context);
   const navigate = useNavigate();
@@ -28,10 +24,8 @@ const PaymentCallbackPage = () => {
       return;
     }
 
-    // Immediate check
     checkStatus();
 
-    // Poll every 2 sec, give up after 30 attempts (~60 sec)
     pollRef.current = setInterval(checkStatus, 2000);
     return () => clearInterval(pollRef.current);
   }, [contestId]);

@@ -1,14 +1,16 @@
+from datetime import datetime
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from pydantic import BaseModel
-from datetime import datetime
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config import settings
 from app.database import get_db
+from app.dependencies import get_current_user, verify_internal
 from app.models import EvaluationResult
 from app.ollama_client import evaluate_submission
-from app.dependencies import verify_internal, get_current_user
 
 router = APIRouter(prefix="/evaluation", tags=["evaluation"])
 
@@ -25,7 +27,7 @@ class EvaluateRequest(BaseModel):
     contest_id: int
     tz_text: str
     submission_text: str
-    images: list[str] = []  # base64-encoded PNG images
+    images: list[str] = []
     image_meta: list[ImageMeta] = []
 
 
@@ -41,10 +43,14 @@ class EvaluationOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-@router.post("/evaluate", response_model=EvaluationOut, dependencies=[Depends(verify_internal)])
+@router.post(
+    "/evaluate", response_model=EvaluationOut, dependencies=[Depends(verify_internal)]
+)
 async def evaluate(data: EvaluateRequest, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(
-        select(EvaluationResult).where(EvaluationResult.submission_id == data.submission_id)
+        select(EvaluationResult).where(
+            EvaluationResult.submission_id == data.submission_id
+        )
     )
     record = existing.scalar_one_or_none()
 
@@ -52,11 +58,12 @@ async def evaluate(data: EvaluateRequest, db: AsyncSession = Depends(get_db)):
         data.tz_text,
         data.submission_text,
         images=data.images if data.images else None,
-        image_meta=[m.model_dump() for m in data.image_meta] if data.image_meta else None,
+        image_meta=[m.model_dump() for m in data.image_meta]
+        if data.image_meta
+        else None,
     )
 
     if record:
-        # Upsert: re-evaluate when files are uploaded after initial text-only pass
         record.compliance_score = result_data.get("compliance_score", 0)
         record.passed_requirements = result_data.get("passed_requirements", [])
         record.failed_requirements = result_data.get("failed_requirements", [])
@@ -77,16 +84,18 @@ async def evaluate(data: EvaluateRequest, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(record)
 
-    # Notify contest-service of the AI score
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             await client.patch(
                 f"{settings.contest_service_url}/submissions/{data.submission_id}/ai-score",
-                params={"score": record.compliance_score, "critical_issues": str(record.critical_issues).lower()},
+                params={
+                    "score": record.compliance_score,
+                    "critical_issues": str(record.critical_issues).lower(),
+                },
                 headers={"x-internal-secret": settings.internal_secret},
             )
     except Exception:
-        pass  # non-blocking
+        pass
 
     return record
 

@@ -32,18 +32,15 @@ router = APIRouter(prefix="/submissions", tags=["submissions"])
 UPLOAD_DIR = "/app/uploads"
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
-# Разрешённые типы файлов: сигнатура (magic bytes) → MIME
 ALLOWED_SIGNATURES: list[tuple[bytes, str]] = [
     (b"\x89PNG",    "image/png"),
     (b"\xff\xd8\xff", "image/jpeg"),
     (b"%PDF",       "application/pdf"),
     (b"PK\x03\x04", "application/zip"),
     (b"PK\x05\x06", "application/zip"),
-    # docx/xlsx тоже zip-контейнеры
 ]
 
 def _check_file(filename: str, content: bytes) -> None:
-    """Проверяет размер и тип файла по magic bytes. Бросает HTTPException при нарушении."""
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=413,
@@ -60,7 +57,6 @@ def _check_file(filename: str, content: bytes) -> None:
 
 
 def _png_size(data: bytes) -> tuple[int, int] | None:
-    """Read width×height from PNG IHDR chunk (bytes 16-24). Returns None if not a valid PNG."""
     try:
         if data[:8] != b"\x89PNG\r\n\x1a\n":
             return None
@@ -121,7 +117,6 @@ async def _enrich_submissions(subs: list, db: AsyncSession) -> list[SubmissionOu
     user_results = await asyncio.gather(*[get_user(uid) for uid in executor_ids])
     user_map = {u["id"]: u["login"] for u in user_results if u}
 
-    # avg_score per submission
     avg_result = await db.execute(
         select(Review.submission_id, func.avg(Review.score).label("avg"))
         .where(Review.submission_id.in_(sub_ids))
@@ -129,7 +124,6 @@ async def _enrich_submissions(subs: list, db: AsyncSession) -> list[SubmissionOu
     )
     avg_map = {row[0]: round(float(row[1]), 2) for row in avg_result}
 
-    # last review per submission (max id proxy for latest)
     last_review_result = await db.execute(
         select(Review)
         .where(Review.submission_id.in_(sub_ids))
@@ -341,13 +335,11 @@ async def retrigger_evaluation(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Manually re-trigger AI evaluation. Accessible by executor (owner), customer, or admin."""
     result = await db.execute(select(Submission).where(Submission.id == submission_id))
     s = result.scalar_one_or_none()
     if not s:
         raise HTTPException(status_code=404, detail="Submission not found")
 
-    # Allow: submission owner, any customer/admin
     if current_user["role"] == "executor" and s.executor_id != current_user["id"]:
         raise HTTPException(status_code=403, detail="Forbidden")
 
@@ -358,7 +350,6 @@ async def retrigger_evaluation(
     if not s.description and not s.files:
         raise HTTPException(status_code=422, detail="Submission has no description or files")
 
-    # Read files: PNG → images, PDF/DOCX → extracted text
     images_b64 = []
     image_meta = []
     doc_texts = []
@@ -419,7 +410,6 @@ async def delete_submission(
     await db.commit()
 
 
-# ─── Files ───────────────────────────────────────────────────────────────────
 
 
 @router.post("/{submission_id}/files", response_model=SubmissionOut)
@@ -505,7 +495,6 @@ async def download_file(
     return FileResponse(path, filename=filename)
 
 
-# ─── Reviews ─────────────────────────────────────────────────────────────────
 
 
 @router.post("/{submission_id}/reviews", response_model=ReviewOut, status_code=201)
@@ -596,7 +585,6 @@ async def delete_review(
     await db.delete(review)
     await db.commit()
 
-# ─── Review Files ─────────────────────────────────────────────────────────────
 
 REVIEW_UPLOAD_DIR = "/app/uploads/reviews"
 
@@ -695,7 +683,6 @@ async def delete_review_file(
     return review
 
 
-# ─── Status Log ───────────────────────────────────────────────────────────────
 
 
 class StatusLogOut(BaseModel):
@@ -722,7 +709,6 @@ async def get_status_log(
     return result.scalars().all()
 
 
-# ─── AI Score (internal) ──────────────────────────────────────────────────────
 
 from app.dependencies import verify_internal
 

@@ -2,17 +2,41 @@ import io
 import zipfile
 
 CODE_EXTENSIONS = {
-    ".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".c", ".cpp", ".h",
-    ".cs", ".go", ".rs", ".rb", ".php", ".swift", ".kt", ".scala",
-    ".html", ".css", ".scss", ".json", ".yaml", ".yml", ".toml",
-    ".md", ".txt", ".sh", ".sql",
+    ".py",
+    ".js",
+    ".ts",
+    ".jsx",
+    ".tsx",
+    ".java",
+    ".c",
+    ".cpp",
+    ".h",
+    ".cs",
+    ".go",
+    ".rs",
+    ".rb",
+    ".php",
+    ".swift",
+    ".kt",
+    ".scala",
+    ".html",
+    ".css",
+    ".scss",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".md",
+    ".txt",
+    ".sh",
+    ".sql",
 }
-_MAX_ZIP_FILE_BYTES = 50_000  # per file
+_MAX_ZIP_FILE_BYTES = 50_000
 _MAX_ZIP_TOTAL_BYTES = 200_000
 
 
 def extract_text_pdf(data: bytes) -> str:
-    import fitz  # PyMuPDF
+    import fitz
 
     doc = fitz.open(stream=data, filetype="pdf")
     return "\n".join(page.get_text() for page in doc).strip()
@@ -23,11 +47,9 @@ def extract_text_docx(data: bytes) -> str:
 
     doc = Document(io.BytesIO(data))
     parts = []
-    # Paragraphs at document level
     for p in doc.paragraphs:
         if p.text.strip():
             parts.append(p.text)
-    # Paragraphs inside tables
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
@@ -44,7 +66,11 @@ def extract_text_zip(data: bytes) -> str:
         for info in zf.infolist():
             if info.is_dir():
                 continue
-            ext = "." + info.filename.rsplit(".", 1)[-1].lower() if "." in info.filename else ""
+            ext = (
+                "." + info.filename.rsplit(".", 1)[-1].lower()
+                if "." in info.filename
+                else ""
+            )
             if ext not in CODE_EXTENSIONS:
                 continue
             file_data = zf.read(info.filename)[:_MAX_ZIP_FILE_BYTES]
@@ -61,7 +87,6 @@ def extract_text_zip(data: bytes) -> str:
 
 
 def extract_file_text(filename: str, data: bytes) -> str | None:
-    """Extract plain text from PDF, DOCX, or ZIP file. Returns None for unsupported formats."""
     name = filename.lower()
     try:
         if name.endswith(".pdf"):

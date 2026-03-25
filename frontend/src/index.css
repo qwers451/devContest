@@ -11,7 +11,6 @@
     --color-border: #e5e7eb;
 }
 
-/* ── Base ─────────────────────────────────────────── */
 html {
     font-family: Inter, system-ui, sans-serif;
 }
@@ -46,7 +45,6 @@ path {
         opacity 160ms ease-out;
 }
 
-/* ── Animations ───────────────────────────────────── */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -177,7 +175,6 @@ path {
     }
 }
 
-/* ── Prose (markdown) ─────────────────────────────── */
 .prose {
     line-height: 1.7;
     color: #374151;
@@ -233,7 +230,6 @@ path {
     text-decoration: underline;
 }
 
-/* ── Scrollbar ────────────────────────────────────── */
 ::-webkit-scrollbar {
     width: 5px;
     height: 5px;
@@ -249,8 +245,6 @@ path {
     background: #9ca3af;
 }
 
-/* ── Dark Mode ─────────────────────────────────────── */
-/* Unlayered rules override Tailwind's @layer utilities */
 
 .dark body {
     background: #0d1117;
@@ -258,7 +252,6 @@ path {
     color-scheme: dark;
 }
 
-/* Backgrounds — GitHub dark palette */
 .dark .bg-white {
     background-color: #161b22;
 }
@@ -269,7 +262,6 @@ path {
     background-color: #21262d;
 }
 
-/* Borders */
 .dark .border-gray-200 {
     border-color: #30363d;
 }
@@ -277,7 +269,6 @@ path {
     border-color: #21262d;
 }
 
-/* Text */
 .dark .text-gray-900 {
     color: #e6edf3;
 }
@@ -300,7 +291,6 @@ path {
     color: #30363d;
 }
 
-/* Violet accents — slightly brighter in dark */
 .dark .text-violet-600 {
     color: #a78bfa;
 }
@@ -317,7 +307,6 @@ path {
     background-color: rgba(251, 191, 36, 0.08);
 }
 
-/* Hover states */
 .dark .hover\:bg-gray-50:hover {
     background-color: #21262d;
 }
@@ -340,7 +329,6 @@ path {
     background-color: rgba(239, 68, 68, 0.08);
 }
 
-/* Input fields */
 .dark input,
 .dark textarea,
 .dark select {
@@ -357,7 +345,6 @@ path {
     border-color: #7c3aed;
 }
 
-/* Dark prose */
 .dark .prose {
     color: #8b949e;
 }
@@ -381,7 +368,6 @@ path {
     color: #a78bfa;
 }
 
-/* Status/info colour blocks in dark */
 .dark .bg-blue-50 {
     background-color: rgba(96, 165, 250, 0.08);
 }
@@ -447,7 +433,6 @@ path {
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
 }
 
-/* Scrollbar dark */
 .dark ::-webkit-scrollbar-thumb {
     background: #30363d;
 }
@@ -455,7 +440,6 @@ path {
     background: #484f58;
 }
 
-/* Shadows — softer in dark */
 .dark .shadow-sm {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }

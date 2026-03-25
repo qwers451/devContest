@@ -37,9 +37,7 @@ const ContestCard = observer(({ contest: item }) => {
       className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-500 hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden animate-fade-in"
     >
       <div className="flex items-stretch">
-        {/* Left: main content */}
         <div className="flex-1 px-5 py-4 min-w-0">
-          {/* Status + type */}
           <div className="flex items-center gap-2 mb-2.5">
             <span
               className={`w-2 h-2 rounded-full flex-shrink-0 ${status.dot}`}
@@ -62,12 +60,10 @@ const ContestCard = observer(({ contest: item }) => {
             )}
           </div>
 
-          {/* Title */}
           <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base leading-snug line-clamp-1 mb-1.5 group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors">
             {item.title}
           </h3>
 
-          {/* Annotation */}
           {item.annotation && (
             <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
               {item.annotation}
@@ -75,7 +71,6 @@ const ContestCard = observer(({ contest: item }) => {
           )}
         </div>
 
-        {/* Right: prize + meta */}
         <div className="flex-shrink-0 w-40 border-l border-gray-100 dark:border-gray-700 px-4 py-4 flex flex-col items-end justify-between">
           <div className="text-right">
             <div>

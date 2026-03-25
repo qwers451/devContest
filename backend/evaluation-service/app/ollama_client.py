@@ -4,7 +4,6 @@ import httpx
 
 from app.config import settings
 
-# Step 1: extract requirements from TZ
 _EXTRACT_PROMPT = """Ты — эксперт по техническим заданиям. Извлеки все конкретные и проверяемые требования из технического задания.
 
 Правила:
@@ -23,7 +22,6 @@ _EXTRACT_PROMPT = """Ты — эксперт по техническим зад�
   ]
 }}"""
 
-# Step 2 (text): evaluate submission against extracted requirements
 _EVALUATE_PROMPT = """Ты — эксперт по оценке конкурсных работ. Проверь работу исполнителя по списку требований.
 
 Оценка за каждое требование:
@@ -50,7 +48,6 @@ _EVALUATE_PROMPT = """Ты — эксперт по оценке конкурсн
   "critical_issues": <true или false>
 }}"""
 
-# Step 2 (vision): evaluate submission with images against extracted requirements
 _EVALUATE_VISION_PROMPT = """Ты — эксперт по оценке конкурсных работ. Проверь работу исполнителя по списку требований.
 Анализируй описание работы, метаданные файлов И прикреплённые изображения.
 
@@ -81,7 +78,6 @@ critical_issues = true если хотя бы одно требование с i
 
 
 async def _generate(prompt: str, images: list[str] | None = None, model: str | None = None) -> str:
-    """Call Ollama API. Pass base64-encoded images for vision evaluation."""
     payload: dict = {
         "model": model or settings.ollama_model,
         "prompt": prompt,
@@ -100,7 +96,6 @@ async def _generate(prompt: str, images: list[str] | None = None, model: str | N
 
 
 def _parse_json(raw: str) -> dict | None:
-    """Strip markdown fences and parse JSON. Returns None on failure."""
     try:
         cleaned = raw.strip()
         if cleaned.startswith("```"):
@@ -126,7 +121,6 @@ def _format_image_meta(image_meta: list[dict]) -> str:
 
 
 def _build_result(data: dict, extracted_reqs: list[dict]) -> dict:
-    """Build evaluation result from step-2 response and step-1 requirements."""
     reqs = data.get("requirements", [])
     if not reqs:
         return {
@@ -136,7 +130,6 @@ def _build_result(data: dict, extracted_reqs: list[dict]) -> dict:
             "critical_issues": True,
         }
 
-    # Map is_critical from step 1 by position
     critical_flags = [r.get("is_critical", False) for r in extracted_reqs]
 
     passed = []
@@ -187,7 +180,6 @@ async def evaluate_submission(
             "critical_issues": False,
         }
 
-    # Step 1: extract requirements from TZ (text model)
     extract_raw = await _generate(
         _EXTRACT_PROMPT.format(tz_text=tz_text),
         model=settings.ollama_model,
@@ -204,7 +196,6 @@ async def evaluate_submission(
     extracted_reqs = extract_data["requirements"]
     requirements_json = json.dumps(extracted_reqs, ensure_ascii=False, indent=2)
 
-    # Step 2: evaluate submission (vision model if images present, text model otherwise)
     if images:
         meta_section = (
             f"\n\nМетаданные прикреплённых изображений:\n{_format_image_meta(image_meta)}"
@@ -235,6 +226,5 @@ async def evaluate_submission(
     return _build_result(eval_data, extracted_reqs)
 
 
-# Keep for backward compatibility (not used directly anymore)
 async def extract_requirements(tz_text: str) -> list[str]:
     return []

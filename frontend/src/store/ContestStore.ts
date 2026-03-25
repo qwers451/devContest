@@ -108,8 +108,12 @@ export default class ContestStore {
     makeAutoObservable(this);
   }
 
-  setStatistics(data: Statistics | null): void { this._statistics = data; }
-  get statistics(): Statistics | null { return this._statistics; }
+  setStatistics(data: Statistics | null): void {
+    this._statistics = data;
+  }
+  get statistics(): Statistics | null {
+    return this._statistics;
+  }
 
   setFormField(field: keyof ContestForm, value: string | number | null): void {
     (this.form[field] as { value: unknown }).value = value;
@@ -120,8 +124,6 @@ export default class ContestStore {
     this.form = baseForm;
     this.stages = [];
   }
-
-  // ── Stages management ──────────────────────────────────────────────────────
 
   addStage(): void {
     this.stages.push({
@@ -135,46 +137,64 @@ export default class ContestStore {
 
   removeStage(index: number): void {
     this.stages.splice(index, 1);
-    this.stages.forEach((s, i) => { s.order = i + 1; });
+    this.stages.forEach((s, i) => {
+      s.order = i + 1;
+    });
   }
 
   updateStage(index: number, field: keyof Stage, value: string | number): void {
     (this.stages[index] as Record<string, unknown>)[field] = value;
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-
   validateField(field: keyof ContestForm): void {
     switch (field) {
       case "title": {
         const f = this.form.title;
-        f.error = !(f.value.length >= (f.rules.min ?? 0) && f.value.length <= (f.rules.max ?? Infinity))
-          ? this.formErrors.title : "";
+        f.error = !(
+          f.value.length >= (f.rules.min ?? 0) &&
+          f.value.length <= (f.rules.max ?? Infinity)
+        )
+          ? this.formErrors.title
+          : "";
         break;
       }
       case "annotation": {
         const f = this.form.annotation;
-        f.error = !(f.value.length >= (f.rules.min ?? 0) && f.value.length <= (f.rules.max ?? Infinity))
-          ? this.formErrors.annotation : "";
+        f.error = !(
+          f.value.length >= (f.rules.min ?? 0) &&
+          f.value.length <= (f.rules.max ?? Infinity)
+        )
+          ? this.formErrors.annotation
+          : "";
         break;
       }
       case "description": {
         const f = this.form.description;
-        f.error = !(f.value.length >= (f.rules.min ?? 0) && f.value.length <= (f.rules.max ?? Infinity))
-          ? this.formErrors.description : "";
+        f.error = !(
+          f.value.length >= (f.rules.min ?? 0) &&
+          f.value.length <= (f.rules.max ?? Infinity)
+        )
+          ? this.formErrors.description
+          : "";
         break;
       }
       case "prizepool": {
         const val = parseInt(this.form.prizepool.value);
-        this.form.prizepool.error = !(val >= (this.form.prizepool.rules.min ?? 0) && val <= (this.form.prizepool.rules.max ?? Infinity))
-          ? this.formErrors.prizepool : "";
+        this.form.prizepool.error = !(
+          val >= (this.form.prizepool.rules.min ?? 0) &&
+          val <= (this.form.prizepool.rules.max ?? Infinity)
+        )
+          ? this.formErrors.prizepool
+          : "";
         break;
       }
       case "endBy": {
         let selectedDate = new Date(this.form.endBy.value);
         if (!this.form.endBy.value) selectedDate = new Date("1970-01-01");
         const minValidDate = new Date();
-        minValidDate.setDate(minValidDate.getDate() + (this.form.endBy.rules.minDays ?? 3));
+        minValidDate.setDate(
+          minValidDate.getDate() + (this.form.endBy.rules.minDays ?? 3),
+        );
         if (selectedDate < minValidDate) {
           this.form.endBy.error = this.formErrors.endBy;
         } else {
@@ -190,63 +210,137 @@ export default class ContestStore {
   }
 
   validateForm(): boolean {
-    (Object.keys(this.form) as Array<keyof ContestForm>).forEach((field) => this.validateField(field));
-    return !(Object.values(this.form) as Array<{ error?: string }>).some((field) => field.error !== "");
+    (Object.keys(this.form) as Array<keyof ContestForm>).forEach((field) =>
+      this.validateField(field),
+    );
+    return !(Object.values(this.form) as Array<{ error?: string }>).some(
+      (field) => field.error !== "",
+    );
   }
 
-  setLoading(bool: boolean): void { this.isLoading = bool; }
-  setEmployerId(id: number | null): void { this._employerId = id; }
-  get employerId(): number | null { return this._employerId; }
+  setLoading(bool: boolean): void {
+    this.isLoading = bool;
+  }
+  setEmployerId(id: number | null): void {
+    this._employerId = id;
+  }
+  get employerId(): number | null {
+    return this._employerId;
+  }
 
-  setIsAuth(bool: boolean): void { this._isAuth = bool; }
-  setTypes(types: ContestType[]): void { this._types = types; }
-  setContests(contest: Contest[]): void { this._contests = contest; }
-  setTotalPages(totalPages: number): void { this.totalPages = totalPages; }
-  setCurrentPage(currentPage: number): void { this.currentPage = currentPage; }
-  setCurrentContest(contest: Contest | null): void { this._currentContest = contest; }
-  setSelectedTypes(types: ContestType[]): void { this._selectedTypes = types; }
-  setSelectedStatuses(statuses: string[]): void { this._selectedStatuses = statuses; }
-  setSearchQuery(query: string): void { this._searchQuery = query; }
+  setIsAuth(bool: boolean): void {
+    this._isAuth = bool;
+  }
+  setTypes(types: ContestType[]): void {
+    this._types = types;
+  }
+  setContests(contest: Contest[]): void {
+    this._contests = contest;
+  }
+  setTotalPages(totalPages: number): void {
+    this.totalPages = totalPages;
+  }
+  setCurrentPage(currentPage: number): void {
+    this.currentPage = currentPage;
+  }
+  setCurrentContest(contest: Contest | null): void {
+    this._currentContest = contest;
+  }
+  setSelectedTypes(types: ContestType[]): void {
+    this._selectedTypes = types;
+  }
+  setSelectedStatuses(statuses: string[]): void {
+    this._selectedStatuses = statuses;
+  }
+  setSearchQuery(query: string): void {
+    this._searchQuery = query;
+  }
 
-  getStatus(status: ContestStatus): string { return this.status[status]; }
+  getStatus(status: ContestStatus): string {
+    return this.status[status];
+  }
 
-  setMinReward(min: number): void { this._minReward = min; }
-  setMaxReward(max: number): void { this._maxReward = max; }
+  setMinReward(min: number): void {
+    this._minReward = min;
+  }
+  setMaxReward(max: number): void {
+    this._maxReward = max;
+  }
   setReward({ min, max }: { min: number; max: number }): void {
     this.setMinReward(min);
     this.setMaxReward(max);
   }
 
-  setSortBy(val: string): void { this._sortBy = val; this._lastFilterParams = null; }
-  setSortDir(val: string): void { this._sortDir = val; this._lastFilterParams = null; }
-  get sortBy(): string { return this._sortBy; }
-  get sortDir(): string { return this._sortDir; }
+  setSortBy(val: string): void {
+    this._sortBy = val;
+    this._lastFilterParams = null;
+  }
+  setSortDir(val: string): void {
+    this._sortDir = val;
+    this._lastFilterParams = null;
+  }
+  get sortBy(): string {
+    return this._sortBy;
+  }
+  get sortDir(): string {
+    return this._sortDir;
+  }
 
   setEndBy(date: string | Date | null | undefined): void {
-    if (!date) { this._endBy = null; return; }
+    if (!date) {
+      this._endBy = null;
+      return;
+    }
     this._endBy = new Date(date);
   }
 
   setEndAfter(date: string | Date | null | undefined): void {
-    if (!date) { this._endAfter = null; return; }
+    if (!date) {
+      this._endAfter = null;
+      return;
+    }
     this._endAfter = new Date(date);
   }
 
-  get minReward(): number { return this._minReward; }
-  get maxReward(): number { return this._maxReward; }
-  get isAuth(): boolean { return this._isAuth; }
-  get types(): ContestType[] { return this._types; }
-  get contests(): Contest[] { return this._contests; }
-  get currentContest(): Contest | null { return this._currentContest; }
-  get selectedTypes(): ContestType[] { return this._selectedTypes; }
-  get selectedStatuses(): string[] { return this._selectedStatuses; }
-  get searchQuery(): string { return this._searchQuery; }
-  get endBy(): Date | null { return this._endBy; }
-  get endAfter(): Date | null { return this._endAfter; }
+  get minReward(): number {
+    return this._minReward;
+  }
+  get maxReward(): number {
+    return this._maxReward;
+  }
+  get isAuth(): boolean {
+    return this._isAuth;
+  }
+  get types(): ContestType[] {
+    return this._types;
+  }
+  get contests(): Contest[] {
+    return this._contests;
+  }
+  get currentContest(): Contest | null {
+    return this._currentContest;
+  }
+  get selectedTypes(): ContestType[] {
+    return this._selectedTypes;
+  }
+  get selectedStatuses(): string[] {
+    return this._selectedStatuses;
+  }
+  get searchQuery(): string {
+    return this._searchQuery;
+  }
+  get endBy(): Date | null {
+    return this._endBy;
+  }
+  get endAfter(): Date | null {
+    return this._endAfter;
+  }
 
   async fetchContests(): Promise<void> {
     try {
-      const data = await fetchData<{ items: Contest[]; pages: number }>("/contests");
+      const data = await fetchData<{ items: Contest[]; pages: number }>(
+        "/contests",
+      );
       this.setContests(data.items || []);
     } catch (error) {
       console.error("Ошибка при отправке:", error);
@@ -258,7 +352,10 @@ export default class ContestStore {
   async fetchContestsByPage(page: number): Promise<void> {
     try {
       this.setLoading(true);
-      const data = await fetchData<{ items: Contest[]; pages: number }>("/contests", { page });
+      const data = await fetchData<{ items: Contest[]; pages: number }>(
+        "/contests",
+        { page },
+      );
       this.setContests(data.items || []);
       this.setTotalPages(data.pages || 1);
       this.setCurrentPage(page);
@@ -276,22 +373,25 @@ export default class ContestStore {
 
   getFiltersAndParams(): FilterParams {
     const params: FilterParams = {
-      minReward: this._minReward !== undefined && this._minReward !== null ? this._minReward : 0,
-      maxReward: this._maxReward !== undefined && this._maxReward !== null ? this._maxReward : 9999999,
+      minReward:
+        this._minReward !== undefined && this._minReward !== null
+          ? this._minReward
+          : 0,
+      maxReward:
+        this._maxReward !== undefined && this._maxReward !== null
+          ? this._maxReward
+          : 9999999,
     };
 
     if (this._selectedTypes?.length > 0)
       params.types = this._selectedTypes.map((t) => t.id).join(",");
     if (this._selectedStatuses?.length > 0)
       params.statuses = this._selectedStatuses.join(",");
-    if (this._searchQuery)
-      params.search = this._searchQuery;
-    if (this._endBy)
-      params.endBy = this._endBy.toISOString().split("T")[0];
+    if (this._searchQuery) params.search = this._searchQuery;
+    if (this._endBy) params.endBy = this._endBy.toISOString().split("T")[0];
     if (this._endAfter)
       params.endAfter = this._endAfter.toISOString().split("T")[0];
-    if (this._employerId)
-      params.employerId = this._employerId;
+    if (this._employerId) params.employerId = this._employerId;
 
     return params;
   }
@@ -302,20 +402,29 @@ export default class ContestStore {
     if (rawParams.search) params.search = rawParams.search;
     if (rawParams.statuses) params.statuses = rawParams.statuses;
     if (rawParams.types) params.types = rawParams.types;
-    if ((rawParams.minReward as number) !== 0) params.min_reward = rawParams.minReward;
-    if ((rawParams.maxReward as number) !== 9999999) params.max_reward = rawParams.maxReward;
+    if ((rawParams.minReward as number) !== 0)
+      params.min_reward = rawParams.minReward;
+    if ((rawParams.maxReward as number) !== 9999999)
+      params.max_reward = rawParams.maxReward;
     if (rawParams.employerId) params.customer_id = rawParams.employerId;
     if (rawParams.endBy) params.endBy = rawParams.endBy;
     if (rawParams.endAfter) params.endAfter = rawParams.endAfter;
     params.sort_by = this._sortBy;
     params.sort_dir = this._sortDir;
 
-    if (!this.hasFiltersChanged(params) && page === this.currentPage && this._contests.length > 0)
+    if (
+      !this.hasFiltersChanged(params) &&
+      page === this.currentPage &&
+      this._contests.length > 0
+    )
       return;
 
     try {
       this.setLoading(true);
-      const data = await fetchData<{ items: Contest[]; pages: number }>("/contests", params as Record<string, unknown>);
+      const data = await fetchData<{ items: Contest[]; pages: number }>(
+        "/contests",
+        params as Record<string, unknown>,
+      );
       this.setContests(data.items || []);
       this.setTotalPages(data.pages || 1);
       this.setCurrentPage(page);
@@ -335,12 +444,13 @@ export default class ContestStore {
     }
   }
 
-  // Alias used by PaymentCheckoutPage / PaymentCallbackPage
   async fetchOneContest(id: number): Promise<Contest | null> {
     return this.fetchOneContestById(id);
   }
 
-  async fetchOneContestByNumber(number: number | string): Promise<Contest | null> {
+  async fetchOneContestByNumber(
+    number: number | string,
+  ): Promise<Contest | null> {
     try {
       return await fetchData<Contest>(`/contests/number/${number}`);
     } catch (error) {
@@ -381,14 +491,21 @@ export default class ContestStore {
     return updateData<Contest>(`/contests/${contestId}/stages`, stages);
   }
 
-  async setCurrentStage(contestId: number, stageId: number | null): Promise<Contest> {
-    const url = stageId != null
-      ? `/contests/${contestId}/current-stage?stage_id=${stageId}`
-      : `/contests/${contestId}/current-stage`;
+  async setCurrentStage(
+    contestId: number,
+    stageId: number | null,
+  ): Promise<Contest> {
+    const url =
+      stageId != null
+        ? `/contests/${contestId}/current-stage?stage_id=${stageId}`
+        : `/contests/${contestId}/current-stage`;
     return patchData<Contest>(url, {});
   }
 
-  async fetchStatistics(x: string = "type", y: string = "count"): Promise<void> {
+  async fetchStatistics(
+    x: string = "type",
+    y: string = "count",
+  ): Promise<void> {
     try {
       const data = await fetchData<Statistics>("/statistics", { x, y });
       this.setStatistics(data);

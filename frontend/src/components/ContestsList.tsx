@@ -22,7 +22,6 @@ const ContestsList = observer(() => {
     contest.fetchContestsFiltered(pageNumber);
   };
 
-  // Show spinner only on initial empty load; during refetch keep showing stale data
   if (contest.isLoading && contest.contests.length === 0) {
     return (
       <div className="flex justify-center items-center my-10">
@@ -50,8 +49,6 @@ const ContestsList = observer(() => {
           />
         ))}
       </div>
-
-      {/* Pagination */}
       {contest.totalPages > 1 && (
         <div className="flex justify-center items-center gap-1 my-6">
           {[...Array(contest.totalPages)].map((_, idx) => (

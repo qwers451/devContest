@@ -1,6 +1,3 @@
-/**
- * Vitest unit tests for PaymentStore
- */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as api from "../services/apiService";
 import PaymentStore from "../store/PaymentStore";
@@ -12,7 +9,6 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-// ── Конструктор ───────────────────────────────────────────────────────────────
 
 describe("Конструктор PaymentStore", () => {
   it("начальные значения по умолчанию", () => {
@@ -28,7 +24,6 @@ describe("Конструктор PaymentStore", () => {
   });
 });
 
-// ── reset ─────────────────────────────────────────────────────────────────────
 
 describe("reset", () => {
   it("сбрасывает payment и error", () => {
@@ -48,7 +43,6 @@ describe("reset", () => {
   });
 });
 
-// ── fetchBalance ──────────────────────────────────────────────────────────────
 
 describe("fetchBalance", () => {
   it("загружает баланс и сохраняет в store", async () => {
@@ -62,7 +56,6 @@ describe("fetchBalance", () => {
   it("использует 0 в store если balance отсутствует в ответе", async () => {
     vi.mocked(api.paymentApi.get).mockResolvedValue({ data: {} });
     await store.fetchBalance();
-    // store.balance gets the ?? 0 fallback; return value is undefined (raw)
     expect(store.balance).toBe(0);
   });
 
@@ -73,7 +66,6 @@ describe("fetchBalance", () => {
   });
 });
 
-// ── fetchWalletPaymentStatus ──────────────────────────────────────────────────
 
 describe("fetchWalletPaymentStatus", () => {
   it("возвращает данные платежа", async () => {
@@ -91,7 +83,6 @@ describe("fetchWalletPaymentStatus", () => {
   });
 });
 
-// ── topupWallet ───────────────────────────────────────────────────────────────
 
 describe("topupWallet", () => {
   it("вызывает POST /wallet/topup и возвращает данные", async () => {
@@ -108,7 +99,6 @@ describe("topupWallet", () => {
     vi.mocked(api.paymentApi.post).mockResolvedValue({ data });
     vi.mocked(api.paymentApi.get).mockResolvedValue({ data: { balance: 200 } });
     await store.topupWallet(200);
-    // fetchBalance was called
     expect(api.paymentApi.get).toHaveBeenCalledWith("/wallet/balance");
   });
 
@@ -127,7 +117,6 @@ describe("topupWallet", () => {
   });
 });
 
-// ── fetchWalletTransactions ───────────────────────────────────────────────────
 
 describe("fetchWalletTransactions", () => {
   it("загружает транзакции", async () => {
@@ -153,7 +142,6 @@ describe("fetchWalletTransactions", () => {
   });
 });
 
-// ── withdrawFromWallet ────────────────────────────────────────────────────────
 
 describe("withdrawFromWallet", () => {
   it("выводит средства и обновляет баланс", async () => {
@@ -192,7 +180,6 @@ describe("withdrawFromWallet", () => {
   });
 });
 
-// ── payContestFromBalance ─────────────────────────────────────────────────────
 
 describe("payContestFromBalance", () => {
   it("оплачивает конкурс с баланса и обновляет payment и balance", async () => {
@@ -224,7 +211,6 @@ describe("payContestFromBalance", () => {
   });
 });
 
-// ── initPayment ───────────────────────────────────────────────────────────────
 
 describe("initPayment", () => {
   it("инициирует платёж YooKassa и сохраняет в payment", async () => {
@@ -253,7 +239,6 @@ describe("initPayment", () => {
   });
 });
 
-// ── fetchPaymentStatus ────────────────────────────────────────────────────────
 
 describe("fetchPaymentStatus", () => {
   it("получает статус платежа и обновляет store", async () => {
@@ -272,7 +257,6 @@ describe("fetchPaymentStatus", () => {
   });
 });
 
-// ── fetchHistory ──────────────────────────────────────────────────────────────
 
 describe("fetchHistory", () => {
   it("загружает историю платежей", async () => {
@@ -298,7 +282,6 @@ describe("fetchHistory", () => {
   });
 });
 
-// ── refundWalletTopup ─────────────────────────────────────────────────────────
 
 describe("refundWalletTopup", () => {
   it("выполняет возврат пополнения кошелька", async () => {
@@ -323,7 +306,6 @@ describe("refundWalletTopup", () => {
   });
 });
 
-// ── refundPayment ─────────────────────────────────────────────────────────────
 
 describe("refundPayment", () => {
   it("возвращает платёж и обновляет history", async () => {
@@ -354,7 +336,6 @@ describe("refundPayment", () => {
   });
 });
 
-// ── fetchWithdrawals ──────────────────────────────────────────────────────────
 
 describe("fetchWithdrawals", () => {
   it("загружает список выплат исполнителя", async () => {
@@ -380,7 +361,6 @@ describe("fetchWithdrawals", () => {
   });
 });
 
-// ── fetchEscrow ───────────────────────────────────────────────────────────────
 
 describe("fetchEscrow", () => {
   it("загружает эскроу и сохраняет в store", async () => {
@@ -401,7 +381,6 @@ describe("fetchEscrow", () => {
   });
 });
 
-// ── fetchMilestones ───────────────────────────────────────────────────────────
 
 describe("fetchMilestones", () => {
   it("загружает вехи эскроу", async () => {
@@ -420,7 +399,6 @@ describe("fetchMilestones", () => {
   });
 });
 
-// ── activateContest ───────────────────────────────────────────────────────────
 
 describe("activateContest", () => {
   it("активирует конкурс и возвращает true", async () => {

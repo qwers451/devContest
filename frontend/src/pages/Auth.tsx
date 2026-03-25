@@ -45,7 +45,6 @@ const Auth = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-fade-in border border-transparent dark:border-gray-700">
-                {/* Logo */}
                 <div className="flex items-center justify-center gap-2 mb-6">
                     <span className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center text-base font-black">C</span>
                     <span className="font-bold text-xl text-violet-700 dark:text-violet-400">devContest</span>

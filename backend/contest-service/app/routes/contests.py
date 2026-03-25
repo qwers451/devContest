@@ -4,17 +4,17 @@ from typing import List
 
 import aiofiles
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy.orm.attributes import flag_modified
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import String, and_, case, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.clients import check_escrow_held, release_escrow, release_stage_escrow
-from app.file_text import extract_file_text
 from app.database import get_db
 from app.dependencies import get_current_user, require_role, verify_internal
+from app.file_text import extract_file_text
 from app.models import Contest, ContestStage, ContestStatus, Submission, Winner
 
 router = APIRouter(prefix="/contests", tags=["contests"])
@@ -215,7 +215,6 @@ async def create_contest(
             )
         )
 
-    # Contest stays in draft until payment is confirmed via /activate
     await db.commit()
     result = await db.execute(
         select(Contest).options(*_relations()).where(Contest.id == contest.id)
@@ -246,7 +245,10 @@ async def update_contest(
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
-    if contest.customer_id != current_user["id"] and current_user.get("role") != "admin":
+    if (
+        contest.customer_id != current_user["id"]
+        and current_user.get("role") != "admin"
+    ):
         raise HTTPException(status_code=403, detail="Not your contest")
 
     for field, value in data.model_dump(exclude_none=True).items():
@@ -278,19 +280,20 @@ async def activate_contest(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Activate contest after payment is confirmed. Called by frontend after YooKassa payment."""
     result = await db.execute(
         select(Contest).options(*_relations()).where(Contest.id == contest_id)
     )
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
-    if contest.customer_id != current_user["id"] and current_user.get("role") != "admin":
+    if (
+        contest.customer_id != current_user["id"]
+        and current_user.get("role") != "admin"
+    ):
         raise HTTPException(status_code=403, detail="Not your contest")
     if contest.status == ContestStatus.active:
         return {"status": "already_active", "contest_id": contest_id}
 
-    # Verify payment is held in payment-service
     held = await check_escrow_held(contest_id)
     if not held:
         raise HTTPException(status_code=402, detail="Payment not confirmed yet")
@@ -300,9 +303,12 @@ async def activate_contest(
     return {"status": "activated", "contest_id": contest_id}
 
 
-@router.patch("/{contest_id}/activate-internal", dependencies=[Depends(verify_internal)])
-async def activate_contest_internal(contest_id: int, db: AsyncSession = Depends(get_db)):
-    """Called by payment-service webhook to activate contest after payment."""
+@router.patch(
+    "/{contest_id}/activate-internal", dependencies=[Depends(verify_internal)]
+)
+async def activate_contest_internal(
+    contest_id: int, db: AsyncSession = Depends(get_db)
+):
     result = await db.execute(select(Contest).where(Contest.id == contest_id))
     contest = result.scalar_one_or_none()
     if not contest:
@@ -384,19 +390,23 @@ async def upload_tz_file(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Upload a PDF or DOCX file as the contest TZ. Extracts text and saves to tz_text."""
     result = await db.execute(
         select(Contest).options(*_relations()).where(Contest.id == contest_id)
     )
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
-    if current_user["role"] not in ("admin",) and contest.customer_id != current_user["id"]:
+    if (
+        current_user["role"] not in ("admin",)
+        and contest.customer_id != current_user["id"]
+    ):
         raise HTTPException(status_code=403, detail="Forbidden")
 
     fname = file.filename or "file"
     if not (fname.lower().endswith(".pdf") or fname.lower().endswith(".docx")):
-        raise HTTPException(status_code=422, detail="Only PDF and DOCX files are supported")
+        raise HTTPException(
+            status_code=422, detail="Only PDF and DOCX files are supported"
+        )
 
     data = await file.read()
 
@@ -440,11 +450,16 @@ async def upload_contest_files(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    result = await db.execute(select(Contest).options(*_relations()).where(Contest.id == contest_id))
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
-    if current_user["role"] not in ("admin",) and contest.customer_id != current_user["id"]:
+    if (
+        current_user["role"] not in ("admin",)
+        and contest.customer_id != current_user["id"]
+    ):
         raise HTTPException(status_code=403, detail="Forbidden")
 
     upload_dir = f"/app/uploads/contests/{contest_id}"
@@ -490,11 +505,16 @@ async def delete_contest_file(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    result = await db.execute(select(Contest).options(*_relations()).where(Contest.id == contest_id))
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
-    if current_user["role"] not in ("admin",) and contest.customer_id != current_user["id"]:
+    if (
+        current_user["role"] not in ("admin",)
+        and contest.customer_id != current_user["id"]
+    ):
         raise HTTPException(status_code=403, detail="Forbidden")
 
     existing = list(contest.files or [])
@@ -508,7 +528,9 @@ async def delete_contest_file(
         os.remove(path)
 
     await db.commit()
-    result = await db.execute(select(Contest).options(*_relations()).where(Contest.id == contest_id))
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
     return result.scalar_one()
 
 
@@ -531,7 +553,9 @@ async def select_winner(
     contest_id: int,
     submission_id: int,
     executor_id: int,
-    stage_id: int | None = Query(None, description="If set — partial milestone release for this stage only"),
+    stage_id: int | None = Query(
+        None, description="If set — partial milestone release for this stage only"
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("customer", "admin")),
 ):
@@ -547,7 +571,6 @@ async def select_winner(
         raise HTTPException(status_code=409, detail="Contest is not active")
 
     if stage_id:
-        # Milestone payment — partial release for a specific stage
         stage_result = await db.execute(
             select(ContestStage).where(
                 ContestStage.id == stage_id, ContestStage.contest_id == contest_id
@@ -560,13 +583,16 @@ async def select_winner(
         prize = stage.prize_amount or (contest.prizepool // max(len(contest.stages), 1))
         try:
             await release_stage_escrow(
-                contest_id, stage_id, executor_id, prize,
-                stage_name=stage.name, contest_title=contest.title,
+                contest_id,
+                stage_id,
+                executor_id,
+                prize,
+                stage_name=stage.name,
+                contest_title=contest.title,
             )
         except Exception:
-            pass  # non-blocking: payment failure doesn't block stage completion
+            pass
 
-        # Don't finish contest yet — just return current state
         await db.commit()
         db.expire_all()
         result = await db.execute(
@@ -574,7 +600,6 @@ async def select_winner(
         )
         return result.scalar_one()
 
-    # Full winner — finish contest
     db.add(
         Winner(
             contest_id=contest_id,
@@ -584,7 +609,9 @@ async def select_winner(
     )
     contest.status = ContestStatus.finished
 
-    sub_result = await db.execute(select(Submission).where(Submission.id == submission_id))
+    sub_result = await db.execute(
+        select(Submission).where(Submission.id == submission_id)
+    )
     submission = sub_result.scalar_one_or_none()
     if submission:
         submission.status = 3
@@ -592,7 +619,7 @@ async def select_winner(
     try:
         await release_escrow(contest_id, executor_id, contest_title=contest.title)
     except Exception:
-        pass  # non-blocking
+        pass
 
     await db.commit()
     db.expire_all()
@@ -618,15 +645,12 @@ async def update_stages(
     if contest.customer_id != current_user["id"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not your contest")
 
-    # Delete existing stages
     for stage in list(contest.stages):
         await db.delete(stage)
     await db.flush()
 
-    # Reset current_stage_id since stages were replaced
     contest.current_stage_id = None
 
-    # Create new stages
     for stage_data in stages:
         db.add(
             ContestStage(

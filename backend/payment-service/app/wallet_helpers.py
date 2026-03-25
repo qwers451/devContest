@@ -1,5 +1,4 @@
-"""Shared wallet helpers: get/create wallet, credit, debit.
-Imported by routes/wallet.py and routes/escrow.py."""
+
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
@@ -61,7 +60,7 @@ async def debit_wallet(
     tx = WalletTransaction(
         wallet_id=wallet.id,
         user_id=user_id,
-        amount=-amount,  # negative — debit
+        amount=-amount,
         tx_type=tx_type,
         reference_id=reference_id,
         description=description,

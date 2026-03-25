@@ -1,8 +1,6 @@
-// ── Domain types ──────────────────────────────────────────────────────────────
-
-export type UserRole = 'customer' | 'executor' | 'admin';
-export type ContestStatus = 'draft' | 'active' | 'finished' | 'cancelled';
-export type SortDir = 'asc' | 'desc';
+export type UserRole = "customer" | "executor" | "admin";
+export type ContestStatus = "draft" | "active" | "finished" | "cancelled";
+export type SortDir = "asc" | "desc";
 
 export interface User {
   id: number;
@@ -90,8 +88,6 @@ export interface EvaluationResult {
   created_at: string;
 }
 
-// ── Payment types ─────────────────────────────────────────────────────────────
-
 export interface WalletBalance {
   balance: number;
   currency: string;
@@ -99,7 +95,7 @@ export interface WalletBalance {
 
 export interface WalletTransaction {
   id: number;
-  type: 'topup' | 'contest_payment' | 'income' | 'withdrawal';
+  type: "topup" | "contest_payment" | "income" | "withdrawal";
   amount: number;
   description?: string;
   created_at: string;
@@ -139,8 +135,6 @@ export interface Milestone {
   released: boolean;
 }
 
-// ── Statistics ────────────────────────────────────────────────────────────────
-
 export interface StatisticsDataset {
   label: string;
   data: number[];
@@ -151,12 +145,10 @@ export interface Statistics {
   datasets: StatisticsDataset[];
 }
 
-// ── Store context type ────────────────────────────────────────────────────────
-
-import type UserStore from '../store/UserStore';
-import type ContestStore from '../store/ContestStore';
-import type SolutionStore from '../store/SolutionStore';
-import type PaymentStore from '../store/PaymentStore';
+import type UserStore from "../store/UserStore";
+import type ContestStore from "../store/ContestStore";
+import type SolutionStore from "../store/SolutionStore";
+import type PaymentStore from "../store/PaymentStore";
 
 export interface StoreContext {
   user: UserStore;

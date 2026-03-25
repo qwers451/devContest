@@ -6,7 +6,6 @@ import SolutionCard from "./SolutionCard";
 const SolutionsList = ({ showContestTitle, showFreelancerLogin }) => {
   const { solution } = useContext(Context);
 
-  // Show spinner only on initial empty load; during refetch keep showing stale data
   if (solution.isLoading && solution.solutions.length === 0) {
     return (
       <div className="flex justify-center items-center my-10">

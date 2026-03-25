@@ -1,5 +1,4 @@
 services:
-  # ─── Databases ───────────────────────────────────────────────────────────────
 
   user-db:
     image: docker.io/library/postgres:16-alpine
@@ -69,18 +68,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── AI Model (disabled for MVP stub mode) ───────────────────────────────────
-  # Uncomment when ready to enable real AI evaluation:
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   expose:
-  #     - "11434"
-  #   volumes:
-  #     - ollama_data:/root/.ollama
-  #   devices:
-  #     - nvidia.com/gpu=all
 
-  # ─── Microservices ───────────────────────────────────────────────────────────
 
   user-service:
     build: ./backend/user-service
@@ -199,7 +187,6 @@ services:
       payment-db:
         condition: service_healthy
 
-  # ─── API Gateway ─────────────────────────────────────────────────────────────
 
   gateway:
     image: docker.io/library/nginx:alpine
@@ -218,7 +205,6 @@ services:
       evaluation-service:
         condition: service_healthy
 
-  # ─── Frontend ────────────────────────────────────────────────────────────────
 
   frontend:
     restart: unless-stopped
@@ -261,4 +247,3 @@ volumes:
   evaluation_db_data:
   payment_db_data:
   contest_uploads:
-  # ollama_data:  # uncomment when enabling Ollama

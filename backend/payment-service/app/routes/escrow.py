@@ -36,8 +36,6 @@ class ReleaseStageRequest(BaseModel):
 
 @router.post("/reserve", dependencies=[Depends(verify_internal)])
 async def reserve_escrow(data: ReserveRequest, db: AsyncSession = Depends(get_db)):
-    """Called by contest-service when YooKassa payment is already confirmed (held).
-    Creates escrow record if payment exists and is held. Otherwise creates a pending payment stub."""
     existing_escrow = await db.execute(
         select(EscrowAccount).where(EscrowAccount.contest_id == data.contest_id)
     )
@@ -82,7 +80,6 @@ async def reserve_escrow(data: ReserveRequest, db: AsyncSession = Depends(get_db
 
 @router.post("/release", dependencies=[Depends(verify_internal)])
 async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db)):
-    """Release full escrow to winner. Credits executor wallet directly."""
     result = await db.execute(
         select(EscrowAccount).where(EscrowAccount.contest_id == data.contest_id)
     )
@@ -101,7 +98,6 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
     escrow.released_at = datetime.now(timezone.utc)
     escrow.released_amount = escrow.amount
 
-    # Mark payment as released so refund button disappears in UI
     payment_result = await db.execute(select(Payment).where(Payment.id == escrow.payment_id))
     if payment_obj := payment_result.scalar_one_or_none():
         payment_obj.status = PaymentStatus.released
@@ -109,7 +105,6 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
 
     contest_label = data.contest_title or f"#{data.contest_id}"
 
-    # Credit executor's wallet
     await credit_wallet(
         data.executor_id,
         remaining,
@@ -119,7 +114,6 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
         db,
     )
 
-    # Create released payout record for history
     payout = Payout(
         executor_id=data.executor_id,
         contest_id=data.contest_id,
@@ -144,7 +138,6 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
 
 @router.post("/release-stage", dependencies=[Depends(verify_internal)])
 async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(get_db)):
-    """Partial release for a milestone/stage. Credits executor wallet."""
     result = await db.execute(
         select(EscrowAccount).where(EscrowAccount.contest_id == data.contest_id)
     )
@@ -187,7 +180,6 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
     if float(escrow.released_amount) >= float(escrow.amount):
         escrow.status = PaymentStatus.released
         escrow.released_at = datetime.now(timezone.utc)
-        # Mark payment as released so refund button disappears in UI
         payment_result = await db.execute(select(Payment).where(Payment.id == escrow.payment_id))
         if payment_obj := payment_result.scalar_one_or_none():
             payment_obj.status = PaymentStatus.released
@@ -196,7 +188,6 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
     stage_label = data.stage_name or f"#{data.stage_id}"
     contest_label = data.contest_title or f"#{data.contest_id}"
 
-    # Credit executor's wallet
     await credit_wallet(
         data.executor_id,
         data.amount,
@@ -206,7 +197,6 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
         db,
     )
 
-    # Create released payout record for history
     payout = Payout(
         executor_id=data.executor_id,
         contest_id=data.contest_id,
@@ -256,7 +246,6 @@ async def get_milestones(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
-    """Returns milestone payment history for a contest. Accessible by JWT auth."""
     result = await db.execute(
         select(EscrowAccount).where(EscrowAccount.contest_id == contest_id)
     )

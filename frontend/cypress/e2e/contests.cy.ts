@@ -20,7 +20,7 @@ describe("Конкурсы", () => {
       cy.visit("/");
       cy.get("h3").first().click();
       cy.contains("₽").should("be.visible");
-      cy.get("[class*=rounded-full]").should("exist"); // status badge
+      cy.get("[class*=rounded-full]").should("exist");
     });
 
     it("позволяет использовать и сбрасывать фильтры списка конкурсов", () => {

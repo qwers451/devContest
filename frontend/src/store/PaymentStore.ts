@@ -1,7 +1,13 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { paymentApi } from "../services/apiService";
 import { patchData } from "../services/apiService";
-import type { Payment, Payout, WalletTransaction, Escrow, Milestone } from "../types";
+import type {
+  Payment,
+  Payout,
+  WalletTransaction,
+  Escrow,
+  Milestone,
+} from "../types";
 
 export default class PaymentStore {
   payment: Payment | null = null;
@@ -17,8 +23,6 @@ export default class PaymentStore {
   constructor() {
     makeAutoObservable(this);
   }
-
-  // ── Wallet balance ─────────────────────────────────────────────────────────
 
   async fetchBalance(): Promise<number> {
     try {
@@ -52,37 +56,51 @@ export default class PaymentStore {
       return res.data;
     } catch (e: unknown) {
       runInAction(() => {
-        this.error = (e as { response?: { data?: { detail?: string } } })
-          .response?.data?.detail ?? "Ошибка пополнения кошелька";
+        this.error =
+          (e as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка пополнения кошелька";
       });
       throw e;
     } finally {
-      runInAction(() => { this.loading = false; });
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
 
   async fetchWalletTransactions(): Promise<void> {
     this.loading = true;
     try {
-      const res = await paymentApi.get<WalletTransaction[]>("/wallet/transactions");
+      const res = await paymentApi.get<WalletTransaction[]>(
+        "/wallet/transactions",
+      );
       runInAction(() => {
         this.walletTransactions = res.data;
       });
     } catch (e: unknown) {
       runInAction(() => {
-        this.error = (e as { response?: { data?: { detail?: string } } })
-          .response?.data?.detail ?? "Ошибка загрузки транзакций";
+        this.error =
+          (e as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка загрузки транзакций";
       });
     } finally {
-      runInAction(() => { this.loading = false; });
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
 
-  async withdrawFromWallet(amount: number, card_number?: string): Promise<Payout> {
+  async withdrawFromWallet(
+    amount: number,
+    card_number?: string,
+  ): Promise<Payout> {
     this.loading = true;
     this.error = null;
     try {
-      const res = await paymentApi.post<Payout>("/wallet/withdraw", { amount, card_number });
+      const res = await paymentApi.post<Payout>("/wallet/withdraw", {
+        amount,
+        card_number,
+      });
       runInAction(() => {
         this.withdrawals = [res.data, ...this.withdrawals];
         this.balance = Math.max(0, this.balance - amount);
@@ -90,18 +108,22 @@ export default class PaymentStore {
       return res.data;
     } catch (e: unknown) {
       runInAction(() => {
-        this.error = (e as { response?: { data?: { detail?: string } } })
-          .response?.data?.detail ?? "Ошибка при выводе средств";
+        this.error =
+          (e as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка при выводе средств";
       });
       throw e;
     } finally {
-      runInAction(() => { this.loading = false; });
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
 
-  // ── Customer: pay contest from wallet balance ──────────────────────────────
-
-  async payContestFromBalance(contest_id: number, amount: number): Promise<Payment> {
+  async payContestFromBalance(
+    contest_id: number,
+    amount: number,
+  ): Promise<Payment> {
     this.loading = true;
     this.error = null;
     try {
@@ -117,38 +139,43 @@ export default class PaymentStore {
       return res.data;
     } catch (e: unknown) {
       runInAction(() => {
-        this.error = (e as { response?: { data?: { detail?: string } } })
-          .response?.data?.detail ?? "Ошибка оплаты с баланса";
+        this.error =
+          (e as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка оплаты с баланса";
       });
       throw e;
     } finally {
-      runInAction(() => { this.loading = false; });
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
-
-  // ── Customer: create/init YooKassa payment ─────────────────────────────────
 
   async initPayment(contest_id: number, amount: number): Promise<Payment> {
     this.loading = true;
     this.error = null;
     try {
-      const res = await paymentApi.post<Payment>("/payments/topup", { contest_id, amount });
+      const res = await paymentApi.post<Payment>("/payments/topup", {
+        contest_id,
+        amount,
+      });
       runInAction(() => {
         this.payment = res.data;
       });
       return res.data;
     } catch (e: unknown) {
       runInAction(() => {
-        this.error = (e as { response?: { data?: { detail?: string } } })
-          .response?.data?.detail ?? "Ошибка при создании платежа";
+        this.error =
+          (e as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка при создании платежа";
       });
       throw e;
     } finally {
-      runInAction(() => { this.loading = false; });
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
-
-  // ── Poll payment status ────────────────────────────────────────────────────
 
   async fetchPaymentStatus(contest_id: number): Promise<Payment | null> {
     try {
@@ -162,8 +189,6 @@ export default class PaymentStore {
     }
   }
 
-  // ── Customer: contest payment history ─────────────────────────────────────
-
   async fetchHistory(): Promise<void> {
     this.loading = true;
     try {
@@ -173,11 +198,14 @@ export default class PaymentStore {
       });
     } catch (e: unknown) {
       runInAction(() => {
-        this.error = (e as { response?: { data?: { detail?: string } } })
-          .response?.data?.detail ?? "Ошибка загрузки истории";
+        this.error =
+          (e as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка загрузки истории";
       });
     } finally {
-      runInAction(() => { this.loading = false; });
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
 
@@ -189,12 +217,15 @@ export default class PaymentStore {
       return res.data;
     } catch (e: unknown) {
       runInAction(() => {
-        this.error = (e as { response?: { data?: { detail?: string } } })
-          .response?.data?.detail ?? 'Ошибка при возврате пополнения';
+        this.error =
+          (e as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка при возврате пополнения";
       });
       throw e;
     } finally {
-      runInAction(() => { this.loading = false; });
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
 
@@ -202,25 +233,28 @@ export default class PaymentStore {
     this.loading = true;
     this.error = null;
     try {
-      const res = await paymentApi.post<Payment>(`/payments/${contest_id}/refund`);
+      const res = await paymentApi.post<Payment>(
+        `/payments/${contest_id}/refund`,
+      );
       runInAction(() => {
-        this.history = this.history.map(p =>
-          p.contest_id === contest_id ? res.data : p
+        this.history = this.history.map((p) =>
+          p.contest_id === contest_id ? res.data : p,
         );
       });
       return res.data;
     } catch (e: unknown) {
       runInAction(() => {
-        this.error = (e as { response?: { data?: { detail?: string } } })
-          .response?.data?.detail ?? "Ошибка при возврате";
+        this.error =
+          (e as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка при возврате";
       });
       throw e;
     } finally {
-      runInAction(() => { this.loading = false; });
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
-
-  // ── Executor: withdrawal history ───────────────────────────────────────────
 
   async fetchWithdrawals(): Promise<void> {
     this.loading = true;
@@ -231,15 +265,16 @@ export default class PaymentStore {
       });
     } catch (e: unknown) {
       runInAction(() => {
-        this.error = (e as { response?: { data?: { detail?: string } } })
-          .response?.data?.detail ?? "Ошибка загрузки выплат";
+        this.error =
+          (e as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка загрузки выплат";
       });
     } finally {
-      runInAction(() => { this.loading = false; });
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
-
-  // ── Escrow & milestones ────────────────────────────────────────────────────
 
   async fetchEscrow(contest_id: number): Promise<Escrow | null> {
     try {
@@ -249,23 +284,27 @@ export default class PaymentStore {
       });
       return res.data;
     } catch {
-      runInAction(() => { this.escrow = null; });
+      runInAction(() => {
+        this.escrow = null;
+      });
       return null;
     }
   }
 
   async fetchMilestones(contest_id: number): Promise<void> {
     try {
-      const res = await paymentApi.get<Milestone[]>(`/escrow/${contest_id}/milestones`);
+      const res = await paymentApi.get<Milestone[]>(
+        `/escrow/${contest_id}/milestones`,
+      );
       runInAction(() => {
         this.milestones = res.data;
       });
     } catch {
-      runInAction(() => { this.milestones = []; });
+      runInAction(() => {
+        this.milestones = [];
+      });
     }
   }
-
-  // ── Activate contest after payment ─────────────────────────────────────────
 
   async activateContest(contest_id: number): Promise<boolean> {
     try {

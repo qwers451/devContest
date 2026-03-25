@@ -152,7 +152,6 @@ const ReviewPage = () => {
                         <hr className="my-4 border-gray-100 dark:border-gray-700" />
                         <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{review.commentary}</p>
 
-                        {/* Files */}
                         {(review.files?.length > 0 || isOwner) && (
                             <>
                                 <hr className="my-4 border-gray-100 dark:border-gray-700" />
@@ -212,7 +211,6 @@ const ReviewPage = () => {
                 </div>
             </div>
 
-            {/* Edit modal */}
             {showEdit && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowEdit(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 animate-fade-in border border-transparent dark:border-gray-700" onClick={e => e.stopPropagation()}>

@@ -18,7 +18,6 @@ const PaymentCheckoutPage = () => {
   const contestId = Number(searchParams.get("contest_id"));
   const amount = Number(searchParams.get("amount"));
 
-  // payment method selection: null = not chosen, 'card' = YooKassa, 'balance' = wallet
   const [method, setMethod] = useState(null);
   const [status, setStatus] = useState("pending");
   const [redirectUrl, setRedirectUrl] = useState(null);
@@ -29,14 +28,12 @@ const PaymentCheckoutPage = () => {
   const pollRef = useRef(null);
   const pollCount = useRef(0);
 
-  // Load balance to decide which options to show
   useEffect(() => {
     if (!contestId || !amount) return;
     payment.fetchBalance().then(() => setBalanceLoaded(true));
     return () => clearInterval(pollRef.current);
   }, [contestId, amount]);
 
-  // Poll status every 3s after YooKassa redirect, give up after 20 attempts (~60 sec)
   useEffect(() => {
     if (method !== "card" || status === "held" || status === "failed") return;
 
@@ -146,7 +143,6 @@ const PaymentCheckoutPage = () => {
           Конкурс #{contestId}
         </p>
 
-        {/* Amount */}
         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-6 text-center">
           <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             {amount.toLocaleString("ru-RU")} ₽
@@ -162,14 +158,12 @@ const PaymentCheckoutPage = () => {
           </div>
         )}
 
-        {/* Method not chosen yet */}
         {method === null && balanceLoaded && (
           <div className="space-y-3">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
               Выберите способ оплаты:
             </p>
 
-            {/* Pay from balance */}
             <button
               onClick={handlePayByBalance}
               disabled={!hasBalance}
@@ -191,7 +185,6 @@ const PaymentCheckoutPage = () => {
               </span>
             </button>
 
-            {/* Pay by card */}
             <button
               onClick={handlePayByCard}
               className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
@@ -211,14 +204,12 @@ const PaymentCheckoutPage = () => {
           </div>
         )}
 
-        {/* Loading balance */}
         {method === null && !balanceLoaded && (
           <div className="flex justify-center py-8">
             <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
           </div>
         )}
 
-        {/* In progress */}
         {method !== null && (
           <div className="space-y-4">
             <div className="flex justify-center">

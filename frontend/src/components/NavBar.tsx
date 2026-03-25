@@ -154,7 +154,6 @@ const NavBar = observer(() => {
   return (
     <nav className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-        {/* Logo */}
         <button
           onClick={() => navigate(CONTESTS_ROUTE)}
           className="flex items-center gap-2 font-black text-lg tracking-tight text-gray-900 dark:text-white hover:text-violet-700 dark:hover:text-violet-400 transition-colors"
@@ -163,10 +162,8 @@ const NavBar = observer(() => {
           devContest
         </button>
 
-        {/* Desktop links */}
         <div className="hidden md:flex items-center gap-6">{links()}</div>
 
-        {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-3">
           <button
             ref={desktopThemeButtonRef}
@@ -214,7 +211,6 @@ const NavBar = observer(() => {
           )}
         </div>
 
-        {/* Mobile hamburger */}
         <button
           className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           onClick={() => setOpen((o) => !o)}
@@ -231,7 +227,6 @@ const NavBar = observer(() => {
         </button>
       </div>
 
-      {/* Mobile menu */}
       {open && (
         <div className="md:hidden border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 animate-slide-down px-4 py-3 flex flex-col gap-3">
           {links()}

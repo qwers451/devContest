@@ -183,7 +183,6 @@ const ContestPage = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
             <div className="max-w-4xl mx-auto px-4">
-                {/* Breadcrumb */}
                 <nav className="flex items-center gap-2 mb-4 text-sm">
                     <button
                         onClick={() => navigate('/contests')}
@@ -195,9 +194,7 @@ const ContestPage = () => {
                     <span className="text-gray-700 dark:text-gray-300 font-medium truncate max-w-xs">{currentContest.title}</span>
                 </nav>
 
-                {/* Main Card */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in">
-                    {/* Header */}
                     <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
                         <div className="flex items-start justify-between gap-4 flex-wrap">
                             <div className="flex-1 min-w-0">
@@ -231,9 +228,7 @@ const ContestPage = () => {
                         </div>
                     </div>
 
-                    {/* Body */}
                     <div className="px-6 py-5">
-                        {/* Winner block */}
                         {isFinished && (
                             <div className="mb-5 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3">
                                 <span className="text-emerald-600 dark:text-emerald-400"><BsTrophy className="w-5 h-5" /></span>
@@ -251,7 +246,6 @@ const ContestPage = () => {
                             </div>
                         )}
 
-                        {/* Description */}
                         <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">Описание проекта</h2>
                         <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
                             <Markdown options={{ disableParsingRawHTML: true }}>
@@ -259,7 +253,6 @@ const ContestPage = () => {
                             </Markdown>
                         </div>
 
-                        {/* Technical specification */}
                         {(currentContest.tz_text || (isOwner || isAdmin)) && (
                             <>
                                 <hr className="my-5 border-gray-100 dark:border-gray-700" />
@@ -290,7 +283,6 @@ const ContestPage = () => {
                             </>
                         )}
 
-                        {/* Contest files */}
                         {(currentContest.files?.length > 0 || (isOwner || isAdmin)) && (
                             <>
                                 <hr className="my-5 border-gray-100 dark:border-gray-700" />
@@ -329,7 +321,6 @@ const ContestPage = () => {
                             </>
                         )}
 
-                        {/* Stages */}
                         {(sortedStages.length > 0 || ((isOwner || isAdmin) && !isFinished)) && (
                             <>
                                 <hr className="my-5 border-gray-100 dark:border-gray-700" />
@@ -445,7 +436,6 @@ const ContestPage = () => {
 
                     </div>
 
-                    {/* Footer actions */}
                     {(isFreelancer && !isFinished) && (
                         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                             <button
