@@ -19,7 +19,7 @@ interface ContestTemplate {
 }
 
 const CreateContest = () => {
-  const { contest, user, payment } = useContext(Context);
+  const { contest, user } = useContext(Context);
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,6 +39,91 @@ const CreateContest = () => {
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
 
   const regex = /(!\[[^\]]*\])\(([^)]+)\)/g;
+  const isEditing = state;
+  const currentTitle = contest.form.title.value;
+  const currentAnnotation = contest.form.annotation.value;
+  const currentDescription = contest.form.description.value;
+  const currentPrizepool = contest.form.prizepool.value;
+  const currentTzText = contest.form.tz_text.value;
+  const pageTitle = isEditing ? "Редактировать конкурс" : "Добавить конкурс";
+  const showExistingFiles = isEditing && existingFiles.length > 0;
+  const showSelectedFiles = files.length > 0;
+  const showTemplates = templates.length > 0;
+  const successMessage = `Конкурс успешно ${isEditing ? "изменён" : "добавлен"}!`;
+  const errorMessage = `Ошибка при ${isEditing ? "редактировании" : "создании"} конкурса`;
+
+  const buildStagesPayload = () =>
+    contest.stages
+      .filter((stage) => stage.name.trim())
+      .map((stage, index) => ({
+        name: stage.name,
+        description: stage.description || undefined,
+        deadline: stage.deadline
+          ? new Date(stage.deadline).toISOString()
+          : undefined,
+        order: index + 1,
+        prize_amount: stage.prize_amount || 0,
+      }));
+
+  const buildContestPayload = () => {
+    const endDate = new Date(contest.form.endBy.value);
+    endDate.setUTCHours(23, 59, 59, 999);
+
+    return {
+      title: currentTitle,
+      annotation: currentAnnotation,
+      prizepool: parseInt(currentPrizepool),
+      description: currentDescription,
+      ends_at: endDate.toISOString(),
+      type_id: Number(contest.form.type.value),
+      tz_text: currentTzText || undefined,
+      stages: buildStagesPayload(),
+    };
+  };
+
+  const uploadTzFile = async (contestId) => {
+    if (!tzFile) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", tzFile);
+      await sendData(`/contests/${contestId}/tz-file`, formData, true);
+    } catch (error) {
+      console.error("TZ file upload failed:", error);
+    } finally {
+      setTzFile(null);
+    }
+  };
+
+  const uploadContestFiles = async (contestId) => {
+    if (!files.length) return;
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+      await sendData(`/contests/${contestId}/files`, formData, true);
+    } catch (error) {
+      console.error("Files upload failed:", error);
+    } finally {
+      setFiles([]);
+    }
+  };
+
+  const fillFormFromContest = (data) => {
+    contest.setFormField("type", data.type_id);
+    contest.setFormField("title", data.title);
+    contest.setFormField("annotation", data.annotation);
+    contest.setFormField("description", data.description);
+    contest.setFormField("tz_text", data.tz_text || "");
+    contest.setFormField("prizepool", data.prizepool);
+    contest.setFormField(
+      "endBy",
+      new Date(data.ends_at).toISOString().split("T")[0],
+    );
+    setExistingFiles(data.files || []);
+  };
+
+  const removeSelectedFile = (index) => {
+    setFiles((prev) => prev.filter((_, idx) => idx !== index));
+  };
 
   useEffect(() => {
     contest.fetchTypes();
@@ -58,69 +143,29 @@ const CreateContest = () => {
       return;
     }
 
-    let date = new Date(contest.form.endBy.value);
-    date.setUTCHours(23, 59, 59, 999);
-
-    const stages = contest.stages
-      .filter((s) => s.name.trim())
-      .map((s, i) => ({
-        name: s.name,
-        description: s.description || undefined,
-        deadline: s.deadline ? new Date(s.deadline).toISOString() : undefined,
-        order: i + 1,
-        prize_amount: s.prize_amount || 0,
-      }));
-
-    const data = {
-      title: contest.form.title.value,
-      annotation: contest.form.annotation.value,
-      prizepool: parseInt(contest.form.prizepool.value),
-      description: contest.form.description.value,
-      ends_at: date.toISOString(),
-      type_id: Number(contest.form.type.value),
-      tz_text: contest.form.tz_text.value || undefined,
-      stages,
-    };
-
     try {
-      const res = state
+      const data = buildContestPayload();
+      const response = isEditing
         ? await updateData(submitURL, data)
         : await sendData(submitURL, data);
       contest.resetForm();
 
-      if (res.id && tzFile) {
-        try {
-          const formData = new FormData();
-          formData.append("file", tzFile);
-          await sendData(`/contests/${res.id}/tz-file`, formData, true);
-        } catch (e) {
-          console.error("TZ file upload failed:", e);
-        }
-        setTzFile(null);
+      if (response.id) {
+        await uploadTzFile(response.id);
+        await uploadContestFiles(response.id);
       }
 
-      if (res.id && files.length > 0) {
-        try {
-          const formData = new FormData();
-          files.forEach((f) => formData.append("files", f));
-          await sendData(`/contests/${res.id}/files`, formData, true);
-        } catch (e) {
-          console.error("Files upload failed:", e);
-        }
-        setFiles([]);
-      }
-
-      if (!state && res.id && res.status === "draft") {
+      if (!isEditing && response.id && response.status === "draft") {
         navigate(
-          `${PAYMENT_CHECKOUT_ROUTE}?contest_id=${res.id}&amount=${data.prizepool}`,
+          `${PAYMENT_CHECKOUT_ROUTE}?contest_id=${response.id}&amount=${data.prizepool}`,
         );
       } else {
         navigate(-1);
-        alert(`Конкурс успешно ${state ? "изменён" : "добавлен"}!`);
+        alert(successMessage);
       }
     } catch (error) {
       console.error("Ошибка при отправке:", error);
-      alert(`Ошибка при ${state ? "редактировании" : "создании"} конкурса`);
+      alert(errorMessage);
     }
   };
 
@@ -133,17 +178,7 @@ const CreateContest = () => {
     if (contestData) {
       setState(true);
       setSubmitURL(`/contests/${contestData.id}`);
-      contest.setFormField("type", contestData.type_id);
-      contest.setFormField("title", contestData.title);
-      contest.setFormField("annotation", contestData.annotation);
-      contest.setFormField("description", contestData.description);
-      contest.setFormField("tz_text", contestData.tz_text || "");
-      contest.setFormField("prizepool", contestData.prizepool);
-      contest.setFormField(
-        "endBy",
-        new Date(contestData.ends_at).toISOString().split("T")[0],
-      );
-      setExistingFiles(contestData.files || []);
+      fillFormFromContest(contestData);
     }
   }, [id, contestData]);
 
@@ -222,7 +257,7 @@ const CreateContest = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
       <div className="max-w-3xl mx-auto px-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-          {state ? "Редактировать конкурс" : "Добавить конкурс"}
+          {pageTitle}
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -277,7 +312,7 @@ const CreateContest = () => {
             <input
               type="text"
               placeholder="Название конкурса"
-              value={contest.form.title.value}
+              value={currentTitle}
               onChange={(e) => contest.setFormField("title", e.target.value)}
               className={
                 contest.form.title.error.length > 0 ? inputErrCls : inputCls
@@ -295,7 +330,7 @@ const CreateContest = () => {
             <input
               type="text"
               placeholder="Краткое описание"
-              value={contest.form.annotation.value}
+              value={currentAnnotation}
               onChange={(e) =>
                 contest.setFormField("annotation", e.target.value)
               }
@@ -317,7 +352,7 @@ const CreateContest = () => {
             <textarea
               rows={10}
               placeholder="Полное описание (поддерживается Markdown)"
-              value={contest.form.description.value}
+              value={currentDescription}
               onChange={(e) =>
                 contest.setFormField("description", e.target.value)
               }
@@ -334,7 +369,7 @@ const CreateContest = () => {
             )}
           </div>
 
-          {templates.length > 0 && (
+          {showTemplates && (
             <div>
               <label className={labelCls}>Шаблон ТЗ</label>
               <div className="relative">
@@ -388,7 +423,7 @@ const CreateContest = () => {
             <textarea
               rows={6}
               placeholder="Опишите требования к работе — ИИ использует их для автоматической оценки решений"
-              value={contest.form.tz_text.value}
+              value={currentTzText}
               onChange={(e) => contest.setFormField("tz_text", e.target.value)}
               className={inputCls}
             />
@@ -431,7 +466,7 @@ const CreateContest = () => {
             <input
               type="number"
               placeholder="Например: 5000"
-              value={contest.form.prizepool.value}
+              value={currentPrizepool}
               onChange={(e) =>
                 contest.setFormField("prizepool", e.target.value)
               }
@@ -550,7 +585,7 @@ const CreateContest = () => {
 
           <div>
             <label className={labelCls}>Файлы</label>
-            {state && existingFiles.length > 0 && (
+            {showExistingFiles && (
               <ul className="mb-2 space-y-1">
                 {existingFiles.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm">
@@ -572,7 +607,7 @@ const CreateContest = () => {
               onChange={(e) => handleFilesChange(e.target.files)}
               className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
             />
-            {files.length > 0 && (
+            {showSelectedFiles && (
               <ul className="mt-1.5 space-y-0.5">
                 {files.map((f, i) => (
                   <li
@@ -582,9 +617,7 @@ const CreateContest = () => {
                     <span>+ {f.name}</span>
                     <button
                       type="button"
-                      onClick={() =>
-                        setFiles((prev) => prev.filter((_, idx) => idx !== i))
-                      }
+                      onClick={() => removeSelectedFile(i)}
                       className="text-red-400 hover:text-red-600 transition-colors"
                     >
                       ✕
@@ -625,7 +658,7 @@ const CreateContest = () => {
             >
               Справка
             </button>
-            {state && (
+            {isEditing && (
               <button
                 type="button"
                 onClick={() => navigate(-1)}
@@ -661,7 +694,7 @@ const CreateContest = () => {
               </div>
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  {contest.form.title.value || "Без названия"}
+                  {currentTitle || "Без названия"}
                 </h1>
                 <div className="flex gap-2 mb-3">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
@@ -678,7 +711,7 @@ const CreateContest = () => {
                   {new Date(contest.form.endBy.value).toLocaleDateString(
                     "ru-RU",
                   )}{" "}
-                  &nbsp;|&nbsp; Приз: {contest.form.prizepool.value} руб.
+                  &nbsp;|&nbsp; Приз: {currentPrizepool} руб.
                 </p>
                 <hr className="my-4 border-gray-200 dark:border-gray-700" />
                 <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-2">
@@ -689,14 +722,14 @@ const CreateContest = () => {
                     {mdDescription}
                   </Markdown>
                 </div>
-                {contest.form.tz_text.value && (
+                {currentTzText && (
                   <>
                     <hr className="my-4 border-gray-200 dark:border-gray-700" />
                     <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
                       Техническое задание
                     </h4>
                     <pre className="whitespace-pre-wrap text-sm bg-white dark:bg-gray-700 dark:text-gray-200 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
-                      {contest.form.tz_text.value}
+                      {currentTzText}
                     </pre>
                   </>
                 )}

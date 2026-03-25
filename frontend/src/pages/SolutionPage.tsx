@@ -142,6 +142,18 @@ const SolutionPage = () => {
   const isContestOwner = user.user?.id === currentContest?.customer_id;
   const isContestActive = currentContest?.status === "active";
   const isCreated = currentSolution.created_at === currentSolution.updated_at;
+  const canManageSolution = isOwner || isAdmin;
+  const canManageEvaluation = isAdmin || isContestOwner;
+  const canShowEvaluationSection =
+    solution.evaluation ||
+    solution.evaluationLoading ||
+    (shouldHaveEvaluation &&
+      (!solution.evaluationUnavailable || canManageEvaluation));
+  const contestRoute = `/contest/${currentContest.number}`;
+  const contestSolutionsRoute = `${contestRoute}/solutions`;
+  const currentCustomer = user.getById(currentContest.customer_id);
+  const hasAttachedFiles = currentSolution.files?.length > 0;
+  const canEditFiles = isExecutor || isAdmin;
 
   const prizeStages = (currentContest?.stages || []).filter(
     (s) => s.prize_amount > 0,
@@ -169,6 +181,27 @@ const SolutionPage = () => {
       minute: "2-digit",
     });
   };
+  const formatMoney = (amount) => `${Number(amount).toLocaleString("ru-RU")} ₽`;
+  const refreshStatusLog = () =>
+    fetchData(`/submissions/${currentSolution.id}/status-log`)
+      .then(setStatusLog)
+      .catch(() => {});
+  const downloadSubmissionFile = (fileName) =>
+    downloadFileOrZip(
+      `/submissions/${currentSolution.id}/files/${fileName}`,
+      fileName,
+    );
+  const uploadSubmissionFiles = async (selectedFiles) => {
+    const formData = new FormData();
+    selectedFiles.forEach((file) => formData.append("files", file));
+    return sendData(`/submissions/${currentSolution.id}/files`, formData, true);
+  };
+  const winnerConfirmText = hasMilestones
+    ? "Завершить конкурс"
+    : "Выбрать победителем";
+  const winnerConfirmMessage = hasMilestones
+    ? `Конкурс завершится. ${allMilestonesPaid ? "Все поэтапные выплаты уже произведены." : `Оставшиеся средства (${currentContest.prizepool} руб.) будут выплачены исполнителю.`} Действие необратимо.`
+    : `Вы уверены, что хотите выбрать это решение победителем? Конкурс завершится, а приз (${currentContest.prizepool} руб.) будет начислен исполнителю. Действие необратимо.`;
 
   const handleDelete = async () => {
     try {
@@ -187,9 +220,7 @@ const SolutionPage = () => {
         newStatus,
       );
       setCurrentSolution(updatedSolution);
-      fetchData(`/submissions/${currentSolution.id}/status-log`)
-        .then(setStatusLog)
-        .catch(() => {});
+      refreshStatusLog();
     } catch (error) {
       console.error("Ошибка изменения статуса:", error);
     }
@@ -240,10 +271,7 @@ const SolutionPage = () => {
 
   const handleDownloadAll = async () => {
     for (const fileName of currentSolution.files) {
-      await downloadFileOrZip(
-        `/submissions/${currentSolution.id}/files/${fileName}`,
-        fileName,
-      );
+      await downloadSubmissionFile(fileName);
     }
   };
 
@@ -265,13 +293,7 @@ const SolutionPage = () => {
     if (!selected.length) return;
     setUploadingFiles(true);
     try {
-      const formData = new FormData();
-      selected.forEach((f) => formData.append("files", f));
-      const updated = await sendData(
-        `/submissions/${currentSolution.id}/files`,
-        formData,
-        true,
-      );
+      const updated = await uploadSubmissionFiles(selected);
       setCurrentSolution(updated);
     } catch (err) {
       alert(err?.response?.data?.detail || "Ошибка загрузки файлов");
@@ -308,9 +330,7 @@ const SolutionPage = () => {
           </button>
           <span className="text-gray-300 dark:text-gray-600">/</span>
           <button
-            onClick={() =>
-              navigate(`/contest/${currentContest.number}/solutions`)
-            }
+            onClick={() => navigate(contestSolutionsRoute)}
             className="text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
           >
             Решения
@@ -331,9 +351,7 @@ const SolutionPage = () => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                   Конкурс «{currentContest.title}» от{" "}
                   <span className="font-medium text-violet-600 dark:text-violet-400">
-                    @
-                    {user.getById(currentContest.customer_id)?.login ||
-                      "Неизвестно"}
+                    @{currentCustomer?.login || "Неизвестно"}
                   </span>
                 </p>
                 <span
@@ -372,12 +390,7 @@ const SolutionPage = () => {
               </Markdown>
             </div>
 
-            {(solution.evaluation ||
-              solution.evaluationLoading ||
-              (shouldHaveEvaluation &&
-                (!solution.evaluationUnavailable ||
-                  isAdmin ||
-                  isContestOwner))) && (
+            {canShowEvaluationSection && (
               <>
                 <hr className="my-5 border-gray-100 dark:border-gray-700" />
                 {solution.evaluationLoading ||
@@ -407,7 +420,7 @@ const SolutionPage = () => {
                         </div>
                       )}
                     </div>
-                    {(isAdmin || isContestOwner) &&
+                    {canManageEvaluation &&
                       !solution.evaluationLoading &&
                       !evalTriggering && (
                         <button
@@ -602,7 +615,7 @@ const SolutionPage = () => {
                     <span className="text-gray-500 dark:text-gray-400">
                       Выплачено:{" "}
                       <span className="font-semibold text-gray-700 dark:text-gray-300">
-                        {totalMilestonePaid.toLocaleString("ru-RU")} ₽
+                        {formatMoney(totalMilestonePaid)}
                       </span>
                     </span>
                     <span className="text-gray-300 dark:text-gray-600">|</span>
@@ -611,7 +624,7 @@ const SolutionPage = () => {
                       <span
                         className={`font-semibold ${escrowRemaining > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}`}
                       >
-                        {escrowRemaining.toLocaleString("ru-RU")} ₽
+                        {formatMoney(escrowRemaining)}
                       </span>
                     </span>
                   </div>
@@ -633,7 +646,7 @@ const SolutionPage = () => {
                             {stage.name}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {stage.prize_amount.toLocaleString("ru-RU")} ₽
+                            {formatMoney(stage.prize_amount)}
                           </p>
                         </div>
                         {paid ? (
@@ -671,7 +684,7 @@ const SolutionPage = () => {
               </>
             )}
 
-            {(currentSolution.files?.length > 0 || isExecutor) && (
+            {(hasAttachedFiles || isExecutor) && (
               <>
                 <hr className="my-5 border-gray-100 dark:border-gray-700" />
                 <div className="flex items-center gap-3 mb-2">
@@ -693,23 +706,18 @@ const SolutionPage = () => {
                     </label>
                   )}
                 </div>
-                {currentSolution.files?.length > 0 ? (
+                {hasAttachedFiles ? (
                   <>
                     <ul className="space-y-1 mb-3">
                       {currentSolution.files.map((fileName, index) => (
                         <li key={index} className="flex items-center gap-2">
                           <button
-                            onClick={() =>
-                              downloadFileOrZip(
-                                `/submissions/${currentSolution.id}/files/${fileName}`,
-                                fileName,
-                              )
-                            }
+                            onClick={() => downloadSubmissionFile(fileName)}
                             className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
                           >
                             {fileName}
                           </button>
-                          {(isExecutor || isAdmin) && (
+                          {canEditFiles && (
                             <button
                               onClick={() => handleDeleteFile(fileName)}
                               className="text-red-400 hover:text-red-600 text-xs transition-colors"
@@ -848,9 +856,7 @@ const SolutionPage = () => {
                 {(isOwner || isAdmin) && (
                   <>
                     <button
-                      onClick={() =>
-                        navigate(`/contest/${currentContest.number}`)
-                      }
+                      onClick={() => navigate(contestRoute)}
                       className={btnSecondary}
                     >
                       К конкурсу
@@ -865,9 +871,7 @@ const SolutionPage = () => {
                 )}
                 {isEmployer && (
                   <button
-                    onClick={() =>
-                      navigate(`/contest/${currentContest.number}/solutions`)
-                    }
+                    onClick={() => navigate(contestSolutionsRoute)}
                     className={btnSecondary}
                   >
                     Вернуться к списку решений
@@ -876,7 +880,7 @@ const SolutionPage = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {(isOwner || isAdmin) && (
+                {canManageSolution && (
                   <>
                     <button
                       onClick={() =>
@@ -920,9 +924,7 @@ const SolutionPage = () => {
                         className={btnPrimary}
                       >
                         <BsTrophy className="w-4 h-4" />
-                        {hasMilestones
-                          ? "Завершить конкурс"
-                          : "Выбрать победителем"}
+                        {winnerConfirmText}
                       </button>
                     )}
                   </>
@@ -956,14 +958,8 @@ const SolutionPage = () => {
         onHide={() => setShowWinnerModal(false)}
         onConfirm={handleSelectWinner}
         title="Выбор победителя"
-        message={
-          hasMilestones
-            ? `Конкурс завершится. ${allMilestonesPaid ? "Все поэтапные выплаты уже произведены." : `Оставшиеся средства (${currentContest.prizepool} руб.) будут выплачены исполнителю.`} Действие необратимо.`
-            : `Вы уверены, что хотите выбрать это решение победителем? Конкурс завершится, а приз (${currentContest.prizepool} руб.) будет начислен исполнителю. Действие необратимо.`
-        }
-        confirmText={
-          hasMilestones ? "Завершить конкурс" : "Выбрать победителем"
-        }
+        message={winnerConfirmMessage}
+        confirmText={winnerConfirmText}
         cancelText="Отмена"
         confirmVariant="primary"
       />

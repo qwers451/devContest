@@ -23,9 +23,43 @@ const CreateSolution = () => {
   const [submitURL, setSubmitURL] = useState("/submissions");
 
   const regex = /(!\[[^\]]*\])\(([^)]+)\)/g;
+  const isEditing = state;
+  const currentTitle = solution.form.title.value;
+  const currentAnnotation = solution.form.annotation.value;
+  const currentDescription = solution.form.description.value;
+  const showExistingFiles = isEditing && existingFiles.length > 0;
+  const showSelectedFiles = files.length > 0;
+  const pageTitle = isEditing ? "Редактирование решения" : "Создание решения";
+  const submitSuccessText = `Решение успешно ${isEditing ? "изменёно" : "отправлено"}!`;
+  const submitErrorText = `Ошибка при ${isEditing ? "редактировании" : "отправке"} решения`;
+
+  const buildPayload = () =>
+    isEditing
+      ? {
+          title: currentTitle,
+          annotation: currentAnnotation,
+          description: currentDescription,
+        }
+      : {
+          contest_id: contest.currentContest?.id,
+          title: currentTitle,
+          annotation: currentAnnotation,
+          description: currentDescription,
+        };
+
+  const uploadSolutionFiles = async (submissionId) => {
+    if (!files.length) return;
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    await sendData(`/submissions/${submissionId}/files`, formData, true);
+  };
+
+  const removeSelectedFile = (index) => {
+    setFiles((prev) => prev.filter((_, idx) => idx !== index));
+  };
 
   useEffect(() => {
-    const fetch = async () => {
+    const loadContest = async () => {
       if (solutionData) {
         const fetched = await contest.fetchOneContestById(
           solutionData.contest_id,
@@ -44,10 +78,8 @@ const CreateSolution = () => {
         }
       }
     };
-    fetch();
+    loadContest();
   }, [number, solutionData, contest]);
-
-  const contestId = contest.currentContest?.id;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,34 +90,18 @@ const CreateSolution = () => {
       return;
     }
 
-    const data = state
-      ? {
-          title: solution.form.title.value,
-          annotation: solution.form.annotation.value,
-          description: solution.form.description.value,
-        }
-      : {
-          contest_id: contestId,
-          title: solution.form.title.value,
-          annotation: solution.form.annotation.value,
-          description: solution.form.description.value,
-        };
-
     try {
-      const res = state
+      const data = buildPayload();
+      const response = isEditing
         ? await updateData(submitURL, data)
         : await sendData(submitURL, data);
-      if (files.length > 0) {
-        const formData = new FormData();
-        files.forEach((file) => formData.append("files", file));
-        await sendData(`/submissions/${res.id}/files`, formData, true);
-      }
+      await uploadSolutionFiles(response.id);
       solution.resetForm();
       navigate(-1);
-      alert(`Решение успешно ${state ? "изменёно" : "отправлено"}!`);
+      alert(submitSuccessText);
     } catch (error) {
       console.error("Ошибка при отправке решения:", error);
-      alert(`Ошибка при ${state ? "редактировании" : "отправке"} решения`);
+      alert(submitErrorText);
     }
   };
 
@@ -185,7 +201,7 @@ const CreateSolution = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
       <div className="max-w-3xl mx-auto px-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-          {state ? "Редактирование решения" : "Создание решения"}
+          {pageTitle}
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -194,7 +210,7 @@ const CreateSolution = () => {
             <input
               type="text"
               placeholder="Название решения"
-              value={solution.form.title.value}
+              value={currentTitle}
               onChange={(e) => solution.setFormField("title", e.target.value)}
               className={
                 solution.form.title.error.length > 0 ? inputErrCls : inputCls
@@ -212,7 +228,7 @@ const CreateSolution = () => {
             <input
               type="text"
               placeholder="Краткое описание решения"
-              value={solution.form.annotation.value}
+              value={currentAnnotation}
               onChange={(e) =>
                 solution.setFormField("annotation", e.target.value)
               }
@@ -234,7 +250,7 @@ const CreateSolution = () => {
             <textarea
               rows={10}
               placeholder="Подробное описание (поддерживается Markdown)"
-              value={solution.form.description.value}
+              value={currentDescription}
               onChange={(e) =>
                 solution.setFormField("description", e.target.value)
               }
@@ -253,7 +269,7 @@ const CreateSolution = () => {
 
           <div>
             <label className={labelCls}>Файлы</label>
-            {state && existingFiles.length > 0 && (
+            {showExistingFiles && (
               <ul className="mb-2 space-y-1">
                 {existingFiles.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm">
@@ -275,7 +291,7 @@ const CreateSolution = () => {
               onChange={(e) => handleFilesChange(e.target.files)}
               className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
             />
-            {files.length > 0 && (
+            {showSelectedFiles && (
               <ul className="mt-1.5 space-y-0.5">
                 {files.map((f, i) => (
                   <li
@@ -285,9 +301,7 @@ const CreateSolution = () => {
                     <span>+ {f.name}</span>
                     <button
                       type="button"
-                      onClick={() =>
-                        setFiles((prev) => prev.filter((_, idx) => idx !== i))
-                      }
+                      onClick={() => removeSelectedFile(i)}
                       className="text-red-400 hover:text-red-600 transition-colors"
                     >
                       ✕
@@ -328,7 +342,7 @@ const CreateSolution = () => {
             >
               Справка
             </button>
-            {state && (
+            {isEditing && (
               <button
                 type="button"
                 onClick={() => navigate(-1)}
@@ -364,7 +378,7 @@ const CreateSolution = () => {
               </div>
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                  {solution.form.title.value || "Без названия"}
+                  {currentTitle || "Без названия"}
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                   Конкурс «
