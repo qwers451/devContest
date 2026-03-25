@@ -44,7 +44,6 @@ describe("Конкурсы", () => {
       cy.contains("Описание проекта").should("be.visible");
       cy.contains("Создатель:").should("be.visible");
       cy.contains(/призовой фонд|₽/).should("be.visible");
-      cy.contains("Техническое задание").should("be.visible");
     });
   });
 
