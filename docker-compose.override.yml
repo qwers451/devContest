@@ -34,6 +34,9 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   payment-service:
+    environment:
+      YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL:-http://localhost:5173/payment/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     volumes:
       - ./backend/payment-service:/app:z
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

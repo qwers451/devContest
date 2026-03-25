@@ -492,10 +492,13 @@ async def download_contest_file(
     contest = result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
-    path = f"/app/uploads/contests/{contest_id}/{filename}"
+    safe_name = os.path.basename(filename)
+    if safe_name not in (contest.files or []):
+        raise HTTPException(status_code=404, detail="File not found")
+    path = f"/app/uploads/contests/{contest_id}/{safe_name}"
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(path, filename=filename)
+    return FileResponse(path, filename=safe_name)
 
 
 @router.delete("/{contest_id}/files/{filename}", response_model=ContestOut)

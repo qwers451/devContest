@@ -31,7 +31,6 @@ export const importData = async (file: File): Promise<unknown> => {
     formData.append("file", file);
 
     const response = await sendData("/import-export/import", formData, true);
-    console.log("Импорт завершён успешно", response);
     return response;
   } catch (error) {
     console.error("Ошибка при импорте данных:", error);

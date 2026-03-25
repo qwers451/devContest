@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-"""Seed script: creates test users, contest types, contests, submissions, reviews, and files.
-
-AI evaluation test coverage:
-  - c2/s3: Article contest — DOCX submission that MEETS requirements (expect high score)
-  - c4/s5: Programming contest — PDF submission that MEETS all requirements (expect high score)
-  - c4/s6: Programming contest — PDF submission that FAILS requirements (expect low score)
-  - c3/s4: Banner contest — PNG images for vision model testing
-"""
-
 import json
 import os
 import struct
@@ -54,7 +44,6 @@ def patch(url, data=None, token=None):
 
 
 def register_or_login(email, login, password, role):
-    """Try login first; if it fails — register. Safe to re-run."""
     status, resp = post(
         f"{USER_API}/auth/login", {"login": login, "password": password}
     )
@@ -71,7 +60,6 @@ def register_or_login(email, login, password, role):
 
 
 def activate_contest(contest_id, amount, token):
-    """Pay contest from wallet balance (works regardless of YooKassa config)."""
     status, resp = post(
         f"{PAYMENT_API}/payments/topup",
         {"contest_id": contest_id, "amount": amount, "use_balance": True},
@@ -87,7 +75,6 @@ def activate_contest(contest_id, amount, token):
 
 
 def get_wallet_balance(token):
-    """Return current wallet balance (float), or None on error."""
     status, resp = get(f"{PAYMENT_API}/wallet/balance", token)
     if status == 200:
         return resp.get("balance", 0)
@@ -95,7 +82,6 @@ def get_wallet_balance(token):
 
 
 def topup_wallet_internal(user_id, amount, label):
-    """Directly credit user wallet via internal endpoint."""
     headers = {"X-Internal-Secret": INTERNAL_SECRET, "Content-Type": "application/json"}
     status, resp = post(
         f"{PAYMENT_API}/wallet/internal/credit",
@@ -114,7 +100,6 @@ def topup_wallet_internal(user_id, amount, label):
 
 
 def make_png(width: int, height: int, rgb: tuple) -> bytes:
-    """Create a minimal solid-color PNG image without external dependencies."""
     def write_chunk(chunk_type: bytes, data: bytes) -> bytes:
         length = struct.pack(">I", len(data))
         content = chunk_type + data
@@ -130,11 +115,6 @@ def make_png(width: int, height: int, rgb: tuple) -> bytes:
 
 
 def make_pdf(text: str) -> bytes:
-    """Create a minimal valid single-page PDF with ASCII text (Helvetica Type1).
-
-    Note: only ASCII characters are rendered/extracted correctly.
-    Use ASCII or transliterated text. Cyrillic content should go into DOCX files.
-    """
     lines: list[str] = []
     for line in text.split("\n"):
         # Replace any non-ASCII chars that slipped through with '?'
@@ -179,7 +159,6 @@ def make_pdf(text: str) -> bytes:
 
 
 def make_docx(text: str) -> bytes:
-    """Create a minimal valid DOCX with given text (pure stdlib, no python-docx required)."""
     import io
     import zipfile
 

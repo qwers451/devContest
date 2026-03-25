@@ -378,8 +378,8 @@ async def withdraw(
     if not escrow:
         raise HTTPException(status_code=404, detail="Escrow not found")
     if (
-        escrow.released_to != current_user["id"]
-        and escrow.status != PaymentStatus.released
+        escrow.status != PaymentStatus.released
+        or escrow.released_to != current_user["id"]
     ):
         raise HTTPException(
             status_code=403, detail="No released escrow for this executor"

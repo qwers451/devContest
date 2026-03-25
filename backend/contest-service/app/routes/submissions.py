@@ -485,14 +485,18 @@ async def download_file(
     _: dict = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Submission.id).where(Submission.id == submission_id)
+        select(Submission).where(Submission.id == submission_id)
     )
-    if not result.scalar_one_or_none():
+    submission = result.scalar_one_or_none()
+    if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
-    path = f"{UPLOAD_DIR}/{submission_id}/{filename}"
+    safe_name = os.path.basename(filename)
+    if safe_name not in (submission.files or []):
+        raise HTTPException(status_code=404, detail="File not found")
+    path = f"{UPLOAD_DIR}/{submission_id}/{safe_name}"
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(path, filename=filename)
+    return FileResponse(path, filename=safe_name)
 
 
 
@@ -643,10 +647,13 @@ async def download_review_file(
     review = result.scalar_one_or_none()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    path = f"{REVIEW_UPLOAD_DIR}/{review.id}/{filename}"
+    safe_name = os.path.basename(filename)
+    if safe_name not in (review.files or []):
+        raise HTTPException(status_code=404, detail="File not found")
+    path = f"{REVIEW_UPLOAD_DIR}/{review.id}/{safe_name}"
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(path, filename=filename)
+    return FileResponse(path, filename=safe_name)
 
 
 @router.delete("/{submission_id}/reviews/{review_number}/files/{filename}", response_model=ReviewOut)

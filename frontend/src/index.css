@@ -19,6 +19,11 @@ html {
     --theme-transition-x: 50vw;
     --theme-transition-y: 50vh;
     --theme-transition-radius: 140vmax;
+    color-scheme: light;
+}
+
+.dark {
+    color-scheme: dark;
 }
 
 body {
