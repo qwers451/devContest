@@ -13,6 +13,503 @@ import {
 } from "../services/apiService.js";
 import { BsCpu, BsTrophy } from "react-icons/bs";
 
+const EvaluationSection = ({
+  canShow,
+  isLoading,
+  evaluation,
+  shouldHaveEvaluation,
+  evaluationUnavailable,
+  evalError,
+  canManageEvaluation,
+  evalTriggering,
+  onTrigger,
+}) => {
+  if (!canShow) {
+    return null;
+  }
+
+  const showLoadingState = isLoading || (!evaluation && shouldHaveEvaluation);
+  if (showLoadingState) {
+    return (
+      <>
+        <hr className="my-5 border-gray-100 dark:border-gray-700" />
+        <div className="rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50/40 dark:bg-violet-900/10 px-5 py-4 flex items-center gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+            <BsCpu className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-violet-800 dark:text-violet-300 text-sm">
+              Автоматическая оценка ИИ
+            </p>
+            {evalError ? (
+              <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                {evalError}
+              </p>
+            ) : (
+              <div className="flex items-center gap-2 mt-1">
+                <div className="w-4 h-4 rounded-full border-2 border-violet-300 dark:border-violet-700 border-t-violet-600 dark:border-t-violet-400 animate-spin flex-shrink-0" />
+                <p className="text-xs text-violet-500 dark:text-violet-400">
+                  {isLoading
+                    ? "Загружается…"
+                    : evaluationUnavailable
+                      ? "Оценка не найдена. Нажмите «Оценить» для запуска."
+                      : "Оценка выполняется, проверяем каждые 6 сек…"}
+                </p>
+              </div>
+            )}
+          </div>
+          {canManageEvaluation && !isLoading && !evalTriggering && (
+            <button
+              onClick={onTrigger}
+              disabled={evalTriggering}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold text-xs transition-colors flex-shrink-0"
+            >
+              {evalTriggering ? (
+                <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <BsCpu className="w-3.5 h-3.5" />
+              )}
+              Оценить
+            </button>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  if (!evaluation) {
+    return null;
+  }
+
+  const score = evaluation.compliance_score;
+  const isHigh = score >= 80;
+  const isMid = score >= 50;
+  const scoreColor = isHigh
+    ? "text-emerald-600 dark:text-emerald-400"
+    : isMid
+      ? "text-amber-600 dark:text-amber-400"
+      : "text-red-600 dark:text-red-400";
+  const scoreBg = isHigh
+    ? "bg-emerald-500"
+    : isMid
+      ? "bg-amber-500"
+      : "bg-red-500";
+  const borderColor = isHigh
+    ? "border-emerald-200 dark:border-emerald-800"
+    : isMid
+      ? "border-amber-200 dark:border-amber-800"
+      : "border-red-200 dark:border-red-800";
+  const bgColor = isHigh
+    ? "bg-emerald-50/50 dark:bg-emerald-900/10"
+    : isMid
+      ? "bg-amber-50/50 dark:bg-amber-900/10"
+      : "bg-red-50/50 dark:bg-red-900/10";
+  const trackColor = isHigh
+    ? "bg-emerald-100 dark:bg-emerald-900/30"
+    : isMid
+      ? "bg-amber-100 dark:bg-amber-900/30"
+      : "bg-red-100 dark:bg-red-900/30";
+
+  return (
+    <>
+      <hr className="my-5 border-gray-100 dark:border-gray-700" />
+      <div
+        className={`rounded-2xl border ${borderColor} ${bgColor} overflow-hidden`}
+      >
+        <div className="px-5 py-4 flex items-center gap-4">
+          <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center">
+            <BsCpu className="w-7 h-7 text-gray-500 dark:text-gray-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">
+                Оценка ИИ · соответствие ТЗ
+              </p>
+              <button
+                onClick={onTrigger}
+                disabled={evalTriggering || isLoading}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors flex-shrink-0"
+              >
+                {evalTriggering ? (
+                  <span className="w-2.5 h-2.5 rounded-full border-2 border-gray-300 border-t-gray-500 animate-spin" />
+                ) : (
+                  "↻"
+                )}
+                Переоценить
+              </button>
+            </div>
+            <div className="mt-2 flex items-center gap-3">
+              <div className={`text-3xl font-black ${scoreColor}`}>
+                {score}%
+              </div>
+              <div className="flex-1">
+                <div
+                  className={`h-2.5 rounded-full ${trackColor} overflow-hidden`}
+                >
+                  <div
+                    className={`h-full rounded-full ${scoreBg} transition-all duration-700`}
+                    style={{ width: `${score}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  {evaluation.critical_issues ? (
+                    <span className="text-xs text-red-600 dark:text-red-400 font-semibold">
+                      ⚠ Критические нарушения
+                    </span>
+                  ) : (
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                      ✓ Критических нарушений нет
+                    </span>
+                  )}
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {evaluation.passed_requirements.length} вып. ·{" "}
+                    {evaluation.failed_requirements.length} не вып.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {(evaluation.passed_requirements.length > 0 ||
+          evaluation.failed_requirements.length > 0) && (
+          <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 grid gap-2 sm:grid-cols-2">
+            {evaluation.passed_requirements.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">
+                  Выполнено
+                </p>
+                <ul className="space-y-1">
+                  {evaluation.passed_requirements.map((requirement, index) => (
+                    <li
+                      key={index}
+                      className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
+                    >
+                      <span className="text-emerald-500 flex-shrink-0 font-bold mt-px">
+                        ✓
+                      </span>
+                      {requirement}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {evaluation.failed_requirements.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">
+                  Не выполнено
+                </p>
+                <ul className="space-y-1">
+                  {evaluation.failed_requirements.map((requirement, index) => (
+                    <li
+                      key={index}
+                      className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
+                    >
+                      <span className="text-red-400 flex-shrink-0 font-bold mt-px">
+                        ✗
+                      </span>
+                      {requirement}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="px-5 py-2 border-t border-gray-100 dark:border-gray-700">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Оценка сформирована автоматически · Окончательное решение принимает
+            заказчик
+          </p>
+        </div>
+      </div>
+    </>
+  );
+};
+
+const MilestonesSection = ({
+  hasMilestones,
+  canManage,
+  totalMilestonePaid,
+  escrowRemaining,
+  milestoneError,
+  prizeStages,
+  paidStageIds,
+  milestoneLoading,
+  isContestActive,
+  onPay,
+  allMilestonesPaid,
+  formatMoney,
+}) => {
+  if (!hasMilestones || !canManage) {
+    return null;
+  }
+
+  return (
+    <>
+      <hr className="my-5 border-gray-100 dark:border-gray-700" />
+      <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+        <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
+          Поэтапная выплата
+        </h3>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-gray-500 dark:text-gray-400">
+            Выплачено:{" "}
+            <span className="font-semibold text-gray-700 dark:text-gray-300">
+              {formatMoney(totalMilestonePaid)}
+            </span>
+          </span>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
+          <span className="text-gray-500 dark:text-gray-400">
+            Остаток эскроу:{" "}
+            <span
+              className={`font-semibold ${escrowRemaining > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}`}
+            >
+              {formatMoney(escrowRemaining)}
+            </span>
+          </span>
+        </div>
+      </div>
+      {milestoneError && (
+        <p className="text-sm text-red-500 mb-2">{milestoneError}</p>
+      )}
+      <div className="space-y-2">
+        {prizeStages.map((stage) => {
+          const paid = paidStageIds.has(stage.id);
+          const loading = milestoneLoading === stage.id;
+          return (
+            <div
+              key={stage.id}
+              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-800 dark:text-gray-200 text-sm truncate">
+                  {stage.name}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatMoney(stage.prize_amount)}
+                </p>
+              </div>
+              {paid ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                  ✓ Выплачено
+                </span>
+              ) : isContestActive ? (
+                <button
+                  onClick={() => onPay(stage)}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-semibold text-xs transition-colors"
+                >
+                  {loading ? (
+                    <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  ) : (
+                    "💸"
+                  )}
+                  Выплатить
+                </button>
+              ) : (
+                <span className="text-xs text-gray-400">
+                  Конкурс не активен
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {allMilestonesPaid && (
+        <p className="mt-2 text-xs text-emerald-600 font-medium">
+          Все этапы оплачены. Выберите победителя для завершения конкурса.
+        </p>
+      )}
+    </>
+  );
+};
+
+const FilesSection = ({
+  hasFiles,
+  canUpload,
+  uploadingFiles,
+  onUpload,
+  files,
+  onDownload,
+  canEditFiles,
+  onDelete,
+  onDownloadAll,
+  downloadAllClassName,
+}) => {
+  if (!hasFiles && !canUpload) {
+    return null;
+  }
+
+  return (
+    <>
+      <hr className="my-5 border-gray-100 dark:border-gray-700" />
+      <div className="flex items-center gap-3 mb-2">
+        <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
+          Файлы
+        </h3>
+        {canUpload && (
+          <label
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors cursor-pointer ${uploadingFiles ? "opacity-50 pointer-events-none" : ""}`}
+          >
+            {uploadingFiles ? "Загрузка..." : "↑ Добавить файлы"}
+            <input
+              type="file"
+              multiple
+              className="hidden"
+              accept=".zip,.png,.jpg,.jpeg,.gif,.pdf,.docx"
+              onChange={onUpload}
+            />
+          </label>
+        )}
+      </div>
+      {hasFiles ? (
+        <>
+          <ul className="space-y-1 mb-3">
+            {files.map((fileName, index) => (
+              <li key={index} className="flex items-center gap-2">
+                <button
+                  onClick={() => onDownload(fileName)}
+                  className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
+                >
+                  {fileName}
+                </button>
+                {canEditFiles && (
+                  <button
+                    onClick={() => onDelete(fileName)}
+                    className="text-red-400 hover:text-red-600 text-xs transition-colors"
+                    title="Удалить файл"
+                  >
+                    ✕
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <button onClick={onDownloadAll} className={downloadAllClassName}>
+            Скачать всё
+          </button>
+        </>
+      ) : (
+        <p className="text-sm text-gray-400 dark:text-gray-500 italic">
+          Файлы не прикреплены.
+        </p>
+      )}
+    </>
+  );
+};
+
+const ReviewsSection = ({ reviews, avgScore, solutionNumber, navigate }) => {
+  if (reviews.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <hr className="my-0 border-gray-100 dark:border-gray-700" />
+      <div className="px-6 py-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
+            Отзывы ({reviews.length})
+            {avgScore != null && (
+              <span className="ml-2 text-sm font-normal text-amber-600 dark:text-amber-400">
+                ★ ср. {avgScore}
+              </span>
+            )}
+          </h3>
+          <button
+            onClick={() => navigate(`/solution/${solutionNumber}/reviews`)}
+            className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium transition-colors"
+          >
+            Все отзывы →
+          </button>
+        </div>
+        <div className="space-y-2">
+          {reviews.slice(0, 3).map((review) => (
+            <div
+              key={review.id}
+              onClick={() =>
+                navigate(`/solution/${solutionNumber}/review/${review.number}`)
+              }
+              className="cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-bold text-xs">
+                  {review.score} / 10
+                </span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  {new Date(review.created_at).toLocaleDateString("ru-RU", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+                {review.files?.length > 0 && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    📎 {review.files.length}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                {review.commentary}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+};
+
+const StatusHistorySection = ({ statusLog, getStatus }) => {
+  if (statusLog.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <hr className="my-0 border-gray-100 dark:border-gray-700" />
+      <div className="px-6 py-5">
+        <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-3">
+          История статусов
+        </h3>
+        <div className="space-y-1">
+          {statusLog.map((log) => {
+            const fromStatus = getStatus(log.old_status);
+            const toStatus = getStatus(log.new_status);
+            return (
+              <div
+                key={log.id}
+                className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+              >
+                <span className="text-gray-300 dark:text-gray-600 font-mono">
+                  {new Date(log.changed_at).toLocaleDateString("ru-RU", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+                {log.old_status != null && (
+                  <>
+                    <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                      {fromStatus?.label || log.old_status}
+                    </span>
+                    <span className="text-gray-400 dark:text-gray-500">→</span>
+                  </>
+                )}
+                <span className="px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-semibold">
+                  {toStatus?.label || log.new_status}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+};
+
 const SolutionPage = () => {
   const { solution, contest, user, payment } = useContext(Context);
   const { number } = useParams();
@@ -138,6 +635,7 @@ const SolutionPage = () => {
 
   const isAdmin = user.user?.role === "admin";
   const isOwner = user.user?.id === currentSolution.executor_id;
+  const isExecutor = user.user?.id === currentSolution.executor_id;
   const isEmployer = user.user?.role === "customer";
   const isContestOwner = user.user?.id === currentContest?.customer_id;
   const isContestActive = currentContest?.status === "active";
@@ -275,8 +773,6 @@ const SolutionPage = () => {
     }
   };
 
-  const isExecutor = user.user?.id === currentSolution?.executor_id;
-
   const handleDeleteFile = async (fileName) => {
     try {
       const updated = await deleteData(
@@ -311,8 +807,6 @@ const SolutionPage = () => {
     "inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-colors";
   const btnDanger =
     "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors";
-  const btnInfo =
-    "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-semibold text-sm transition-colors";
   const btnWarning =
     "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm transition-colors";
   const btnSuccess =
@@ -390,465 +884,58 @@ const SolutionPage = () => {
               </Markdown>
             </div>
 
-            {canShowEvaluationSection && (
-              <>
-                <hr className="my-5 border-gray-100 dark:border-gray-700" />
-                {solution.evaluationLoading ||
-                (!solution.evaluation && shouldHaveEvaluation) ? (
-                  <div className="rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50/40 dark:bg-violet-900/10 px-5 py-4 flex items-center gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                      <BsCpu className="w-6 h-6 text-violet-600 dark:text-violet-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-violet-800 dark:text-violet-300 text-sm">
-                        Автоматическая оценка ИИ
-                      </p>
-                      {evalError ? (
-                        <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-                          {evalError}
-                        </p>
-                      ) : (
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="w-4 h-4 rounded-full border-2 border-violet-300 dark:border-violet-700 border-t-violet-600 dark:border-t-violet-400 animate-spin flex-shrink-0" />
-                          <p className="text-xs text-violet-500 dark:text-violet-400">
-                            {solution.evaluationLoading
-                              ? "Загружается…"
-                              : solution.evaluationUnavailable
-                                ? "Оценка не найдена. Нажмите «Оценить» для запуска."
-                                : "Оценка выполняется, проверяем каждые 6 сек…"}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    {canManageEvaluation &&
-                      !solution.evaluationLoading &&
-                      !evalTriggering && (
-                        <button
-                          onClick={handleTriggerEval}
-                          disabled={evalTriggering}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold text-xs transition-colors flex-shrink-0"
-                        >
-                          {evalTriggering ? (
-                            <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                          ) : (
-                            <BsCpu className="w-3.5 h-3.5" />
-                          )}
-                          Оценить
-                        </button>
-                      )}
-                  </div>
-                ) : (
-                  solution.evaluation &&
-                  (() => {
-                    const score = solution.evaluation.compliance_score;
-                    const isHigh = score >= 80;
-                    const isMid = score >= 50;
-                    const scoreColor = isHigh
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : isMid
-                        ? "text-amber-600 dark:text-amber-400"
-                        : "text-red-600 dark:text-red-400";
-                    const scoreBg = isHigh
-                      ? "bg-emerald-500"
-                      : isMid
-                        ? "bg-amber-500"
-                        : "bg-red-500";
-                    const borderColor = isHigh
-                      ? "border-emerald-200 dark:border-emerald-800"
-                      : isMid
-                        ? "border-amber-200 dark:border-amber-800"
-                        : "border-red-200 dark:border-red-800";
-                    const bgColor = isHigh
-                      ? "bg-emerald-50/50 dark:bg-emerald-900/10"
-                      : isMid
-                        ? "bg-amber-50/50 dark:bg-amber-900/10"
-                        : "bg-red-50/50 dark:bg-red-900/10";
-                    const trackColor = isHigh
-                      ? "bg-emerald-100 dark:bg-emerald-900/30"
-                      : isMid
-                        ? "bg-amber-100 dark:bg-amber-900/30"
-                        : "bg-red-100 dark:bg-red-900/30";
-                    return (
-                      <div
-                        className={`rounded-2xl border ${borderColor} ${bgColor} overflow-hidden`}
-                      >
-                        <div className="px-5 py-4 flex items-center gap-4">
-                          <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center">
-                            <BsCpu className="w-7 h-7 text-gray-500 dark:text-gray-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2 flex-wrap">
-                              <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">
-                                Оценка ИИ · соответствие ТЗ
-                              </p>
-                              <button
-                                onClick={handleTriggerEval}
-                                disabled={
-                                  evalTriggering || solution.evaluationLoading
-                                }
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors flex-shrink-0"
-                              >
-                                {evalTriggering ? (
-                                  <span className="w-2.5 h-2.5 rounded-full border-2 border-gray-300 border-t-gray-500 animate-spin" />
-                                ) : (
-                                  "↻"
-                                )}
-                                Переоценить
-                              </button>
-                            </div>
-                            <div className="mt-2 flex items-center gap-3">
-                              <div
-                                className={`text-3xl font-black ${scoreColor}`}
-                              >
-                                {score}%
-                              </div>
-                              <div className="flex-1">
-                                <div
-                                  className={`h-2.5 rounded-full ${trackColor} overflow-hidden`}
-                                >
-                                  <div
-                                    className={`h-full rounded-full ${scoreBg} transition-all duration-700`}
-                                    style={{ width: `${score}%` }}
-                                  />
-                                </div>
-                                <div className="flex items-center gap-3 mt-1">
-                                  {solution.evaluation.critical_issues ? (
-                                    <span className="text-xs text-red-600 dark:text-red-400 font-semibold">
-                                      ⚠ Критические нарушения
-                                    </span>
-                                  ) : (
-                                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                                      ✓ Критических нарушений нет
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                                    {
-                                      solution.evaluation.passed_requirements
-                                        .length
-                                    }{" "}
-                                    вып. ·{" "}
-                                    {
-                                      solution.evaluation.failed_requirements
-                                        .length
-                                    }{" "}
-                                    не вып.
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+            <EvaluationSection
+              canShow={canShowEvaluationSection}
+              isLoading={solution.evaluationLoading}
+              evaluation={solution.evaluation}
+              shouldHaveEvaluation={shouldHaveEvaluation}
+              evaluationUnavailable={solution.evaluationUnavailable}
+              evalError={evalError}
+              canManageEvaluation={canManageEvaluation}
+              evalTriggering={evalTriggering}
+              onTrigger={handleTriggerEval}
+            />
 
-                        {(solution.evaluation.passed_requirements.length > 0 ||
-                          solution.evaluation.failed_requirements.length >
-                            0) && (
-                          <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 grid gap-2 sm:grid-cols-2">
-                            {solution.evaluation.passed_requirements.length >
-                              0 && (
-                              <div>
-                                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">
-                                  Выполнено
-                                </p>
-                                <ul className="space-y-1">
-                                  {solution.evaluation.passed_requirements.map(
-                                    (r, i) => (
-                                      <li
-                                        key={i}
-                                        className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
-                                      >
-                                        <span className="text-emerald-500 flex-shrink-0 font-bold mt-px">
-                                          ✓
-                                        </span>
-                                        {r}
-                                      </li>
-                                    ),
-                                  )}
-                                </ul>
-                              </div>
-                            )}
-                            {solution.evaluation.failed_requirements.length >
-                              0 && (
-                              <div>
-                                <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">
-                                  Не выполнено
-                                </p>
-                                <ul className="space-y-1">
-                                  {solution.evaluation.failed_requirements.map(
-                                    (r, i) => (
-                                      <li
-                                        key={i}
-                                        className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
-                                      >
-                                        <span className="text-red-400 flex-shrink-0 font-bold mt-px">
-                                          ✗
-                                        </span>
-                                        {r}
-                                      </li>
-                                    ),
-                                  )}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <div className="px-5 py-2 border-t border-gray-100 dark:border-gray-700">
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            Оценка сформирована автоматически · Окончательное
-                            решение принимает заказчик
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })()
-                )}
-              </>
-            )}
+            <MilestonesSection
+              hasMilestones={hasMilestones}
+              canManage={isContestOwner || isAdmin}
+              totalMilestonePaid={totalMilestonePaid}
+              escrowRemaining={escrowRemaining}
+              milestoneError={milestoneError}
+              prizeStages={prizeStages}
+              paidStageIds={paidStageIds}
+              milestoneLoading={milestoneLoading}
+              isContestActive={isContestActive}
+              onPay={handleMilestonePayment}
+              allMilestonesPaid={allMilestonesPaid}
+              formatMoney={formatMoney}
+            />
 
-            {hasMilestones && (isContestOwner || isAdmin) && (
-              <>
-                <hr className="my-5 border-gray-100 dark:border-gray-700" />
-                <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
-                  <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
-                    Поэтапная выплата
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      Выплачено:{" "}
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">
-                        {formatMoney(totalMilestonePaid)}
-                      </span>
-                    </span>
-                    <span className="text-gray-300 dark:text-gray-600">|</span>
-                    <span className="text-gray-500 dark:text-gray-400">
-                      Остаток эскроу:{" "}
-                      <span
-                        className={`font-semibold ${escrowRemaining > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}`}
-                      >
-                        {formatMoney(escrowRemaining)}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-                {milestoneError && (
-                  <p className="text-sm text-red-500 mb-2">{milestoneError}</p>
-                )}
-                <div className="space-y-2">
-                  {prizeStages.map((stage) => {
-                    const paid = paidStageIds.has(stage.id);
-                    const loading = milestoneLoading === stage.id;
-                    return (
-                      <div
-                        key={stage.id}
-                        className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-800 dark:text-gray-200 text-sm truncate">
-                            {stage.name}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatMoney(stage.prize_amount)}
-                          </p>
-                        </div>
-                        {paid ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                            ✓ Выплачено
-                          </span>
-                        ) : isContestActive ? (
-                          <button
-                            onClick={() => handleMilestonePayment(stage)}
-                            disabled={loading}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-semibold text-xs transition-colors"
-                          >
-                            {loading ? (
-                              <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                            ) : (
-                              "💸"
-                            )}
-                            Выплатить
-                          </button>
-                        ) : (
-                          <span className="text-xs text-gray-400">
-                            Конкурс не активен
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                {allMilestonesPaid && (
-                  <p className="mt-2 text-xs text-emerald-600 font-medium">
-                    Все этапы оплачены. Выберите победителя для завершения
-                    конкурса.
-                  </p>
-                )}
-              </>
-            )}
-
-            {(hasAttachedFiles || isExecutor) && (
-              <>
-                <hr className="my-5 border-gray-100 dark:border-gray-700" />
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
-                    Файлы
-                  </h3>
-                  {isExecutor && (
-                    <label
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors cursor-pointer ${uploadingFiles ? "opacity-50 pointer-events-none" : ""}`}
-                    >
-                      {uploadingFiles ? "Загрузка..." : "↑ Добавить файлы"}
-                      <input
-                        type="file"
-                        multiple
-                        className="hidden"
-                        accept=".zip,.png,.jpg,.jpeg,.gif,.pdf,.docx"
-                        onChange={handleUploadFiles}
-                      />
-                    </label>
-                  )}
-                </div>
-                {hasAttachedFiles ? (
-                  <>
-                    <ul className="space-y-1 mb-3">
-                      {currentSolution.files.map((fileName, index) => (
-                        <li key={index} className="flex items-center gap-2">
-                          <button
-                            onClick={() => downloadSubmissionFile(fileName)}
-                            className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
-                          >
-                            {fileName}
-                          </button>
-                          {canEditFiles && (
-                            <button
-                              onClick={() => handleDeleteFile(fileName)}
-                              className="text-red-400 hover:text-red-600 text-xs transition-colors"
-                              title="Удалить файл"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                    <button onClick={handleDownloadAll} className={btnSuccess}>
-                      Скачать всё
-                    </button>
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-400 dark:text-gray-500 italic">
-                    Файлы не прикреплены.
-                  </p>
-                )}
-              </>
-            )}
+            <FilesSection
+              hasFiles={hasAttachedFiles}
+              canUpload={isExecutor}
+              uploadingFiles={uploadingFiles}
+              onUpload={handleUploadFiles}
+              files={currentSolution.files || []}
+              onDownload={downloadSubmissionFile}
+              canEditFiles={canEditFiles}
+              onDelete={handleDeleteFile}
+              onDownloadAll={handleDownloadAll}
+              downloadAllClassName={btnSuccess}
+            />
           </div>
 
-          {reviews.length > 0 && (
-            <>
-              <hr className="my-0 border-gray-100 dark:border-gray-700" />
-              <div className="px-6 py-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
-                    Отзывы ({reviews.length})
-                    {currentSolution.avg_score != null && (
-                      <span className="ml-2 text-sm font-normal text-amber-600 dark:text-amber-400">
-                        ★ ср. {currentSolution.avg_score}
-                      </span>
-                    )}
-                  </h3>
-                  <button
-                    onClick={() =>
-                      navigate(`/solution/${currentSolution.number}/reviews`)
-                    }
-                    className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium transition-colors"
-                  >
-                    Все отзывы →
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {reviews.slice(0, 3).map((r) => (
-                    <div
-                      key={r.id}
-                      onClick={() =>
-                        navigate(
-                          `/solution/${currentSolution.number}/review/${r.number}`,
-                        )
-                      }
-                      className="cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-bold text-xs">
-                          {r.score} / 10
-                        </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
-                          {new Date(r.created_at).toLocaleDateString("ru-RU", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </span>
-                        {r.files?.length > 0 && (
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
-                            📎 {r.files.length}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {r.commentary}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+          <ReviewsSection
+            reviews={reviews}
+            avgScore={currentSolution.avg_score}
+            solutionNumber={currentSolution.number}
+            navigate={navigate}
+          />
 
-          {statusLog.length > 0 && (
-            <>
-              <hr className="my-0 border-gray-100 dark:border-gray-700" />
-              <div className="px-6 py-5">
-                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-3">
-                  История статусов
-                </h3>
-                <div className="space-y-1">
-                  {statusLog.map((log, i) => {
-                    const fromStatus = solution.getStatus(log.old_status);
-                    const toStatus = solution.getStatus(log.new_status);
-                    return (
-                      <div
-                        key={log.id}
-                        className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
-                      >
-                        <span className="text-gray-300 dark:text-gray-600 font-mono">
-                          {new Date(log.changed_at).toLocaleDateString(
-                            "ru-RU",
-                            {
-                              day: "2-digit",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            },
-                          )}
-                        </span>
-                        {log.old_status != null && (
-                          <>
-                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-                              {fromStatus?.label || log.old_status}
-                            </span>
-                            <span className="text-gray-400 dark:text-gray-500">
-                              →
-                            </span>
-                          </>
-                        )}
-                        <span className="px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-semibold">
-                          {toStatus?.label || log.new_status}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
+          <StatusHistorySection
+            statusLog={statusLog}
+            getStatus={solution.getStatus}
+          />
 
           <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex flex-wrap gap-2 justify-between">

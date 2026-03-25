@@ -44,6 +44,356 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const LoadingBlock = () => (
+  <div className="flex justify-center py-10">
+    <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
+  </div>
+);
+
+const EmptyBlock = ({ text }) => (
+  <div className="text-center py-10 text-gray-400">{text}</div>
+);
+
+const AlertBlock = ({ tone = "success", text, className = "mb-3" }) => {
+  if (!text) {
+    return null;
+  }
+
+  const toneClass =
+    tone === "error"
+      ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400"
+      : "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400";
+
+  return (
+    <div
+      className={`${className} px-4 py-3 rounded-xl border text-sm ${toneClass}`}
+    >
+      {text}
+    </div>
+  );
+};
+
+const BalanceTab = ({
+  balance,
+  transactionsCount,
+  isExecutor,
+  formatMoney,
+}) => (
+  <div className="space-y-3">
+    <div className="grid grid-cols-2 gap-3">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
+        <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+          Доступно
+        </div>
+        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {formatMoney(balance)}
+        </div>
+      </div>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
+        <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+          Транзакций
+        </div>
+        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {transactionsCount}
+        </div>
+      </div>
+    </div>
+    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 p-4 text-sm text-blue-700 dark:text-blue-300">
+      <strong>Как работает кошелёк:</strong>
+      <ul className="mt-1 space-y-0.5 list-disc list-inside text-blue-600 dark:text-blue-400">
+        <li>Пополните баланс и используйте его для оплаты конкурсов</li>
+        {isExecutor && (
+          <li>Выигрыш за конкурсы начисляется сюда автоматически</li>
+        )}
+        <li>Выведите средства на карту в любой момент</li>
+      </ul>
+    </div>
+  </div>
+);
+
+const TransactionsTab = ({
+  topupRefundSuccess,
+  topupRefundError,
+  loading,
+  transactions,
+  getTransactionConfig,
+  refundedTopupIds,
+  topupRefundingId,
+  onRefund,
+  formatMoney,
+}) => {
+  if (loading) {
+    return <LoadingBlock />;
+  }
+
+  return (
+    <div>
+      <AlertBlock text={topupRefundSuccess} />
+      <AlertBlock tone="error" text={topupRefundError} />
+      {transactions.length === 0 ? (
+        <EmptyBlock text="Операций пока нет" />
+      ) : (
+        <div className="space-y-2">
+          {transactions.map((tx) => {
+            const txConfig = getTransactionConfig(tx);
+            const isCredit = tx.amount > 0;
+            const canRefund =
+              tx.tx_type === "topup" &&
+              isCredit &&
+              tx.reference_id &&
+              !refundedTopupIds.has(tx.reference_id);
+
+            return (
+              <div
+                key={tx.id}
+                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-between gap-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {txConfig.label}
+                  </div>
+                  {tx.description && (
+                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                      {tx.description}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-400 dark:text-gray-500">
+                    {new Date(tx.created_at).toLocaleDateString("ru-RU", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <div
+                    className={`text-base font-bold ${isCredit ? "text-emerald-600" : "text-red-500"}`}
+                  >
+                    {isCredit ? "+" : ""}
+                    {formatMoney(tx.amount)}
+                  </div>
+                  {canRefund && (
+                    <button
+                      onClick={() => onRefund(tx.reference_id)}
+                      disabled={topupRefundingId === tx.reference_id}
+                      className="text-xs px-2.5 py-0.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors disabled:opacity-50"
+                    >
+                      {topupRefundingId === tx.reference_id
+                        ? "Возврат…"
+                        : "Вернуть"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PaymentHistoryTab = ({
+  refundSuccess,
+  refundError,
+  loading,
+  history,
+  getContestTitle,
+  refundingId,
+  onRefund,
+  formatMoney,
+}) => {
+  if (loading) {
+    return <LoadingBlock />;
+  }
+
+  return (
+    <div>
+      <AlertBlock text={refundSuccess} className="mb-4" />
+      <AlertBlock tone="error" text={refundError} className="mb-4" />
+      {history.length === 0 ? (
+        <EmptyBlock text="Платежей пока нет" />
+      ) : (
+        <div className="space-y-3">
+          {history.map((paymentItem) => {
+            const isFinished = paymentItem.status === "released";
+            const isRefunded = paymentItem.status === "refunded";
+            return (
+              <div
+                key={paymentItem.id}
+                className={`rounded-2xl border p-4 flex items-center justify-between ${isFinished ? "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700" : "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700"}`}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    {isFinished && (
+                      <span
+                        className="text-gray-400 dark:text-gray-500"
+                        title="Конкурс завершён"
+                      >
+                        🔒
+                      </span>
+                    )}
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      {getContestTitle(paymentItem.contest_id)}
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                    {new Date(paymentItem.created_at).toLocaleDateString(
+                      "ru-RU",
+                      {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      },
+                    )}
+                  </div>
+                  {isFinished && (
+                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Средства выплачены исполнителю — возврат невозможен
+                    </div>
+                  )}
+                </div>
+                <div className="text-right flex flex-col items-end gap-2">
+                  <StatusBadge status={paymentItem.status} />
+                  <span
+                    className={`text-base font-bold ${isFinished || isRefunded ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}
+                  >
+                    {formatMoney(paymentItem.amount)}
+                  </span>
+                  {paymentItem.status === "held" && (
+                    <button
+                      onClick={() => onRefund(paymentItem.contest_id)}
+                      disabled={refundingId === paymentItem.contest_id}
+                      className="text-xs px-3 py-1 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors disabled:opacity-50"
+                    >
+                      {refundingId === paymentItem.contest_id
+                        ? "Возврат…"
+                        : "Вернуть"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const WithdrawTab = ({
+  balance,
+  withdrawSuccess,
+  withdrawError,
+  onSubmit,
+  withdrawForm,
+  setWithdrawForm,
+  inputCls,
+  withdrawing,
+  formatMoney,
+}) => (
+  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+    <h2 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">
+      Вывести средства
+    </h2>
+    <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+      Баланс:{" "}
+      <strong className="dark:text-gray-300">{formatMoney(balance)}</strong>
+    </p>
+
+    <AlertBlock text={withdrawSuccess} className="mb-4" />
+    <AlertBlock tone="error" text={withdrawError} className="mb-4" />
+
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+          Сумма вывода (₽)
+        </label>
+        <input
+          type="number"
+          required
+          min="1"
+          placeholder="Например: 1000"
+          value={withdrawForm.amount}
+          onChange={(e) =>
+            setWithdrawForm((form) => ({ ...form, amount: e.target.value }))
+          }
+          className={inputCls}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+          Номер банковской карты
+        </label>
+        <input
+          type="text"
+          placeholder="Номер карты (необязательно)"
+          value={withdrawForm.card_number}
+          onChange={(e) =>
+            setWithdrawForm((form) => ({
+              ...form,
+              card_number: e.target.value,
+            }))
+          }
+          className={inputCls}
+          maxLength={19}
+        />
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          Без номера карты — средства списываются с баланса без перевода.
+        </p>
+      </div>
+      <button
+        type="submit"
+        disabled={withdrawing || balance <= 0}
+        className="w-full px-5 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors disabled:opacity-60"
+      >
+        {withdrawing ? "Отправка…" : "Вывести средства"}
+      </button>
+    </form>
+  </div>
+);
+
+const PayoutsTab = ({ loading, payouts, formatMoney }) => {
+  if (loading) {
+    return <LoadingBlock />;
+  }
+
+  return payouts.length === 0 ? (
+    <EmptyBlock text="Выплат пока нет" />
+  ) : (
+    <div className="space-y-3">
+      {payouts.map((payout) => (
+        <div
+          key={payout.id}
+          className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-between"
+        >
+          <div>
+            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+              {payout.contest_id
+                ? `Конкурс #${payout.contest_id}`
+                : "Вывод с кошелька"}
+            </div>
+            <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              {payout.recipient_account
+                ? `Карта ****${payout.recipient_account.slice(-4)}`
+                : "Реквизиты не указаны"}
+            </div>
+            <div className="text-xs text-gray-400 dark:text-gray-500">
+              {new Date(payout.created_at).toLocaleDateString("ru-RU")}
+            </div>
+          </div>
+          <div className="text-right flex flex-col items-end gap-1">
+            <StatusBadge status={payout.status} />
+            <span className="text-base font-bold text-gray-900 dark:text-gray-100">
+              {formatMoney(payout.amount)}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const WalletPage = () => {
   const { payment, user, contest } = useContext(Context);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -351,318 +701,61 @@ const WalletPage = () => {
         </div>
 
         {tab === "balance" && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
-                <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">
-                  Доступно
-                </div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {formatMoney(payment.balance)}
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
-                <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">
-                  Транзакций
-                </div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {payment.walletTransactions.length}
-                </div>
-              </div>
-            </div>
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 p-4 text-sm text-blue-700 dark:text-blue-300">
-              <strong>Как работает кошелёк:</strong>
-              <ul className="mt-1 space-y-0.5 list-disc list-inside text-blue-600 dark:text-blue-400">
-                <li>Пополните баланс и используйте его для оплаты конкурсов</li>
-                {isExecutor && (
-                  <li>Выигрыш за конкурсы начисляется сюда автоматически</li>
-                )}
-                <li>Выведите средства на карту в любой момент</li>
-              </ul>
-            </div>
-          </div>
+          <BalanceTab
+            balance={payment.balance}
+            transactionsCount={payment.walletTransactions.length}
+            isExecutor={isExecutor}
+            formatMoney={formatMoney}
+          />
         )}
 
         {tab === "transactions" && (
-          <div>
-            {topupRefundSuccess && (
-              <div className="mb-3 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm">
-                {topupRefundSuccess}
-              </div>
-            )}
-            {topupRefundError && (
-              <div className="mb-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                {topupRefundError}
-              </div>
-            )}
-            {payment.loading ? (
-              <div className="flex justify-center py-10">
-                <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
-              </div>
-            ) : payment.walletTransactions.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">
-                Операций пока нет
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {payment.walletTransactions.map((tx) => {
-                  const txConfig = getTransactionConfig(tx);
-                  const isCredit = tx.amount > 0;
-                  const canRefund =
-                    tx.tx_type === "topup" &&
-                    isCredit &&
-                    tx.reference_id &&
-                    !refundedTopupIds.has(tx.reference_id);
-
-                  return (
-                    <div
-                      key={tx.id}
-                      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-between gap-3"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                          {txConfig.label}
-                        </div>
-                        {tx.description && (
-                          <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
-                            {tx.description}
-                          </div>
-                        )}
-                        <div className="text-xs text-gray-400 dark:text-gray-500">
-                          {new Date(tx.created_at).toLocaleDateString("ru-RU", {
-                            day: "2-digit",
-                            month: "long",
-                            year: "numeric",
-                          })}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <div
-                          className={`text-base font-bold ${isCredit ? "text-emerald-600" : "text-red-500"}`}
-                        >
-                          {isCredit ? "+" : ""}
-                          {formatMoney(tx.amount)}
-                        </div>
-                        {canRefund && (
-                          <button
-                            onClick={() => handleTopupRefund(tx.reference_id)}
-                            disabled={topupRefundingId === tx.reference_id}
-                            className="text-xs px-2.5 py-0.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors disabled:opacity-50"
-                          >
-                            {topupRefundingId === tx.reference_id
-                              ? "Возврат…"
-                              : "Вернуть"}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <TransactionsTab
+            topupRefundSuccess={topupRefundSuccess}
+            topupRefundError={topupRefundError}
+            loading={payment.loading}
+            transactions={payment.walletTransactions}
+            getTransactionConfig={getTransactionConfig}
+            refundedTopupIds={refundedTopupIds}
+            topupRefundingId={topupRefundingId}
+            onRefund={handleTopupRefund}
+            formatMoney={formatMoney}
+          />
         )}
 
         {tab === "history" && (
-          <div>
-            {refundSuccess && (
-              <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm">
-                {refundSuccess}
-              </div>
-            )}
-            {refundError && (
-              <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                {refundError}
-              </div>
-            )}
-            {payment.loading ? (
-              <div className="flex justify-center py-10">
-                <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
-              </div>
-            ) : payment.history.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">
-                Платежей пока нет
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {payment.history.map((p) => {
-                  const isFinished = p.status === "released";
-                  const isRefunded = p.status === "refunded";
-                  return (
-                    <div
-                      key={p.id}
-                      className={`rounded-2xl border p-4 flex items-center justify-between ${isFinished ? "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700" : "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700"}`}
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          {isFinished && (
-                            <span
-                              className="text-gray-400 dark:text-gray-500"
-                              title="Конкурс завершён"
-                            >
-                              🔒
-                            </span>
-                          )}
-                          <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                            {getContestTitle(p.contest_id)}
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                          {new Date(p.created_at).toLocaleDateString("ru-RU", {
-                            day: "2-digit",
-                            month: "long",
-                            year: "numeric",
-                          })}
-                        </div>
-                        {isFinished && (
-                          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                            Средства выплачены исполнителю — возврат невозможен
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right flex flex-col items-end gap-2">
-                        <StatusBadge status={p.status} />
-                        <span
-                          className={`text-base font-bold ${isFinished || isRefunded ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}
-                        >
-                          {formatMoney(p.amount)}
-                        </span>
-                        {p.status === "held" && (
-                          <button
-                            onClick={() => handleRefund(p.contest_id)}
-                            disabled={refundingId === p.contest_id}
-                            className="text-xs px-3 py-1 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors disabled:opacity-50"
-                          >
-                            {refundingId === p.contest_id
-                              ? "Возврат…"
-                              : "Вернуть"}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <PaymentHistoryTab
+            refundSuccess={refundSuccess}
+            refundError={refundError}
+            loading={payment.loading}
+            history={payment.history}
+            getContestTitle={getContestTitle}
+            refundingId={refundingId}
+            onRefund={handleRefund}
+            formatMoney={formatMoney}
+          />
         )}
 
         {tab === "withdraw" && (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-            <h2 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">
-              Вывести средства
-            </h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-              Баланс:{" "}
-              <strong className="dark:text-gray-300">
-                {formatMoney(payment.balance)}
-              </strong>
-            </p>
-
-            {withdrawSuccess && (
-              <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm">
-                {withdrawSuccess}
-              </div>
-            )}
-            {withdrawError && (
-              <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                {withdrawError}
-              </div>
-            )}
-
-            <form onSubmit={handleWithdraw} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Сумма вывода (₽)
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  placeholder="Например: 1000"
-                  value={withdrawForm.amount}
-                  onChange={(e) =>
-                    setWithdrawForm((f) => ({ ...f, amount: e.target.value }))
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Номер банковской карты
-                </label>
-                <input
-                  type="text"
-                  placeholder="Номер карты (необязательно)"
-                  value={withdrawForm.card_number}
-                  onChange={(e) =>
-                    setWithdrawForm((f) => ({
-                      ...f,
-                      card_number: e.target.value,
-                    }))
-                  }
-                  className={inputCls}
-                  maxLength={19}
-                />
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  Без номера карты — средства списываются с баланса без
-                  перевода.
-                </p>
-              </div>
-              <button
-                type="submit"
-                disabled={withdrawing || payment.balance <= 0}
-                className="w-full px-5 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors disabled:opacity-60"
-              >
-                {withdrawing ? "Отправка…" : "Вывести средства"}
-              </button>
-            </form>
-          </div>
+          <WithdrawTab
+            balance={payment.balance}
+            withdrawSuccess={withdrawSuccess}
+            withdrawError={withdrawError}
+            onSubmit={handleWithdraw}
+            withdrawForm={withdrawForm}
+            setWithdrawForm={setWithdrawForm}
+            inputCls={inputCls}
+            withdrawing={withdrawing}
+            formatMoney={formatMoney}
+          />
         )}
 
         {tab === "payouts" && (
-          <div>
-            {payment.loading ? (
-              <div className="flex justify-center py-10">
-                <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
-              </div>
-            ) : payment.withdrawals.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">
-                Выплат пока нет
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {payment.withdrawals.map((p) => (
-                  <div
-                    key={p.id}
-                    className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                        {p.contest_id
-                          ? `Конкурс #${p.contest_id}`
-                          : "Вывод с кошелька"}
-                      </div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                        {p.recipient_account
-                          ? `Карта ****${p.recipient_account.slice(-4)}`
-                          : "Реквизиты не указаны"}
-                      </div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(p.created_at).toLocaleDateString("ru-RU")}
-                      </div>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-1">
-                      <StatusBadge status={p.status} />
-                      <span className="text-base font-bold text-gray-900 dark:text-gray-100">
-                        {formatMoney(p.amount)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <PayoutsTab
+            loading={payment.loading}
+            payouts={payment.withdrawals}
+            formatMoney={formatMoney}
+          />
         )}
       </div>
     </div>
