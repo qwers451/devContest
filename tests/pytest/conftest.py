@@ -18,7 +18,7 @@ INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "cafdgadhffdah")
 SERVICE_STARTUP_TIMEOUT = float(os.getenv("PYTEST_SERVICE_STARTUP_TIMEOUT", "30"))
 SERVICE_POLL_INTERVAL = float(os.getenv("PYTEST_SERVICE_POLL_INTERVAL", "1"))
 
-# Unique suffix so repeated runs don't collide
+# Уникальный суффикс чтобы повторные запуски не конфликтовали
 TS = int(time.time())
 
 
@@ -59,7 +59,7 @@ async def wait_for_stack():
     await wait_for_service(PAYMENT_URL)
 
 
-# ── Token fixtures ────────────────────────────────────────────────────────────
+# ── Токены ───────────────────────────────────────────────────────────────────
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -70,7 +70,7 @@ async def admin_token():
         )
         if r.status_code == 200:
             return r.json()["access_token"]
-        # Fresh DB — register admin (works when no admin exists yet)
+        # Чистая БД — регистрируем admin если его ещё нет
         r = await c.post(
             f"{USER_URL}/auth/register",
             json={
@@ -120,7 +120,7 @@ async def executor_token():
         return r.json()["access_token"]
 
 
-# ── Shared data created once per session ─────────────────────────────────────
+# ── Общие данные создаются один раз за сессию ────────────────────────────────
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -169,7 +169,7 @@ async def contest(admin_token, customer_token, contest_type_id):
         assert r.status_code == 201, r.text
         contest_data = r.json()
 
-        # Reserve escrow (stub) and activate the contest
+        # Резервируем эскроу (заглушка) и активируем конкурс
         internal_headers = {"x-internal-secret": INTERNAL_SECRET}
         await c.post(
             f"{PAYMENT_URL}/escrow/reserve",

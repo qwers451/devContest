@@ -238,7 +238,7 @@ async def test_edit_contest(customer_token, contest):
             },
             headers=auth_headers(customer_token),
         )
-    # 200 if edit endpoint exists, 404/405 if not implemented yet
+    # 200 если эндпоинт реализован, 404/405 если нет
     assert r.status_code in (200, 404, 405)
 
 
@@ -320,7 +320,7 @@ async def test_update_stages(customer_token, contest):
         )
     assert r.status_code == 200
     assert len(r.json()["stages"]) == 3
-    assert r.json()["current_stage_id"] is None  # reset after stages update
+    assert r.json()["current_stage_id"] is None  # сбрасывается после обновления этапов
 
 
 # ── 20. Установка текущего этапа ─────────────────────────────────────────────
@@ -328,7 +328,7 @@ async def test_update_stages(customer_token, contest):
 
 @pytest.mark.asyncio
 async def test_set_current_stage(customer_token, contest):
-    # First refresh contest to get current stage ids
+    # Получаем актуальные id этапов
     async with httpx.AsyncClient() as c:
         cr = await c.get(
             f"{CONTEST_URL}/contests/{contest['id']}",

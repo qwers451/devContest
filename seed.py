@@ -55,7 +55,7 @@ def register_or_login(email, login, password, role):
     )
     if status == 201:
         return resp
-    print(f"    login+register failed for {login}: {resp}")
+    print(f"    не удалось создать/войти {login}: {resp}")
     return None
 
 
@@ -70,7 +70,7 @@ def activate_contest(contest_id, amount, token):
         return True
     if status == 409:
         return True
-    print(f"    topup failed for contest {contest_id}: {status} {resp}")
+    print(f"    не удалось оплатить конкурс {contest_id}: {status} {resp}")
     return False
 
 
@@ -88,14 +88,14 @@ def topup_wallet_internal(user_id, amount, label):
         {
             "user_id": user_id,
             "amount": amount,
-            "description": f"Seed topup for {label}",
+            "description": f"Пополнение для {label}",
         },
         headers=headers,
     )
     if status in (200, 201):
-        print(f"    {label} wallet (internal) → OK +{amount} ₽")
+        print(f"    {label} кошелёк → +{amount} ₽")
         return True
-    print(f"    internal wallet topup failed for {label}: {status} {resp}")
+    print(f"    не удалось пополнить кошелёк {label}: {status} {resp}")
     return False
 
 
@@ -117,7 +117,7 @@ def make_png(width: int, height: int, rgb: tuple) -> bytes:
 def make_pdf(text: str) -> bytes:
     lines: list[str] = []
     for line in text.split("\n"):
-        # Replace any non-ASCII chars that slipped through with '?'
+        # Заменяем не-ASCII символы на '?'
         line = line.encode("ascii", errors="replace").decode("ascii")
         while len(line) > 90:
             lines.append(line[:90])
@@ -275,13 +275,13 @@ def add_review(submission_id: int, token: str, score: float, commentary: str, la
         token,
     )
     if status == 201:
-        print(f"  Отзыв для submission {submission_id} [{label}] → OK score={score}")
+        print(f"  Отзыв для submission {submission_id} [{label}] → ок score={score}")
         return resp
     elif status == 409:
         print(f"  Отзыв для submission {submission_id} [{label}] → уже существует")
         return None
     else:
-        print(f"  Отзыв для submission {submission_id} [{label}] → FAIL {status} {resp}")
+        print(f"  Отзыв для submission {submission_id} [{label}] → ошибка {status} {resp}")
         return None
 
 
@@ -295,50 +295,50 @@ def change_status(submission_id: int, new_status: int, token: str, label: str):
         print(f"  Статус submission {submission_id} → {new_status} ({label})")
         return True
     else:
-        print(f"  Статус submission {submission_id} → FAIL {status} {resp}")
+        print(f"  Статус submission {submission_id} → ошибка {status} {resp}")
         return False
 
 
-# ── Users ─────────────────────────────────────────────────────────────────────
+# ── Пользователи ────────────────────────────────────────────────────────────
 
-print("=== Creating users ===")
+print("=== Создание пользователей ===")
 
 admin_resp = register_or_login("admin@devcontest.ru", "admin", "admin123", "admin")
 admin_token = admin_resp["access_token"] if admin_resp else None
 admin_id = admin_resp["user"]["id"] if admin_resp else None
-print(f"  admin     → {'OK id=' + str(admin_id) if admin_id else 'FAIL'}")
+print(f"  admin     → {'ок id=' + str(admin_id) if admin_id else 'ошибка'}")
 
 customer_resp = register_or_login(
     "customer@devcontest.ru", "customer1", "test1234", "customer"
 )
 customer_token = customer_resp["access_token"] if customer_resp else None
 customer_id = customer_resp["user"]["id"] if customer_resp else None
-print(f"  customer1 → {'OK id=' + str(customer_id) if customer_id else 'FAIL'}")
+print(f"  customer1 → {'ок id=' + str(customer_id) if customer_id else 'ошибка'}")
 
 executor_resp = register_or_login(
     "executor@devcontest.ru", "executor1", "test1234", "executor"
 )
 executor_token = executor_resp["access_token"] if executor_resp else None
 executor_id = executor_resp["user"]["id"] if executor_resp else None
-print(f"  executor1 → {'OK id=' + str(executor_id) if executor_id else 'FAIL'}")
+print(f"  executor1 → {'ок id=' + str(executor_id) if executor_id else 'ошибка'}")
 
 executor2_resp = register_or_login(
     "executor2@devcontest.ru", "executor2", "test1234", "executor"
 )
 executor2_token = executor2_resp["access_token"] if executor2_resp else None
 executor2_id = executor2_resp["user"]["id"] if executor2_resp else None
-print(f"  executor2 → {'OK id=' + str(executor2_id) if executor2_id else 'FAIL'}")
+print(f"  executor2 → {'ок id=' + str(executor2_id) if executor2_id else 'ошибка'}")
 
 executor3_resp = register_or_login(
     "executor3@devcontest.ru", "executor3", "test1234", "executor"
 )
 executor3_token = executor3_resp["access_token"] if executor3_resp else None
 executor3_id = executor3_resp["user"]["id"] if executor3_resp else None
-print(f"  executor3 → {'OK id=' + str(executor3_id) if executor3_id else 'FAIL'}")
+print(f"  executor3 → {'ок id=' + str(executor3_id) if executor3_id else 'ошибка'}")
 
-# ── Wallet top-ups ─────────────────────────────────────────────────────────────
+# ── Пополнение кошельков ────────────────────────────────────────────────────
 
-print("\n=== Topping up wallets ===")
+print("\n=== Пополнение кошельков ===")
 
 if customer_id and customer_token:
     balance = get_wallet_balance(customer_token)
@@ -376,9 +376,9 @@ if admin_id and admin_token:
     print(f"  admin     → баланс: {bal} ₽")
 
 
-# ── Contest Templates ──────────────────────────────────────────────────────────
+# ── Шаблоны конкурсов ───────────────────────────────────────────────────────
 
-print("\n=== Creating contest templates ===")
+print("\n=== Создание шаблонов конкурсов ===")
 
 template_ids = {}
 _, existing_templates = get(f"{CONTEST_API}/contest-templates")
@@ -447,26 +447,26 @@ TEMPLATES = [
 
 for tmpl in TEMPLATES:
     if tmpl["name"] in template_ids:
-        print(f"  {tmpl['name']} → already exists id={template_ids[tmpl['name']]}")
+        print(f"  {tmpl['name']} → уже существует id={template_ids[tmpl['name']]}")
         continue
     if not admin_token:
-        print(f"  {tmpl['name']} → SKIP (no admin token)")
+        print(f"  {tmpl['name']} → пропуск (нет токена admin)")
         continue
     status, t = post(f"{CONTEST_API}/contest-templates", tmpl, admin_token)
     if status == 201:
         template_ids[tmpl["name"]] = t["id"]
         print(f"  {tmpl['name']} → id={t['id']}")
     else:
-        print(f"  {tmpl['name']} → FAIL {status} {t}")
+        print(f"  {tmpl['name']} → ошибка {status} {t}")
 
 logo_template = template_ids.get("Логотип")
 article_template = template_ids.get("Статья")
 code_template = template_ids.get("Код")
 banner_template = template_ids.get("Баннер")
 
-# ── Contest Types ──────────────────────────────────────────────────────────────
+# ── Типы конкурсов ──────────────────────────────────────────────────────────
 
-print("\n=== Creating contest types ===")
+print("\n=== Создание типов конкурсов ===")
 
 type_ids = {}
 _, existing = get(f"{CONTEST_API}/contest-types")
@@ -476,35 +476,35 @@ if isinstance(existing, list):
 
 for name in ["Статья", "Логотип", "Баннер", "Иконка", "Веб-разработка"]:
     if name in type_ids:
-        print(f"  {name} → already exists id={type_ids[name]}")
+        print(f"  {name} → уже существует id={type_ids[name]}")
         continue
     if not admin_token:
-        print(f"  {name} → SKIP (no admin token)")
+        print(f"  {name} → пропуск (нет токена admin)")
         continue
     status, ct = post(f"{CONTEST_API}/contest-types", {"name": name}, admin_token)
     if status == 201:
         type_ids[name] = ct["id"]
         print(f"  {name} → id={ct['id']}")
     else:
-        print(f"  {name} → FAIL {status} {ct}")
+        print(f"  {name} → ошибка {status} {ct}")
 
 logo_type = type_ids.get("Логотип")
 article_type = type_ids.get("Статья")
 banner_type = type_ids.get("Баннер")
 webdev_type = type_ids.get("Веб-разработка")
 
-# ── Contests ───────────────────────────────────────────────────────────────────
+# ── Конкурсы ────────────────────────────────────────────────────────────────
 
-print("\n=== Creating contests ===")
+print("\n=== Создание конкурсов ===")
 
 c1 = c2 = c3 = c4 = None
 
 if not customer_token:
-    print("  SKIP — no customer token")
+    print("  пропуск — нет токена заказчика")
 else:
     now = datetime.now(timezone.utc)
 
-    # Contest 1: Logo design (with stages)
+    # Конкурс 1: разработка логотипа (с этапами)
     status, c1 = post(
         f"{CONTEST_API}/contests",
         {
@@ -552,12 +552,12 @@ else:
     if c1:
         activated = activate_contest(c1["id"], 15000, customer_token)
         print(
-            f"  Логотип для стартапа → OK id={c1['id']} | payment={'activated' if activated else 'FAIL'}"
+            f"  Логотип для стартапа → ок id={c1['id']} | payment={'активировано' if activated else 'ошибка'}"
         )
     else:
-        print(f"  Логотип для стартапа → FAIL {status}")
+        print(f"  Логотип для стартапа → ошибка {status}")
 
-    # Contest 2: Article — detailed TZ for AI evaluation testing
+    # Конкурс 2: статья — расширенное ТЗ
     status, c2 = post(
         f"{CONTEST_API}/contests",
         {
@@ -592,12 +592,12 @@ else:
     if c2:
         activated = activate_contest(c2["id"], 8000, customer_token)
         print(
-            f"  Статья об ИИ        → OK id={c2['id']} | payment={'activated' if activated else 'FAIL'}"
+            f"  Статья об ИИ        → ок id={c2['id']} | payment={'активировано' if activated else 'ошибка'}"
         )
     else:
-        print(f"  Статья об ИИ        → FAIL {status}")
+        print(f"  Статья об ИИ        → ошибка {status}")
 
-    # Contest 3: Banners (PNG-focused TZ for vision model testing)
+    # Конкурс 3: баннеры — ТЗ для PNG-файлов
     status, c3 = post(
         f"{CONTEST_API}/contests",
         {
@@ -644,12 +644,12 @@ else:
     if c3:
         activated = activate_contest(c3["id"], 12000, customer_token)
         print(
-            f"  Баннеры для рекламы → OK id={c3['id']} | payment={'activated' if activated else 'FAIL'}"
+            f"  Баннеры для рекламы → ок id={c3['id']} | payment={'активировано' if activated else 'ошибка'}"
         )
     else:
-        print(f"  Баннеры для рекламы → FAIL {status}")
+        print(f"  Баннеры для рекламы → ошибка {status}")
 
-    # Contest 4: Web API development — clear structured TZ for AI evaluation pass/fail testing
+    # Конкурс 4: разработка REST API — структурированное ТЗ
     status, c4 = post(
         f"{CONTEST_API}/contests",
         {
@@ -715,14 +715,14 @@ else:
     if c4:
         activated = activate_contest(c4["id"], 25000, customer_token)
         print(
-            f"  REST API магазин    → OK id={c4['id']} | payment={'activated' if activated else 'FAIL'}"
+            f"  REST API магазин    → ок id={c4['id']} | payment={'активировано' if activated else 'ошибка'}"
         )
     else:
-        print(f"  REST API магазин    → FAIL {status}")
+        print(f"  REST API магазин    → ошибка {status}")
 
-# ── Submissions ────────────────────────────────────────────────────────────────
+# ── Решения ─────────────────────────────────────────────────────────────────
 
-print("\n=== Creating submissions ===")
+print("\n=== Создание решений ===")
 
 s1 = s2 = s3 = s4 = s5 = s6 = None
 
@@ -752,10 +752,10 @@ if c1 and executor_token:
         )
         s1 = s1 if status == 201 else None
         print(
-            f"  Лого TechFlow (executor1) → {'OK id=' + str(s1['id']) if s1 else f'FAIL {status}'}"
+            f"  Лого TechFlow (executor1) → {'ок id=' + str(s1['id']) if s1 else f'ошибка {status}'}"
         )
     else:
-        print(f"  Лого TechFlow (executor1) → SKIP (contest not active)")
+        print(f"  Лого TechFlow (executor1) → пропуск (конкурс не активен)")
 
 if c1 and executor2_token:
     c1_active = get_contest(c1["id"], executor2_token)
@@ -776,10 +776,10 @@ if c1 and executor2_token:
         )
         s2 = s2 if status == 201 else None
         print(
-            f"  Лого градиент (executor2) → {'OK id=' + str(s2['id']) if s2 else f'FAIL {status}'}"
+            f"  Лого градиент (executor2) → {'ок id=' + str(s2['id']) if s2 else f'ошибка {status}'}"
         )
     else:
-        print(f"  Лого градиент (executor2) → SKIP (contest not active)")
+        print(f"  Лого градиент (executor2) → пропуск (конкурс не активен)")
 
 if c2 and executor_token:
     c2_active = get_contest(c2["id"], executor_token)
@@ -801,10 +801,10 @@ if c2 and executor_token:
         )
         s3 = s3 if status == 201 else None
         print(
-            f"  Статья ИИ (executor1)     → {'OK id=' + str(s3['id']) if s3 else f'FAIL {status}'}"
+            f"  Статья ИИ (executor1)     → {'ок id=' + str(s3['id']) if s3 else f'ошибка {status}'}"
         )
     else:
-        print(f"  Статья ИИ (executor1)     → SKIP (contest not active)")
+        print(f"  Статья ИИ (executor1)     → пропуск (конкурс не активен)")
 
 if c3 and executor2_token:
     c3_active = get_contest(c3["id"], executor2_token)
@@ -826,12 +826,12 @@ if c3 and executor2_token:
         )
         s4 = s4 if status == 201 else None
         print(
-            f"  Баннеры (executor2)       → {'OK id=' + str(s4['id']) if s4 else f'FAIL {status}'}"
+            f"  Баннеры (executor2)       → {'ок id=' + str(s4['id']) if s4 else f'ошибка {status}'}"
         )
     else:
-        print(f"  Баннеры (executor2)       → SKIP (contest not active)")
+        print(f"  Баннеры (executor2)       → пропуск (конкурс не активен)")
 
-# Submission s5: PASSES all requirements of c4 (AI should give high score)
+# Решение s5: соответствует всем требованиям c4 (ожидается высокий балл)
 if c4 and executor_token:
     c4_active = get_contest(c4["id"], executor_token)
     if c4_active:
@@ -860,12 +860,12 @@ if c4 and executor_token:
         )
         s5 = s5 if status == 201 else None
         print(
-            f"  API Shop PASS (executor1) → {'OK id=' + str(s5['id']) if s5 else f'FAIL {status}'}"
+            f"  API Shop PASS (executor1) → {'ок id=' + str(s5['id']) if s5 else f'ошибка {status}'}"
         )
     else:
-        print(f"  API Shop PASS (executor1) → SKIP (contest not active)")
+        print(f"  API Shop PASS (executor1) → пропуск (конкурс не активен)")
 
-# Submission s6: FAILS several critical requirements of c4 (AI should give low score)
+# Решение s6: нарушает критические требования c4 (ожидается низкий балл)
 if c4 and executor3_token:
     c4_active = get_contest(c4["id"], executor3_token)
     if c4_active:
@@ -893,14 +893,14 @@ if c4 and executor3_token:
         )
         s6 = s6 if status == 201 else None
         print(
-            f"  API Shop FAIL (executor3) → {'OK id=' + str(s6['id']) if s6 else f'FAIL {status}'}"
+            f"  API Shop FAIL (executor3) → {'ок id=' + str(s6['id']) if s6 else f'ошибка {status}'}"
         )
     else:
-        print(f"  API Shop FAIL (executor3) → SKIP (contest not active)")
+        print(f"  API Shop FAIL (executor3) → пропуск (конкурс не активен)")
 
-# ── PNG file uploads (for vision evaluation testing) ──────────────────────────
+# ── Загрузка тестовых PNG-файлов ────────────────────────────────────────────
 
-print("\n=== Uploading test PNG files ===")
+print("\n=== Загрузка тестовых PNG ===")
 
 # Logo submission: синий логотип 200x200
 if s1 and executor_token:
@@ -908,7 +908,7 @@ if s1 and executor_token:
     st, resp = upload_png(s1["id"], executor_token, png, "logo_techflow.png")
     print(
         f"  logo_techflow.png → submission {s1['id']} "
-        f"{'OK (' + str(len(png)) + ' bytes)' if st == 200 else f'FAIL {st} {resp}'}"
+        f"{'ок (' + str(len(png)) + ' байт)' if st == 200 else f'ошибка {st}'}"
     )
 
 # Logo submission 2: голубой логотип 200x200
@@ -917,7 +917,7 @@ if s2 and executor2_token:
     st, resp = upload_png(s2["id"], executor2_token, png, "logo_gradient.png")
     print(
         f"  logo_gradient.png → submission {s2['id']} "
-        f"{'OK (' + str(len(png)) + ' bytes)' if st == 200 else f'FAIL {st} {resp}'}"
+        f"{'ок (' + str(len(png)) + ' байт)' if st == 200 else f'ошибка {st}'}"
     )
 
 # Banner submission: оранжевый баннер 728x90 (leaderboard)
@@ -926,41 +926,41 @@ if s4 and executor2_token:
     st, resp = upload_png(s4["id"], executor2_token, png_728, "banner_728x90.png")
     print(
         f"  banner_728x90.png → submission {s4['id']} "
-        f"{'OK (' + str(len(png_728)) + ' bytes)' if st == 200 else f'FAIL {st} {resp}'}"
+        f"{'ок (' + str(len(png_728)) + ' байт)' if st == 200 else f'ошибка {st}'}"
     )
     png_300 = make_png(300, 250, (44, 62, 80))    # #2C3E50 тёмно-синий
     st, resp = upload_png(s4["id"], executor2_token, png_300, "banner_300x250.png")
     print(
         f"  banner_300x250.png → submission {s4['id']} "
-        f"{'OK (' + str(len(png_300)) + ' bytes)' if st == 200 else f'FAIL {st} {resp}'}"
+        f"{'ок (' + str(len(png_300)) + ' байт)' if st == 200 else f'ошибка {st}'}"
     )
     png_160 = make_png(160, 600, (255, 107, 53))  # #FF6B35 скайскрапер
     st, resp = upload_png(s4["id"], executor2_token, png_160, "banner_160x600.png")
     print(
         f"  banner_160x600.png → submission {s4['id']} "
-        f"{'OK (' + str(len(png_160)) + ' bytes)' if st == 200 else f'FAIL {st} {resp}'}"
+        f"{'ок (' + str(len(png_160)) + ' байт)' if st == 200 else f'ошибка {st}'}"
     )
 
-# ── TZ file upload (PDF) — contest c2 "Статья об ИИ" ─────────────────────────
+# ── Загрузка ТЗ в виде PDF для конкурса c2 ──────────────────────────────────
 
-print("\n=== Uploading TZ as PDF (contest c2 — Статья об ИИ) ===")
+print("\n=== Загрузка ТЗ в PDF (конкурс c2) ===")
 
 if c2 and customer_token:
     tz_pdf_text = (
-        "Technical Specification: Article on Artificial Intelligence in Medicine\n\n"
-        "Requirements:\n"
-        "1. Length: 3000-5000 words\n"
-        "2. Structure: introduction, at least 4 sections, conclusion\n"
-        "3. At least 5 references to peer-reviewed scientific sources (PubMed, Scopus, Nature)\n"
-        "4. Real-world examples of AI deployment in medicine (Mayo Clinic, Skoltech, DeepMind)\n"
-        "5. Text uniqueness: at least 95%\n"
-        "6. Style: popular science\n"
-        "7. Submission format: DOCX or PDF\n\n"
-        "Critical requirements (failure = rejection):\n"
-        "- Sections structure is mandatory\n"
-        "- List of references is mandatory (minimum 5 sources)\n"
-        "- Introduction and conclusion are mandatory\n"
-        "- Volume at least 3000 words\n"
+        "Техническое задание: Статья об искусственном интеллекте в медицине\n\n"
+        "Требования:\n"
+        "1. Объём: 3000–5000 слов\n"
+        "2. Структура: введение, не менее 4 разделов, заключение\n"
+        "3. Не менее 5 ссылок на рецензируемые научные источники (PubMed, Scopus, Nature)\n"
+        "4. Реальные примеры применения ИИ в медицине (Mayo Clinic, Skoltech, DeepMind)\n"
+        "5. Уникальность текста: не менее 95%\n"
+        "6. Стиль: научно-популярный\n"
+        "7. Формат сдачи: DOCX или PDF\n\n"
+        "Критические требования (невыполнение = отклонение):\n"
+        "- Структура разделов обязательна\n"
+        "- Список литературы обязателен (минимум 5 источников)\n"
+        "- Введение и заключение обязательны\n"
+        "- Объём не менее 3000 слов\n"
     )
     pdf_bytes = make_pdf(tz_pdf_text)
     st, resp = upload_file_multipart(
@@ -973,42 +973,42 @@ if c2 and customer_token:
     )
     if st == 200:
         print(
-            f"  tz_article_ai.pdf → contest {c2['id']} OK "
-            f"({len(pdf_bytes)} bytes, tz_text updated)"
+            f"  tz_article_ai.pdf → конкурс {c2['id']} ок "
+            f"({len(pdf_bytes)} байт)"
         )
     else:
-        print(f"  tz_article_ai.pdf → FAIL {st} {resp}")
+        print(f"  tz_article_ai.pdf → ошибка {st} {resp}")
 else:
-    print("  SKIP — contest c2 or customer_token missing")
+    print("  пропуск — нет c2 или токена")
 
-# ── TZ file upload (PDF) — contest c4 "REST API" ──────────────────────────────
+# ── Загрузка ТЗ в виде PDF для конкурса c4 ──────────────────────────────────
 
-print("\n=== Uploading TZ as PDF (contest c4 — REST API) ===")
+print("\n=== Загрузка ТЗ в PDF (конкурс c4) ===")
 
 if c4 and customer_token:
     tz_c4_text = (
-        "Technical Specification: REST API for Online Store\n\n"
-        "Mandatory technical requirements:\n"
-        "1. Language: Python (FastAPI or Django REST Framework)\n"
-        "2. Database: PostgreSQL (SQLite is NOT acceptable)\n"
-        "3. Authentication: JWT tokens (access token + refresh token)\n"
-        "4. CRUD for products: create, read, update, delete\n"
-        "5. CRUD for orders: create, status updates, order history\n"
-        "6. CRUD for users: registration, profile\n"
-        "7. Swagger/OpenAPI documentation (auto-generated)\n"
-        "8. Automated tests (pytest): coverage >= 80%\n"
-        "9. Docker-compose.yml: run entire stack with single command\n"
-        "10. Configuration via .env file (no secrets in code)\n\n"
-        "Critical requirements (mandatory, rejection if missing):\n"
-        "- JWT authentication is mandatory\n"
-        "- PostgreSQL is mandatory (SQLite not accepted)\n"
-        "- Docker-compose is mandatory\n"
-        "- Automated tests are mandatory\n"
-        "- Swagger/OpenAPI documentation is mandatory\n\n"
-        "Submission format:\n"
-        "- Source code (archive or repository link)\n"
-        "- README with launch instructions\n"
-        "- Architecture description\n"
+        "Техническое задание: REST API интернет-магазина\n\n"
+        "Обязательные технические требования:\n"
+        "1. Язык: Python (FastAPI или Django REST Framework)\n"
+        "2. База данных: PostgreSQL (SQLite недопустим)\n"
+        "3. Аутентификация: JWT-токены (access token + refresh token)\n"
+        "4. CRUD для товаров: создание, чтение, обновление, удаление\n"
+        "5. CRUD для заказов: создание, смена статуса, история заказов\n"
+        "6. CRUD для пользователей: регистрация, профиль\n"
+        "7. Документация Swagger/OpenAPI (автогенерация)\n"
+        "8. Автоматические тесты (pytest): покрытие >= 80%\n"
+        "9. Docker-compose: приложение + БД\n\n"
+        "Критические требования (невыполнение = отклонение):\n"
+        "- PostgreSQL обязателен — SQLite не принимается\n"
+        "- JWT аутентификация обязательна — Basic Auth не принимается\n"
+        "- Docker-compose обязателен\n"
+        "- Тесты pytest обязательны (покрытие >= 80%)\n"
+        "- Документация Swagger/OpenAPI обязательна\n\n"
+        "Необязательные улучшения (влияют на оценку):\n"
+        "- Redis для кеширования\n"
+        "- Celery для фоновых задач\n"
+        "- CI/CD пайплайн\n"
+        "- Развёртывание на облачном сервере\n"
     )
     pdf_bytes = make_pdf(tz_c4_text)
     st, resp = upload_file_multipart(
@@ -1021,16 +1021,16 @@ if c4 and customer_token:
     )
     if st == 200:
         print(
-            f"  tz_rest_api_shop.pdf → contest {c4['id']} OK ({len(pdf_bytes)} bytes)"
+            f"  tz_rest_api_shop.pdf → конкурс {c4['id']} ок ({len(pdf_bytes)} байт)"
         )
     else:
-        print(f"  tz_rest_api_shop.pdf → FAIL {st} {resp}")
+        print(f"  tz_rest_api_shop.pdf → ошибка {st} {resp}")
 else:
-    print("  SKIP — contest c4 or customer_token missing")
+    print("  пропуск — нет c4 или токена")
 
-# ── DOCX submission file upload — s3 "Статья ИИ" ──────────────────────────────
+# ── Загрузка DOCX-решения s3 ────────────────────────────────────────────────
 
-print("\n=== Uploading submission as DOCX (s3 — Статья ИИ executor1) ===")
+print("\n=== Загрузка решения DOCX (s3 — Статья ИИ executor1) ===")
 
 if s3 and executor_token:
     article_text = (
@@ -1103,62 +1103,62 @@ if s3 and executor_token:
     )
     if st == 200:
         print(
-            f"  article_ai_cardiology.docx → submission {s3['id']} OK "
-            f"({len(docx_bytes)} bytes)"
+            f"  article_ai_cardiology.docx → submission {s3['id']} ок "
+            f"({len(docx_bytes)} байт)"
         )
     else:
-        print(f"  article_ai_cardiology.docx → FAIL {st} {resp}")
+        print(f"  article_ai_cardiology.docx → ошибка {st} {resp}")
 else:
-    print("  SKIP — submission s3 or executor_token missing")
+    print("  пропуск — нет s3 или токена")
 
-# ── PDF submission file upload — s5 "API Shop PASS" ───────────────────────────
+# ── Загрузка PDF-решения s5 ─────────────────────────────────────────────────
 
-print("\n=== Uploading submission as PDF (s5 — FastAPI Shop PASS executor1) ===")
+print("\n=== Загрузка решения PDF (s5 — FastAPI Shop executor1) ===")
 
 if s5 and executor_token:
     s5_pdf_text = (
-        "FastAPI Shop - REST API for Online Store\n\n"
-        "Tech stack:\n"
+        "FastAPI Shop — REST API интернет-магазина\n\n"
+        "Стек технологий:\n"
         "- Python 3.11, FastAPI 0.104\n"
         "- PostgreSQL 15 + SQLAlchemy 2.0 (async)\n"
-        "- Authentication: JWT (python-jose), access token 30min + refresh 7 days\n"
-        "- Docker-compose: app service + PostgreSQL + Alembic migrations\n\n"
-        "Implemented API endpoints:\n\n"
-        "Authentication (JWT):\n"
-        "POST /auth/register - register new user\n"
-        "POST /auth/login - get JWT access+refresh tokens\n"
-        "POST /auth/refresh - renew access token\n\n"
-        "Products CRUD:\n"
-        "GET /products - list products with pagination and filters\n"
-        "POST /products - create product (admin only)\n"
-        "GET /products/{id} - get single product\n"
-        "PUT /products/{id} - update product (admin only)\n"
-        "DELETE /products/{id} - delete product (admin only)\n\n"
-        "Orders CRUD:\n"
-        "POST /orders - create order (authenticated users)\n"
-        "GET /orders - user order history\n"
-        "GET /orders/{id} - order details\n"
-        "PATCH /orders/{id}/status - change status (admin)\n\n"
-        "Users:\n"
-        "GET /users/me - current user profile\n"
-        "PUT /users/me - update profile\n\n"
-        "Documentation:\n"
-        "Swagger UI: http://localhost:8000/docs (auto-generated by FastAPI)\n"
+        "- Аутентификация: JWT (python-jose), access token 30 мин + refresh 7 дней\n"
+        "- Docker-compose: сервис приложения + PostgreSQL + миграции Alembic\n\n"
+        "Реализованные эндпоинты API:\n\n"
+        "Аутентификация (JWT):\n"
+        "POST /auth/register — регистрация нового пользователя\n"
+        "POST /auth/login — получение JWT access+refresh токенов\n"
+        "POST /auth/refresh — обновление access токена\n\n"
+        "Товары (CRUD):\n"
+        "GET /products — список товаров с пагинацией и фильтрами\n"
+        "POST /products — создание товара (только admin)\n"
+        "GET /products/{id} — получить товар\n"
+        "PUT /products/{id} — обновить товар (только admin)\n"
+        "DELETE /products/{id} — удалить товар (только admin)\n\n"
+        "Заказы (CRUD):\n"
+        "POST /orders — создать заказ (авторизованные пользователи)\n"
+        "GET /orders — история заказов пользователя\n"
+        "GET /orders/{id} — детали заказа\n"
+        "PATCH /orders/{id}/status — сменить статус (admin)\n\n"
+        "Пользователи:\n"
+        "GET /users/me — профиль текущего пользователя\n"
+        "PUT /users/me — обновить профиль\n\n"
+        "Документация:\n"
+        "Swagger UI: http://localhost:8000/docs (автогенерация FastAPI)\n"
         "OpenAPI JSON: http://localhost:8000/openapi.json\n\n"
-        "Tests (pytest):\n"
-        "pytest tests/ - 47 tests, coverage 87%\n"
-        "Uses FastAPI TestClient + separate PostgreSQL test database\n\n"
-        "Launch:\n"
+        "Тесты (pytest):\n"
+        "pytest tests/ — 47 тестов, покрытие 87%\n"
+        "Используется FastAPI TestClient + отдельная БД PostgreSQL для тестов\n\n"
+        "Запуск:\n"
         "docker-compose up --build\n"
-        "App: http://localhost:8000\n\n"
-        "Configuration (.env):\n"
+        "Приложение: http://localhost:8000\n\n"
+        "Конфигурация (.env):\n"
         "DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/shopdb\n"
-        "JWT_SECRET=your-secret-key\n"
+        "JWT_SECRET=ваш-секретный-ключ\n"
         "JWT_ALGORITHM=HS256\n\n"
-        "Architecture:\n"
-        "Layered: routes -> services -> repositories\n"
-        "Dependency injection via FastAPI Depends\n"
-        "Async/await throughout, no blocking calls\n"
+        "Архитектура:\n"
+        "Слоистая: routes -> services -> repositories\n"
+        "Dependency injection через FastAPI Depends\n"
+        "Async/await везде, без блокирующих вызовов\n"
     )
     pdf_bytes = make_pdf(s5_pdf_text)
     st, resp = upload_file_multipart(
@@ -1171,43 +1171,43 @@ if s5 and executor_token:
     )
     if st == 200:
         print(
-            f"  fastapi_shop_documentation.pdf → submission {s5['id']} OK "
-            f"({len(pdf_bytes)} bytes)"
+            f"  fastapi_shop_documentation.pdf → submission {s5['id']} ок "
+            f"({len(pdf_bytes)} байт)"
         )
     else:
-        print(f"  fastapi_shop_documentation.pdf → FAIL {st} {resp}")
+        print(f"  fastapi_shop_documentation.pdf → ошибка {st} {resp}")
 else:
-    print("  SKIP — submission s5 or executor_token missing")
+    print("  пропуск — нет s5 или токена")
 
-# ── PDF submission file upload — s6 "API Shop FAIL" ──────────────────────────
+# ── Загрузка PDF-решения s6 ─────────────────────────────────────────────────
 
-print("\n=== Uploading submission as PDF (s6 — Flask Shop FAIL executor3) ===")
+print("\n=== Загрузка решения PDF (s6 — Flask Shop executor3) ===")
 
 if s6 and executor3_token:
     s6_pdf_text = (
-        "Flask Shop - Simple REST API\n\n"
-        "Tech stack:\n"
+        "Flask Shop — простой REST API\n\n"
+        "Стек технологий:\n"
         "- Python 3.10, Flask 2.3\n"
-        "- SQLite (built-in database, file shop.db)\n"
-        "- Authentication: Basic Auth (login/password in header)\n"
-        "- Deployment: python app.py (local run only)\n\n"
-        "Implemented API endpoints:\n\n"
-        "GET /products - list all products\n"
-        "GET /products/<id> - get product by ID\n"
-        "POST /orders - create order (requires Basic Auth)\n"
-        "GET /orders/<id> - get order\n\n"
-        "Notes:\n"
-        "- Authentication via Flask-HTTPAuth (Basic Auth, NOT JWT)\n"
-        "- Database: SQLite (PostgreSQL was not used - no time to set it up)\n"
-        "- Swagger/OpenAPI documentation: NOT implemented\n"
-        "- Tests: NOT written (planned for next iteration)\n"
-        "- Docker: NOT configured, runs locally via python app.py only\n\n"
-        "Launch:\n"
+        "- SQLite (встроенная БД, файл shop.db)\n"
+        "- Аутентификация: Basic Auth (логин/пароль в заголовке)\n"
+        "- Запуск: python app.py (только локально)\n\n"
+        "Реализованные эндпоинты API:\n\n"
+        "GET /products — список всех товаров\n"
+        "GET /products/<id> — получить товар по ID\n"
+        "POST /orders — создать заказ (требует Basic Auth)\n"
+        "GET /orders/<id> — получить заказ\n\n"
+        "Примечания:\n"
+        "- Аутентификация через Flask-HTTPAuth (Basic Auth, не JWT)\n"
+        "- База данных: SQLite (PostgreSQL не использован — не хватило времени)\n"
+        "- Документация Swagger/OpenAPI: не реализована\n"
+        "- Тесты: не написаны (запланировано на следующую итерацию)\n"
+        "- Docker: не настроен, запускается локально через python app.py\n\n"
+        "Запуск:\n"
         "pip install flask flask-httpauth\n"
         "python app.py\n"
-        "Server: http://localhost:5000\n\n"
-        "Configuration:\n"
-        "SECRET_KEY is hardcoded in app.py for simplicity\n"
+        "Сервер: http://localhost:5000\n\n"
+        "Конфигурация:\n"
+        "SECRET_KEY захардкожен в app.py для простоты\n"
     )
     pdf_bytes = make_pdf(s6_pdf_text)
     st, resp = upload_file_multipart(
@@ -1220,17 +1220,17 @@ if s6 and executor3_token:
     )
     if st == 200:
         print(
-            f"  flask_shop_readme.pdf → submission {s6['id']} OK "
-            f"({len(pdf_bytes)} bytes)"
+            f"  flask_shop_readme.pdf → submission {s6['id']} ок "
+            f"({len(pdf_bytes)} байт)"
         )
     else:
-        print(f"  flask_shop_readme.pdf → FAIL {st} {resp}")
+        print(f"  flask_shop_readme.pdf → ошибка {st} {resp}")
 else:
-    print("  SKIP — submission s6 or executor3_token missing")
+    print("  пропуск — нет s6 или токена")
 
-# ── Customer reviews ───────────────────────────────────────────────────────────
+# ── Рецензии заказчика ──────────────────────────────────────────────────────
 
-print("\n=== Adding customer reviews ===")
+print("\n=== Добавление рецензий ===")
 
 if s1 and customer_token:
     add_review(
@@ -1290,9 +1290,9 @@ if s6 and customer_token:
         "API Shop FAIL",
     )
 
-# ── Status changes (for status history testing) ───────────────────────────────
+# ── Изменение статусов решений ──────────────────────────────────────────────
 
-print("\n=== Updating submission statuses ===")
+print("\n=== Обновление статусов решений ===")
 
 if s3 and customer_token:
     # Статья: принять (статус 2 = на проверке, затем 3 = принята)
@@ -1310,9 +1310,9 @@ if s6 and customer_token:
     # Flask Shop: отклонить
     change_status(s6["id"], 5, customer_token, "отклонена")
 
-# ── Summary ────────────────────────────────────────────────────────────────────
+# ── Итог ────────────────────────────────────────────────────────────────────
 
-print("\n=== Done! Credentials ===")
+print("\n=== Готово! Учётные данные ===")
 print("  admin     / admin123   (кошелёк: 10 000 ₽)")
 print("  customer1 / test1234   (кошелёк: ~80 000 ₽ минус оплата конкурсов)")
 print("  executor1 / test1234   (кошелёк: 5 000 ₽)")
@@ -1324,9 +1324,9 @@ print("  Тестовые пары 'хорошее / плохое' решени�
 print()
 if c4 and s5 and s6:
     print(f"  Конкурс: 'REST API магазин' id={c4['id']}")
-    print(f"  ✅ PASS: submission id={s5['id']} (FastAPI+PostgreSQL+JWT+Docker+тесты+Swagger)")
+    print(f"  ✅ ОК: решение id={s5['id']} (FastAPI+PostgreSQL+JWT+Docker+тесты+Swagger)")
     print(f"       → Ожидаемый AI score: высокий (80-100)")
-    print(f"  ❌ FAIL: submission id={s6['id']} (Flask+SQLite+BasicAuth, без Docker/тестов/Swagger)")
+    print(f"  ❌ Не прошло: решение id={s6['id']} (Flask+SQLite+BasicAuth, без Docker/тестов/Swagger)")
     print(f"       → Ожидаемый AI score: низкий (0-30)")
 print()
 print("  Другие тестовые файлы:")

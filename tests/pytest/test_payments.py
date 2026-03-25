@@ -86,12 +86,12 @@ async def test_wallet_topup_stub(executor_token):
         assert "payment_id" in data
 
         if data["redirect_url"] is None:
-            # Stub mode: wallet credited immediately
+            # Stub-режим: средства зачисляются сразу
             assert data["status"] == "held"
             after = (await c.get(f"{PAYMENT_URL}/wallet/balance", headers=auth_headers(executor_token))).json()["balance"]
             assert after == pytest.approx(before + 1000.0, abs=0.01)
         else:
-            # YooKassa configured: payment pending, redirect returned
+            # YooKassa настроена: платёж в ожидании, возвращается redirect
             assert data["status"] in ("pending", "held")
             assert data["redirect_url"].startswith("http")
 
