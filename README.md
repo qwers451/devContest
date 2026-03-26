@@ -8,7 +8,7 @@
 |------|-----------|
 | Frontend | React 19 + TypeScript + Vite + MobX |
 | Backend | 4 микросервиса на FastAPI + PostgreSQL |
-| LLM | Ollama (llava:7b / llama3.2-vision) |
+| LLM | Ollama  |
 | Контейнеры | Podman / Docker + Compose |
 | Тесты | Vitest (unit), Pytest (интеграция), Cypress (e2e) |
 
