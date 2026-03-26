@@ -1,303 +1,132 @@
 # devContest
 
-## О проекте
+Платформа конкурсов для фриланс-заказов. Заказчик публикует конкурс с ТЗ и призовым фондом, исполнители отправляют решения, победителя выбирает заказчик. Решения автоматически оцениваются локальной LLM.
 
-`devContest` — платформа конкурсов для фриланс-заказов.  
-Заказчик публикует конкурс с ТЗ и призовым фондом, исполнители отправляют решения, после чего заказчик выбирает победителя.
+## Стек
 
-### Основные возможности
+| Слой | Технологии |
+|------|-----------|
+| Frontend | React 19 + TypeScript + Vite + MobX |
+| Backend | 4 микросервиса на FastAPI + PostgreSQL |
+| LLM | Ollama (llava:7b / llama3.2-vision) |
+| Контейнеры | Podman / Docker + Compose |
+| Тесты | Vitest (unit), Pytest (интеграция), Cypress (e2e) |
 
-- создание и просмотр конкурсов;
-- фильтрация конкурсов и решений;
-- отправка решений (submissions) на конкурс;
-- выбор победителя конкурса;
-- базовые роли пользователей: `admin`, `customer`, `executor`.
+## Сервисы
 
-### Архитектура
+| Сервис | Порт | Назначение |
+|--------|------|-----------|
+| `user-service` | 8001 | Аутентификация, пользователи |
+| `contest-service` | 8002 | Конкурсы, решения, отзывы |
+| `evaluation-service` | 8003 | Автооценка через LLM |
+| `payment-service` | 8004 | Эскроу, кошелёк, YooKassa |
+| `gateway` (nginx) | 8080 | Проксирует все API |
+| `frontend` | 3000 | Веб-приложение |
 
-Проект состоит из frontend и набора backend-сервисов:
-- `frontend` — клиентское приложение (React);
-- `user-service` (`:8001`) — аутентификация и пользователи;
-- `contest-service` (`:8002`) — конкурсы, типы конкурсов, решения;
-- `payment-service` — escrow/платежные операции (в текущей версии со stub-логикой);
-- `evaluation-service` — сервис автоматической оценки решений.
-
-### Адресация сервисов
-
-В проекте используются два режима адресации:
-- из браузера и с хоста: `http://localhost:8001`, `http://localhost:8002`;
-- между контейнерами в compose-сети: `http://user-service:8000`, `http://contest-service:8000`.
-
-Все публичные URL вынесены в переменные окружения:
-- frontend: `VITE_USER_API_URL`, `VITE_CONTEST_API_URL`, `VITE_IMPORT_EXPORT_API_URL`;
-- pytest: `PYTEST_USER_URL`, `PYTEST_CONTEST_URL`.
-
-## Сценарии использования
-
-### Аутентификация (все роли)
-
-| # | Сценарий | Как |
-|---|----------|-----|
-| 1 | Регистрация | Форма: логин, email, пароль, роль (executor / customer) → `POST /auth/register` |
-| 2 | Вход | Форма: логин, пароль → `POST /auth/login` → JWT в localStorage |
-| 3 | Выход | Кнопка «Выйти» в NavBar → очищает токен + редирект на /contests |
-| 4 | Просмотр профиля | `/profile` → `GET /users/profile` |
-| 5 | Редактирование профиля | Форма: логин, email, пароль → `PUT /users/profile` |
-
----
-
-### Конкурсы — просмотр и фильтры (все авторизованные)
-
-| # | Сценарий | Фильтры / детали |
-|---|----------|-----------------|
-| 6 | Список всех конкурсов | `/contests` — пагинированный список |
-| 7 | Фильтр по статусу | Чекбоксы: active / finished / draft / cancelled |
-| 8 | Фильтр по типу | Чекбоксы из contest-types |
-| 9 | Фильтр по призовому фонду | Поля min/max ₽ |
-| 10 | Фильтр по дате окончания | «Закончится до» / «Закончится после» |
-| 11 | Поиск по названию | Текстовое поле, debounce |
-| 12 | Сброс фильтров | Кнопка «Сбросить фильтры» |
-| 13 | Просмотр страницы конкурса | `/contest/:number` → `GET /contests/number/{number}` + имя заказчика |
-| 14 | Навигация по страницам | Пагинация «‹ 1 2 3 ›» |
-
----
-
-### Конкурсы — управление (customer / admin)
-
-| # | Сценарий | Детали |
-|---|----------|--------|
-| 15 | Создание конкурса | Форма: название, аннотация, описание, ТЗ, призовой фонд, дата окончания, тип, этапы → `POST /contests` |
-| 16 | Редактирование конкурса | Те же поля → `PUT /contests/{id}` |
-| 17 | Просмотр своих конкурсов | `/my-contests` — список только конкурсов этого заказчика |
-| 18 | Удаление конкурса | Кнопка (только admin) → `DELETE /contests/{id}` |
-| 19 | Редактирование этапов | Добавить / удалить / переименовать этап, изменить дедлайн → `PUT /contests/{id}/stages` |
-| 20 | Установка текущего этапа вручную | Кнопка «Сделать текущим» рядом с этапом → `PATCH /contests/{id}/current-stage?stage_id=` |
-| 21 | Сброс текущего этапа (авто-режим) | Кнопка «Авто» → `PATCH /contests/{id}/current-stage?stage_id=null` |
-
----
-
-### Решения — просмотр и фильтры
-
-| # | Роль | Сценарий |
-|---|------|----------|
-| 22 | executor | Список своих решений — `/my-solutions` |
-| 23 | customer / admin | Список решений по конкурсу — `/solutions?contestId=` |
-| 24 | все | Фильтр по статусу (1–5: Новое / Просмотрено / Победитель / Правки / Исправлено) |
-| 25 | все | Фильтр по дате добавления (до / после) |
-| 26 | все | Поиск по названию |
-| 27 | все | Сброс фильтров |
-| 28 | все | Просмотр страницы решения — `/solution/:number` |
-
----
-
-### Решения — управление
-
-| # | Роль | Сценарий | API |
-|---|------|----------|-----|
-| 29 | executor | Отправить решение | `POST /submissions` |
-| 30 | executor | Редактировать решение | `PUT /submissions/{id}` |
-| 31 | executor | Удалить своё решение | `DELETE /submissions/{id}` |
-| 32 | customer / admin | Изменить статус решения | `PATCH /submissions/{id}/status?status=1..5` |
-| 33 | customer | Выбрать победителя | `POST /contests/{id}/winner?submission_id=&executor_id=` |
-
----
-
-### Отзывы
-
-| # | Роль | Сценарий | API |
-|---|------|----------|-----|
-| 34 | customer / admin | Написать отзыв на решение | `POST /submissions/{id}/reviews` |
-| 35 | customer / admin | Редактировать отзыв | `PUT /submissions/{id}/reviews/{num}` |
-| 36 | customer / admin | Удалить отзыв | `DELETE /submissions/{id}/reviews/{num}` |
-| 37 | все | Просмотреть все отзывы решения | `GET /submissions/{id}/reviews` |
-
----
-
-### Администрирование (admin)
-
-| # | Сценарий | API |
-|---|----------|-----|
-| 38 | Просмотр всех пользователей | `GET /users` |
-| 39 | Добавить тип конкурса | `POST /contest-types` |
-| 40 | Удалить тип конкурса | `DELETE /contest-types/{id}` |
-| 41 | Статистика | Admin panel → StatisticsPanel |
-| 42 | Импорт / экспорт данных | Admin panel → ImportExportPanel |
-
----
-
-## Тестирование и инструменты
-
-Проект покрыт тестами на трех уровнях: фронтенд, бэкенд (интеграционные) и API (Postman).
-
-### 1. Фронтенд-тесты (Vitest)
-Тестируют логику хранилищ (stores) и взаимодействия с API на стороне клиента.
-- **Путь:** `frontend/src/__tests__/`
-- **Запуск:**
-  ```bash
-  cd frontend
-  npm install
-  npm run test
-  ```
-
-### 2. Бэкенд-тесты (Pytest)
-Интеграционные тесты, проверяющие работу всех микросервисов вместе.
-- **Путь:** `tests/pytest/`
-- **Рекомендуемый запуск:** внутри compose-сети, чтобы тесты ходили к сервисам по DNS-именам контейнеров.
-  ```bash
-  podman-compose --profile tests up --build tests
-  ```
-- **Альтернативный запуск с хоста:** после старта сервисов.
-  ```bash
-  podman-compose up -d --build
-  pip install -r tests/pytest/requirements.txt
-  PYTEST_USER_URL=http://localhost:8001 \
-  PYTEST_CONTEST_URL=http://localhost:8002 \
-  python3 -m pytest
-  ```
-
-### 3. API-тесты (Postman / Newman)
-Коллекция запросов для проверки всех эндпоинтов API.
-- **Путь:** `tests/postman/devContest_collection.json`
-- **Запуск через CLI (Newman):**
-  ```bash
-  newman run tests/postman/devContest_collection.json
-  ```
-- **Запуск через GUI:** Импортируйте JSON-файл в приложение Postman и запустите Collection Runner.
-
-### 4. GitHub Actions (CI)
-Все вышеуказанные тесты автоматически запускаются при каждом `push` или `pull request` в ветки `main`/`master`. Конфигурация находится в `.github/workflows/tests.yml`.
-
-### 5. Просмотр баз данных (Adminer)
-Для удобного просмотра таблиц всех микросервисов в браузере:
-1. Запустите Adminer: `podman-compose up -d adminer`
-2. Откройте: `http://localhost:8080`
-3. Параметры входа (PostgreSQL):
-   - **Server:** `user-db`, `contest-db`, `payment-db` или `evaluation-db`
-   - **Username/Password/Database:** см. файл `.env`
-
----
-
-## AI-оценка решений (Ollama)
-
-`evaluation-service` использует локально запущенную LLM через [Ollama](https://ollama.com) для автоматической проверки решений по ТЗ.
-
-### Установка Ollama
+## Быстрый старт
 
 ```bash
-# Linux
-curl -fsSL https://ollama.com/install.sh | sh
-
-# macOS
-brew install ollama
+cp .env.example .env
+# отредактируйте .env — задайте пароли и JWT_SECRET
+podman-compose up --build
 ```
 
-### Скачать модель
+Приложение доступно на `http://localhost:3000`.
 
-Для работы нужна мультимодальная модель (текст + изображения):
+Документация API (Swagger):
+- `http://localhost:8001/docs` — пользователи
+- `http://localhost:8002/docs` — конкурсы
+- `http://localhost:8003/docs` — оценка
+- `http://localhost:8004/docs` — платежи
 
-```bash
-# Рекомендуется для тестирования (4.7 ГБ, быстрая):
-ollama pull llava:7b
+## Переменные окружения
 
-# Для продакшена на мощном GPU (7 ГБ, точнее):
-ollama pull llama3.2-vision
-```
-
-### Запустить Ollama
-
-```bash
-ollama serve
-# Слушает на http://localhost:11434
-```
-
-> На Linux можно запустить как systemd-сервис: `sudo systemctl enable --now ollama`
-
-### Конфигурация в проекте
-
-В файле `.env` (скопируйте из `.env.example`):
+Скопируйте `.env.example` в `.env` и заполните:
 
 ```env
-EVALUATION_STUB=false          # true = stub-режим без LLM, false = реальная оценка
-OLLAMA_URL=http://host.docker.internal:11434  # адрес Ollama из контейнера
-OLLAMA_MODEL=llava:7b          # модель, которую скачали
+# Пароли БД
+USER_DB_PASSWORD=...
+CONTEST_DB_PASSWORD=...
+EVAL_DB_PASSWORD=...
+PAYMENT_DB_PASSWORD=...
+
+# Секреты
+JWT_SECRET=...            # длинная случайная строка
+INTERNAL_SECRET=...       # для межсервисных запросов
+
+# LLM (если нужна реальная оценка)
+EVALUATION_STUB=false     # true = заглушка без LLM
+OLLAMA_URL=http://host.docker.internal:11434
+OLLAMA_MODEL=llava:7b
+
+# YooKassa (опционально)
+YOOKASSA_SHOP_ID=
+YOOKASSA_SECRET_KEY=
 ```
 
-> `host.docker.internal` работает на macOS и Windows автоматически.
-> На Linux он прописывается через `extra_hosts` в `docker-compose.yml` — уже настроено.
+## LLM-оценка (Ollama)
 
-### Как работает оценка
-
-1. Заказчик создаёт конкурс с ТЗ — текстом или загружает **PDF / DOCX** файл.
-2. Исполнитель отправляет решение: текст описания и/или файлы (**PNG**, **PDF**, **DOCX**).
-3. На странице решения нажимается кнопка **«Запустить оценку»**.
-4. `contest-service` извлекает текст из DOCX/PDF и отправляет в `evaluation-service`.
-5. `evaluation-service` отправляет один промпт в Ollama: ТЗ + работа → оценка каждого требования (0 / 50 / 100 баллов) + комментарий на русском.
-6. Итоговый балл = среднее арифметическое оценок по всем требованиям.
-
-### Типы файлов
-
-| Тип | Где используется | Как обрабатывается |
-|-----|------------------|--------------------|
-| PNG | Решение исполнителя | Передаётся в LLM как изображение + метаданные (размеры в пикселях, размер файла) |
-| PDF | ТЗ конкурса или решение | Текст извлекается через PyMuPDF |
-| DOCX | ТЗ конкурса или решение | Текст извлекается через python-docx |
-
-### Выбор модели
-
-| Модель | Размер | GPU | Скорость | Качество |
-|--------|--------|-----|----------|----------|
-| `llava:7b` | 4.7 ГБ | 8+ ГБ VRAM | ~30–60 с | Достаточно для тестирования |
-| `llama3.2-vision` | 7 ГБ | 10+ ГБ VRAM | ~60–120 с | Лучше для продакшена |
-
-> RTX 3060 12 ГБ: `llava:7b` помещается целиком в VRAM.
-> При нехватке VRAM часть слоёв уходит на CPU — оценка занимает дольше.
-
----
-
-## Seed данных (`seed.py`)
-
-Скрипт `seed.py` заполняет систему тестовыми данными через API:
-- создаёт пользователей;
-- создаёт типы конкурсов;
-- создаёт несколько конкурсов;
-- создаёт решения (submissions) от исполнителей.
-
-### Что нужно перед запуском
-
-- должны быть запущены сервисы `user-service` и `contest-service`;
-- API должны быть доступны по адресам:
-  - `http://localhost:8001` (users/auth),
-  - `http://localhost:8002` (contests/submissions).
-
-### Переменные окружения
-
-- Скопируйте корневой [.env.example](/home/mikhail/Документы/devContest/.env.example) в `.env`.
-- Для локального frontend без контейнера можно использовать [frontend/.env.example](/home/mikhail/Документы/devContest/frontend/.env.example).
-
-### Как запустить
-
-Из корня проекта:
 ```bash
+# Установить Ollama
+curl -fsSL https://ollama.com/install.sh | sh   # Linux
+brew install ollama                              # macOS
+
+# Скачать модель
+ollama pull llava:7b        # 4.7 ГБ, для разработки
+ollama pull llama3.2-vision # 7 ГБ, точнее
+
+# Запустить
+ollama serve
+```
+
+Для тестирования без LLM достаточно `EVALUATION_STUB=true` в `.env`.
+
+## Тестовые данные
+
+```bash
+# Сервисы должны быть запущены
 python3 seed.py
 ```
 
-При необходимости адреса API можно переопределить через `SEED_USER_URL` и `SEED_CONTEST_URL`.
+Создаёт пользователей, типы конкурсов, конкурсы и решения.
 
-### Какие пользователи создаются для теста
+| Роль | Логин | Пароль |
+|------|-------|--------|
+| admin | `admin` | `admin123` |
+| customer | `customer1` | `test1234` |
+| executor | `executor1` | `test1234` |
+| executor | `executor2` | `test1234` |
 
-Если пользователь уже существует, скрипт пробует логиниться с теми же данными.
+## Тесты
 
-| Роль | Login | Password | Email |
-|---|---|---|---|
-| admin | `admin` | `admin123` | `admin@devcontest.ru` |
-| customer | `customer1` | `test1234` | `customer@devcontest.ru` |
-| executor | `executor1` | `test1234` | `executor@devcontest.ru` |
-| executor | `executor2` | `test1234` | `executor2@devcontest.ru` |
+**Unit-тесты (Vitest)** — логика store и API-клиентов:
+```bash
+cd frontend && npm run test
+```
 
-### Какие данные создаются
+**Интеграционные тесты (Pytest)** — все микросервисы вместе:
+```bash
+# Внутри compose-сети (рекомендуется)
+podman-compose --profile tests up --build tests
 
-- Типы конкурсов: `Статья`, `Логотип`, `Баннер`, `Иконка`.
-- Конкурсы: 3 штуки (логотип, статья, баннеры).
-- Решения: 4 штуки (по созданным конкурсам).
+# С хоста
+podman-compose up -d --build
+pip install -r tests/pytest/requirements.txt
+python3 -m pytest
+```
 
-Важно: пользователи и типы конкурсов обрабатываются почти идемпотентно (при повторном запуске используются существующие), а конкурсы и решения создаются заново при каждом успешном запуске.
+**E2E тесты (Cypress)**:
+```bash
+cd frontend
+npm run cypress:run          # headless
+npm run cypress:open         # с GUI
+```
+
+## Просмотр БД (Adminer)
+
+```bash
+podman-compose up -d adminer
+# http://localhost:8080
+# Server: user-db / contest-db / payment-db / evaluation-db
+# Реквизиты — в .env
+```
