@@ -55,9 +55,10 @@ JWT_SECRET=...            # длинная случайная строка
 INTERNAL_SECRET=...       # для межсервисных запросов
 
 # LLM (если нужна реальная оценка)
-EVALUATION_STUB=false     # true = заглушка без LLM
+EVALUATION_STUB=false          # true = заглушка без LLM
 OLLAMA_URL=http://host.docker.internal:11434
-OLLAMA_MODEL=llava:7b
+OLLAMA_MODEL=mistral           # для текста
+OLLAMA_VISION_MODEL=pixtral:12b  # для изображений
 
 # YooKassa (опционально)
 YOOKASSA_SHOP_ID=
@@ -71,9 +72,9 @@ YOOKASSA_SECRET_KEY=
 curl -fsSL https://ollama.com/install.sh | sh   # Linux
 brew install ollama                              # macOS
 
-# Скачать модель
-ollama pull llava:7b        # 4.7 ГБ, для разработки
-ollama pull llama3.2-vision # 7 ГБ, точнее
+# Скачать модели
+ollama pull mistral      # текстовая (~4 ГБ) — извлечение требований и оценка текста
+ollama pull pixtral:12b  # мультимодальная (~8 ГБ) — оценка решений с изображениями
 
 # Запустить
 ollama serve
