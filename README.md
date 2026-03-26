@@ -122,12 +122,3 @@ cd frontend
 npm run cypress:run          # headless
 npm run cypress:open         # с GUI
 ```
-
-## Просмотр БД (Adminer)
-
-```bash
-podman-compose up -d adminer
-# http://localhost:8080
-# Server: user-db / contest-db / payment-db / evaluation-db
-# Реквизиты — в .env
-```
