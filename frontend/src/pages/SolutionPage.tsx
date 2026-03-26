@@ -53,7 +53,7 @@ const EvaluationSection = ({
                     ? "Загружается…"
                     : evaluationUnavailable
                       ? "Оценка не найдена. Нажмите «Оценить» для запуска."
-                      : "Оценка выполняется, проверяем каждые 6 сек…"}
+                      : "Оценка выполняется"}
                 </p>
               </div>
             )}
@@ -183,32 +183,49 @@ const EvaluationSection = ({
                   : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300";
               return (
                 <div key={index} className="flex items-start gap-2">
-                  <span className={`flex-shrink-0 inline-flex items-center justify-center w-9 h-5 rounded text-xs font-bold tabular-nums ${scoreCls}`}>
+                  <span
+                    className={`flex-shrink-0 inline-flex items-center justify-center w-9 h-5 rounded text-xs font-bold tabular-nums ${scoreCls}`}
+                  >
                     {req.score}
                   </span>
                   {req.is_critical && (
-                    <span className="flex-shrink-0 inline-flex items-center justify-center w-4 h-5 text-xs font-bold text-red-500 dark:text-red-400" title="Критическое требование">!</span>
+                    <span
+                      className="flex-shrink-0 inline-flex items-center justify-center w-4 h-5 text-xs font-bold text-red-500 dark:text-red-400"
+                      title="Критическое требование"
+                    >
+                      !
+                    </span>
                   )}
                   <span className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                     {req.text}
                     {req.comment && (
-                      <span className="text-gray-400 dark:text-gray-500"> — {req.comment}</span>
+                      <span className="text-gray-400 dark:text-gray-500">
+                        {" "}
+                        — {req.comment}
+                      </span>
                     )}
                   </span>
                 </div>
               );
             })}
           </div>
-        ) : (evaluation.passed_requirements.length > 0 ||
-          evaluation.failed_requirements.length > 0) ? (
+        ) : evaluation.passed_requirements.length > 0 ||
+          evaluation.failed_requirements.length > 0 ? (
           <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 grid gap-2 sm:grid-cols-2">
             {evaluation.passed_requirements.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">Выполнено</p>
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">
+                  Выполнено
+                </p>
                 <ul className="space-y-1">
                   {evaluation.passed_requirements.map((requirement, index) => (
-                    <li key={index} className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed">
-                      <span className="text-emerald-500 flex-shrink-0 font-bold mt-px">✓</span>
+                    <li
+                      key={index}
+                      className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
+                    >
+                      <span className="text-emerald-500 flex-shrink-0 font-bold mt-px">
+                        ✓
+                      </span>
                       {requirement}
                     </li>
                   ))}
@@ -217,11 +234,18 @@ const EvaluationSection = ({
             )}
             {evaluation.failed_requirements.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">Не выполнено</p>
+                <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">
+                  Не выполнено
+                </p>
                 <ul className="space-y-1">
                   {evaluation.failed_requirements.map((requirement, index) => (
-                    <li key={index} className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed">
-                      <span className="text-red-400 flex-shrink-0 font-bold mt-px">✗</span>
+                    <li
+                      key={index}
+                      className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
+                    >
+                      <span className="text-red-400 flex-shrink-0 font-bold mt-px">
+                        ✗
+                      </span>
                       {requirement}
                     </li>
                   ))}
@@ -605,14 +629,9 @@ const SolutionPage = () => {
     currentContest?.tz_text && currentSolution?.description
   );
   useEffect(() => {
-    if (
-      !shouldHaveEvaluation ||
-      solution.evaluation ||
-      solution.evaluationUnavailable
-    )
-      return;
+    if (!shouldHaveEvaluation || solution.evaluation) return;
     let attempts = 0;
-    const MAX_ATTEMPTS = 20;
+    const MAX_ATTEMPTS = 40;
     const intervalId = setInterval(async () => {
       if (solution.evaluation) {
         clearInterval(intervalId);
