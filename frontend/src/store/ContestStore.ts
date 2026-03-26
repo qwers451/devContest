@@ -510,7 +510,7 @@ export default class ContestStore {
       const data = await fetchData<Statistics>("/statistics", { x, y });
       this.setStatistics(data);
     } catch (error) {
-      console.error("fetchStatistics error:", error);
+      console.error("Ошибка получения статистики:", error);
     }
   }
 }

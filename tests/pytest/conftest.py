@@ -86,7 +86,7 @@ async def admin_token():
 
 @pytest_asyncio.fixture(scope="session")
 async def customer_token():
-    """Registers a fresh customer for the test session."""
+    """Регистрирует нового заказчика для тестовой сессии."""
     login = f"cust_{TS}"
     async with httpx.AsyncClient() as c:
         r = await c.post(
@@ -104,7 +104,7 @@ async def customer_token():
 
 @pytest_asyncio.fixture(scope="session")
 async def executor_token():
-    """Registers a fresh executor for the test session."""
+    """Регистрирует нового исполнителя для тестовой сессии."""
     login = f"exec_{TS}"
     async with httpx.AsyncClient() as c:
         r = await c.post(
@@ -125,7 +125,7 @@ async def executor_token():
 
 @pytest_asyncio.fixture(scope="session")
 async def contest_type_id(admin_token):
-    """Creates a contest type and returns its id."""
+    """Создаёт тип конкурса и возвращает его id."""
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{CONTEST_URL}/contest-types",
@@ -140,7 +140,7 @@ async def contest_type_id(admin_token):
 
 @pytest_asyncio.fixture(scope="session")
 async def contest(admin_token, customer_token, contest_type_id):
-    """Creates a contest and returns its full response dict."""
+    """Создаёт конкурс и возвращает полный словарь ответа."""
     import datetime
 
     import pytz
@@ -190,7 +190,7 @@ async def contest(admin_token, customer_token, contest_type_id):
 
 @pytest_asyncio.fixture(scope="session")
 async def submission(admin_token, executor_token, contest):
-    """Creates a submission and returns its full response dict."""
+    """Создаёт решение и возвращает полный словарь ответа."""
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{CONTEST_URL}/submissions",

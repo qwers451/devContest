@@ -215,7 +215,7 @@ def upload_file_multipart(
     content_type: str,
     field_name: str = "file",
 ):
-    """Upload any file via multipart/form-data."""
+    """Загружает произвольный файл через multipart/form-data."""
     boundary = "SeedFileBoundary99"
     body = (
         f"--{boundary}\r\n"
@@ -239,7 +239,7 @@ def upload_file_multipart(
 
 
 def upload_png(submission_id: int, token: str, png_bytes: bytes, filename: str):
-    """Upload PNG file to submission via multipart/form-data."""
+    """Загружает PNG-файл к решению через multipart/form-data."""
     boundary = "SeedPNGBoundary42"
     body = (
         f"--{boundary}\r\n"
@@ -268,7 +268,7 @@ def upload_png(submission_id: int, token: str, png_bytes: bytes, filename: str):
 
 
 def add_review(submission_id: int, token: str, score: float, commentary: str, label: str):
-    """Add a customer review to a submission."""
+    """Добавляет рецензию заказчика к решению."""
     status, resp = post(
         f"{CONTEST_API}/submissions/{submission_id}/reviews",
         {"score": score, "commentary": commentary},
@@ -286,7 +286,7 @@ def add_review(submission_id: int, token: str, score: float, commentary: str, la
 
 
 def change_status(submission_id: int, new_status: int, token: str, label: str):
-    """Change submission status."""
+    """Изменяет статус решения."""
     status, resp = patch(
         f"{CONTEST_API}/submissions/{submission_id}/status?status={new_status}",
         token=token,
@@ -860,10 +860,10 @@ if c4 and executor_token:
         )
         s5 = s5 if status == 201 else None
         print(
-            f"  API Shop PASS (executor1) → {'ок id=' + str(s5['id']) if s5 else f'ошибка {status}'}"
+            f"  Магазин API PASS (executor1) →{'ок id=' + str(s5['id']) if s5 else f'ошибка {status}'}"
         )
     else:
-        print(f"  API Shop PASS (executor1) → пропуск (конкурс не активен)")
+        print(f"  Магазин API PASS (executor1) →пропуск (конкурс не активен)")
 
 # Решение s6: нарушает критические требования c4 (ожидается низкий балл)
 if c4 and executor3_token:
@@ -893,10 +893,10 @@ if c4 and executor3_token:
         )
         s6 = s6 if status == 201 else None
         print(
-            f"  API Shop FAIL (executor3) → {'ок id=' + str(s6['id']) if s6 else f'ошибка {status}'}"
+            f"  Магазин API FAIL (executor3) →{'ок id=' + str(s6['id']) if s6 else f'ошибка {status}'}"
         )
     else:
-        print(f"  API Shop FAIL (executor3) → пропуск (конкурс не активен)")
+        print(f"  Магазин API FAIL (executor3) →пропуск (конкурс не активен)")
 
 # ── Загрузка тестовых PNG-файлов ────────────────────────────────────────────
 
@@ -1274,7 +1274,7 @@ if s5 and customer_token:
         "Docker-compose работает с первой команды. Покрытие тестами 87% — выше требуемых 80%. "
         "Swagger автоматически сгенерирован. Код чистый, архитектура правильная. "
         "Принято!",
-        "API Shop PASS",
+        "Магазин API PASS",
     )
 
 if s6 and customer_token:
@@ -1287,7 +1287,7 @@ if s6 and customer_token:
         "Тесты отсутствуют — критическое нарушение. "
         "Swagger/OpenAPI отсутствует — критическое нарушение. "
         "Работа не может быть принята.",
-        "API Shop FAIL",
+        "Магазин API FAIL",
     )
 
 # ── Изменение статусов решений ──────────────────────────────────────────────

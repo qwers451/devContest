@@ -279,12 +279,12 @@ async def test_delete_contest_customer_forbidden(customer_token, contest):
 async def test_delete_contest_admin_succeeds(
     admin_token, contest_type_id, customer_token
 ):
-    """Creates a disposable contest and deletes it as admin."""
+    """Создаёт временный конкурс и удаляет его от имени администратора."""
     async with httpx.AsyncClient() as c:
         cr = await c.post(
             f"{CONTEST_URL}/contests",
             json={
-                "title": "Disposable Contest",
+                "title": "Временный конкурс",
                 "annotation": "A" * 30,
                 "description": "D" * 100,
                 "prizepool": 1000,
@@ -452,12 +452,12 @@ async def test_create_contest_missing_title(customer_token, contest_type_id):
 
 @pytest.mark.asyncio
 async def test_create_contest_executor_forbidden(executor_token, contest_type_id):
-    """Executor не может создавать конкурсы."""
+    """Исполнитель не может создавать конкурсы."""
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{CONTEST_URL}/contests",
             json={
-                "title": "Forbidden Contest",
+                "title": "Запрещённый конкурс",
                 "annotation": "A" * 30,
                 "description": "D" * 100,
                 "prizepool": 1000,

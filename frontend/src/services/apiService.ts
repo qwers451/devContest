@@ -93,7 +93,7 @@ export const fetchData = async <T = unknown>(
     return response.data;
   } catch (error) {
     if (!options.silent)
-      console.error(`Error fetching data from ${endpoint}:`, error);
+      console.error(`Ошибка получения данных ${endpoint}:`, error);
     throw error;
   }
 };
@@ -126,7 +126,7 @@ export const sendData = async <T = unknown>(
       const err = (await response.json().catch(() => ({}))) as {
         detail?: string;
       };
-      throw Object.assign(new Error("Upload failed"), {
+      throw Object.assign(new Error("Ошибка загрузки файла"), {
         response: { data: err },
       });
     }
@@ -136,7 +136,7 @@ export const sendData = async <T = unknown>(
     const response = await getClient(endpoint).post<T>(endpoint, data);
     return response.data;
   } catch (error) {
-    console.error(`Error sending data to ${endpoint}:`, error);
+    console.error(`Ошибка отправки данных ${endpoint}:`, error);
     throw error;
   }
 };
@@ -149,7 +149,7 @@ export const updateData = async <T = unknown>(
     const response = await getClient(endpoint).put<T>(endpoint, data);
     return response.data;
   } catch (error) {
-    console.error(`Error updating data at ${endpoint}:`, error);
+    console.error(`Ошибка обновления данных ${endpoint}:`, error);
     throw error;
   }
 };
@@ -165,7 +165,7 @@ export const patchData = async <T = unknown>(
     });
     return response.data;
   } catch (error) {
-    console.error(`Error patching data at ${endpoint}:`, error);
+    console.error(`Ошибка частичного обновления ${endpoint}:`, error);
     throw error;
   }
 };
@@ -178,7 +178,7 @@ export const deleteData = async <T = unknown>(
     const response = await getClient(endpoint).delete<T>(endpoint, config);
     return response.data;
   } catch (error) {
-    console.error(`Error deleting data at ${endpoint}:`, error);
+    console.error(`Ошибка удаления данных ${endpoint}:`, error);
     throw error;
   }
 };

@@ -98,7 +98,7 @@ async def _yk_create_payout(
         result = await asyncio.to_thread(YKPayout.create, payload, idempotency_key)
         return result.dict() if hasattr(result, "dict") else dict(result)
     except Exception as e:
-        print(f"[payment-service] YooKassa payout error: {e}")
+        print(f"[payment-service] ошибка выплаты YooKassa: {e}")
         return None
 
 
@@ -126,7 +126,7 @@ async def _notify_contest_service_cancel(contest_id: int) -> None:
                 headers={"x-internal-secret": settings.internal_secret},
             )
     except Exception as e:
-        print(f"[payment-service] Failed to cancel contest: {e}")
+        print(f"[payment-service] не удалось отменить конкурс: {e}")
 
 
 async def _notify_contest_service_activate(contest_id: int) -> None:
@@ -137,7 +137,7 @@ async def _notify_contest_service_activate(contest_id: int) -> None:
                 headers={"x-internal-secret": settings.internal_secret},
             )
     except Exception as e:
-        print(f"[payment-service] Failed to notify contest-service: {e}")
+        print(f"[payment-service] не удалось уведомить contest-service: {e}")
 
 
 class TopupRequest(BaseModel):
@@ -357,7 +357,7 @@ async def get_payment(
                 payment.updated_at = datetime.now(timezone.utc)
                 await db.commit()
         except Exception as e:
-            print(f"[get_payment] live sync failed: {e}")
+            print(f"[get_payment] синхронизация не удалась: {e}")
 
     return payment
 
@@ -541,7 +541,7 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
             yk_obj = await asyncio.to_thread(YKPayment.find_one, yk_payment_id)
             yk_status = getattr(yk_obj, "status", None)
         except Exception as e:
-            print(f"[webhook] YooKassa re-fetch failed: {e}")
+            print(f"[webhook] не удалось получить статус YooKassa: {e}")
             return {"ok": True}
     else:
         yk_status = event.get("event", "").removeprefix("payment.")
@@ -551,7 +551,7 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
             try:
                 await _yk_capture_payment(yk_payment_id, float(payment.amount))
             except Exception as e:
-                print(f"[webhook] capture failed: {e}")
+                print(f"[webhook] подтверждение платежа не удалось: {e}")
         await _confirm_by_type(payment.id, payment.payment_type, db)
 
     elif yk_status == "succeeded":

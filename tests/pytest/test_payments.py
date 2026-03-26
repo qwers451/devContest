@@ -272,7 +272,7 @@ async def test_payment_topup_from_balance(customer_token, contest_type_id, admin
         after = (await c.get(f"{PAYMENT_URL}/wallet/balance", headers=auth_headers(customer_token))).json()["balance"]
         assert after == pytest.approx(before - 3000.0, abs=0.01)
 
-        # Cleanup
+        # Очистка
         await c.delete(f"{CONTEST_URL}/contests/{contest_id}", headers=auth_headers(admin_token))
 
 
@@ -354,7 +354,7 @@ async def test_payment_refund(customer_token, contest_type_id, admin_token):
         cr2 = await c.get(f"{CONTEST_URL}/contests/{contest_id}")
         assert cr2.json()["status"] == "cancelled"
 
-        # Cleanup
+        # Очистка
         await c.delete(f"{CONTEST_URL}/contests/{contest_id}", headers=auth_headers(admin_token))
 
 

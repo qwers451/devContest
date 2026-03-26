@@ -178,12 +178,12 @@ async def test_edit_submission(executor_token, submission):
     assert r.status_code in (200, 404, 405)
 
 
-# ── File upload tests ─────────────────────────────────────────────────────────
+# ── Тесты загрузки файлов ─────────────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_upload_file(executor_token, submission):
-    # Minimal valid PNG (1x1 pixel)
+    # Минимальный валидный PNG (1x1 пиксель)
     file_content = (
         b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
         b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00"
@@ -202,7 +202,7 @@ async def test_upload_file(executor_token, submission):
 
 @pytest.mark.asyncio
 async def test_download_file(executor_token, submission):
-    # Upload PNG, then download
+    # Загружаем PNG, затем скачиваем
     file_content = (
         b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
         b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00"
@@ -316,11 +316,11 @@ async def test_update_review(customer_token, submission, review):
 
 @pytest.mark.asyncio
 async def test_delete_review(customer_token, submission):
-    """Creates a separate review and deletes it."""
+    """Создаёт отдельную рецензию и удаляет её."""
     async with httpx.AsyncClient() as c:
         cr = await c.post(
             f"{CONTEST_URL}/submissions/{submission['id']}/reviews",
-            json={"score": 1.0, "commentary": "To be deleted"},
+            json={"score": 1.0, "commentary": "Будет удалена"},
             headers=auth_headers(customer_token),
         )
         num = cr.json()["number"]
@@ -346,13 +346,13 @@ async def test_delete_submission_wrong_owner(customer_token, submission):
 
 @pytest.mark.asyncio
 async def test_delete_submission(executor_token, contest, admin_token):
-    """Creates a throwaway submission and deletes it."""
+    """Создаёт временное решение и удаляет его."""
     async with httpx.AsyncClient() as c:
         cr = await c.post(
             f"{CONTEST_URL}/submissions",
             json={
                 "contest_id": contest["id"],
-                "title": "Throwaway submission",
+                "title": "Временное решение",
                 "annotation": "A" * 30,
                 "description": "D" * 100,
             },
@@ -440,13 +440,13 @@ async def test_create_submission_missing_contest_id(executor_token):
 
 @pytest.mark.asyncio
 async def test_create_submission_customer_forbidden(customer_token, contest):
-    """Customer не может создавать решения."""
+    """Заказчик не может создавать решения."""
     async with httpx.AsyncClient() as c:
         r = await c.post(
             f"{CONTEST_URL}/submissions",
             json={
                 "contest_id": contest["id"],
-                "title": "Customer tries to submit",
+                "title": "Попытка заказчика отправить решение",
                 "annotation": "A" * 30,
                 "description": "D" * 100,
             },

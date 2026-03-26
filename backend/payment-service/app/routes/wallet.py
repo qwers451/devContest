@@ -65,7 +65,7 @@ async def _yk_verify_payment(yk_payment_id: str) -> str | None:
         obj = await asyncio.to_thread(YKPayment.find_one, yk_payment_id)
         return getattr(obj, "status", None)
     except Exception as e:
-        print(f"[wallet] YooKassa verify failed: {e}")
+        print(f"[wallet] ошибка проверки YooKassa: {e}")
         return None
 
 
@@ -92,7 +92,7 @@ async def _yk_create_payout_local(
         result = await asyncio.to_thread(YKPayout.create, payload, idempotency_key)
         return result.dict() if hasattr(result, "dict") else dict(result)
     except Exception as e:
-        print(f"[wallet] YooKassa payout error: {e}")
+        print(f"[wallet] ошибка выплаты YooKassa: {e}")
         return None
 
 
@@ -420,7 +420,7 @@ async def get_wallet_payment_status(
                     },
                 )
             except Exception as e:
-                print(f"[wallet] YooKassa capture failed: {e}")
+                print(f"[wallet] подтверждение платежа не удалось: {e}")
         if yk_status in ("waiting_for_capture", "succeeded"):
             await _confirm_wallet_topup(payment.id, db)
             await db.refresh(payment)

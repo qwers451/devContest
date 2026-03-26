@@ -182,7 +182,7 @@ async def test_select_winner(
         assert contest_response.status_code == 201
         contest = contest_response.json()
 
-        # Reserve escrow (stub) and activate contest so winner selection works
+        # Резервируем эскроу (заглушка) и активируем конкурс для выбора победителя
         internal_h = {"x-internal-secret": INTERNAL_SECRET}
         await c.post(
             f"{PAYMENT_URL}/escrow/reserve",
@@ -302,7 +302,7 @@ async def test_create_duplicate_contest_type(admin_token):
                 json={"name": name},
                 headers=auth_headers(admin_token),
             )
-            # Either duplicate is rejected or returns the same id
+            # Дубликат отклоняется или возвращает тот же id
             assert r2.status_code in (201, 409)
         finally:
             await c.delete(

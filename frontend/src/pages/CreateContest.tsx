@@ -352,7 +352,7 @@ const CreateContest = () => {
       formData.append("file", tzFile);
       await sendData(`/contests/${contestId}/tz-file`, formData, true);
     } catch (error) {
-      console.error("TZ file upload failed:", error);
+      console.error("Ошибка загрузки файла ТЗ:", error);
     } finally {
       setTzFile(null);
     }
@@ -365,7 +365,7 @@ const CreateContest = () => {
       files.forEach((file) => formData.append("files", file));
       await sendData(`/contests/${contestId}/files`, formData, true);
     } catch (error) {
-      console.error("Files upload failed:", error);
+      console.error("Ошибка загрузки файлов:", error);
     } finally {
       setFiles([]);
     }

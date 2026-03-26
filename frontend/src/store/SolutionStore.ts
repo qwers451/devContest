@@ -167,13 +167,13 @@ export default class SolutionStore {
       params.sort_dir = this._sortDir;
 
       if (!this.hasFiltersChanged(params) && this._solutions.length > 0) {
-        console.log("Using cached solutions");
+        console.log("Используем кэшированные решения");
         this.setLoading(false);
         return;
       }
 
       this.setLoading(true);
-      console.log("Fetching submissions with params:", params);
+      console.log("Загружаем решения с параметрами:", params);
 
       const response = await fetchData<Submission[]>("/submissions", params as Record<string, unknown>);
       const list = Array.isArray(response) ? response : [];
