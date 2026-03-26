@@ -135,8 +135,7 @@ brew install ollama                              # macOS
 # Скачать модели
 ollama pull mistral        # ~4 ГБ — извлечение требований и оценка текста
 ollama pull pixtral:12b    # ~8 ГБ — оценка решений с изображениями
-# или более лёгкая альтернатива:
-ollama pull llava:7b       # ~4 ГБ
+
 
 # Запустить (доступен из контейнера)
 OLLAMA_HOST=0.0.0.0:11434 ollama serve
