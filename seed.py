@@ -134,7 +134,11 @@ def make_pdf(text: str) -> bytes:
     obj1 = b"<< /Type /Catalog /Pages 2 0 R >>"
     obj2 = b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>"
     obj3 = b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>"
-    obj4 = f"<< /Length {len(stream_content)} >>\nstream\n".encode() + stream_content + b"\nendstream"
+    obj4 = (
+        f"<< /Length {len(stream_content)} >>\nstream\n".encode()
+        + stream_content
+        + b"\nendstream"
+    )
     obj5 = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
     objects = [obj1, obj2, obj3, obj4, obj5]
 
@@ -188,14 +192,14 @@ def make_docx(text: str) -> bytes:
     paragraphs = ""
     for line in text.split("\n"):
         escaped = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        paragraphs += f'<w:p><w:r><w:t xml:space="preserve">{escaped}</w:t></w:r></w:p>\n'
+        paragraphs += (
+            f'<w:p><w:r><w:t xml:space="preserve">{escaped}</w:t></w:r></w:p>\n'
+        )
 
     document = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">\n'
-        "  <w:body>\n"
-        + paragraphs
-        + "  </w:body>\n</w:document>"
+        "  <w:body>\n" + paragraphs + "  </w:body>\n</w:document>"
     )
 
     buf = io.BytesIO()
@@ -218,10 +222,14 @@ def upload_file_multipart(
     """Загружает произвольный файл через multipart/form-data."""
     boundary = "SeedFileBoundary99"
     body = (
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'
-        f"Content-Type: {content_type}\r\n\r\n"
-    ).encode() + file_bytes + f"\r\n--{boundary}--\r\n".encode()
+        (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'
+            f"Content-Type: {content_type}\r\n\r\n"
+        ).encode()
+        + file_bytes
+        + f"\r\n--{boundary}--\r\n".encode()
+    )
     headers = {
         "Content-Type": f"multipart/form-data; boundary={boundary}",
         "Authorization": f"Bearer {token}",
@@ -242,10 +250,14 @@ def upload_png(submission_id: int, token: str, png_bytes: bytes, filename: str):
     """Загружает PNG-файл к решению через multipart/form-data."""
     boundary = "SeedPNGBoundary42"
     body = (
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="files"; filename="{filename}"\r\n'
-        f"Content-Type: image/png\r\n\r\n"
-    ).encode() + png_bytes + f"\r\n--{boundary}--\r\n".encode()
+        (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="files"; filename="{filename}"\r\n'
+            f"Content-Type: image/png\r\n\r\n"
+        ).encode()
+        + png_bytes
+        + f"\r\n--{boundary}--\r\n".encode()
+    )
     headers = {
         "Content-Type": f"multipart/form-data; boundary={boundary}",
         "Authorization": f"Bearer {token}",
@@ -267,7 +279,9 @@ def upload_png(submission_id: int, token: str, png_bytes: bytes, filename: str):
         return e.code, err_body
 
 
-def add_review(submission_id: int, token: str, score: float, commentary: str, label: str):
+def add_review(
+    submission_id: int, token: str, score: float, commentary: str, label: str
+):
     """Добавляет рецензию заказчика к решению."""
     status, resp = post(
         f"{CONTEST_API}/submissions/{submission_id}/reviews",
@@ -281,7 +295,9 @@ def add_review(submission_id: int, token: str, score: float, commentary: str, la
         print(f"  Отзыв для submission {submission_id} [{label}] → уже существует")
         return None
     else:
-        print(f"  Отзыв для submission {submission_id} [{label}] → ошибка {status} {resp}")
+        print(
+            f"  Отзыв для submission {submission_id} [{label}] → ошибка {status} {resp}"
+        )
         return None
 
 
@@ -904,7 +920,7 @@ print("\n=== Загрузка тестовых PNG ===")
 
 # Logo submission: синий логотип 200x200
 if s1 and executor_token:
-    png = make_png(200, 200, (26, 115, 232))   # #1A73E8 синий
+    png = make_png(200, 200, (26, 115, 232))  # #1A73E8 синий
     st, resp = upload_png(s1["id"], executor_token, png, "logo_techflow.png")
     print(
         f"  logo_techflow.png → submission {s1['id']} "
@@ -913,7 +929,7 @@ if s1 and executor_token:
 
 # Logo submission 2: голубой логотип 200x200
 if s2 and executor2_token:
-    png = make_png(200, 200, (0, 180, 216))    # #00B4D8 голубой
+    png = make_png(200, 200, (0, 180, 216))  # #00B4D8 голубой
     st, resp = upload_png(s2["id"], executor2_token, png, "logo_gradient.png")
     print(
         f"  logo_gradient.png → submission {s2['id']} "
@@ -922,13 +938,13 @@ if s2 and executor2_token:
 
 # Banner submission: оранжевый баннер 728x90 (leaderboard)
 if s4 and executor2_token:
-    png_728 = make_png(728, 90, (255, 107, 53))   # #FF6B35 оранжевый
+    png_728 = make_png(728, 90, (255, 107, 53))  # #FF6B35 оранжевый
     st, resp = upload_png(s4["id"], executor2_token, png_728, "banner_728x90.png")
     print(
         f"  banner_728x90.png → submission {s4['id']} "
         f"{'ок (' + str(len(png_728)) + ' байт)' if st == 200 else f'ошибка {st}'}"
     )
-    png_300 = make_png(300, 250, (44, 62, 80))    # #2C3E50 тёмно-синий
+    png_300 = make_png(300, 250, (44, 62, 80))  # #2C3E50 тёмно-синий
     st, resp = upload_png(s4["id"], executor2_token, png_300, "banner_300x250.png")
     print(
         f"  banner_300x250.png → submission {s4['id']} "
@@ -943,7 +959,7 @@ if s4 and executor2_token:
 
 # ── Загрузка ТЗ в виде PDF для конкурса c2 ──────────────────────────────────
 
-print("\n=== Загрузка ТЗ в PDF (конкурс c2) ===")
+print("\n=== Загрузка ТЗ в DOCX (конкурс c2) ===")
 
 if c2 and customer_token:
     tz_pdf_text = (
@@ -962,28 +978,25 @@ if c2 and customer_token:
         "- Введение и заключение обязательны\n"
         "- Объём не менее 3000 слов\n"
     )
-    pdf_bytes = make_pdf(tz_pdf_text)
+    docx_bytes = make_docx(tz_pdf_text)
     st, resp = upload_file_multipart(
         f"{CONTEST_API}/contests/{c2['id']}/tz-file",
         customer_token,
-        pdf_bytes,
-        "tz_article_ai.pdf",
-        "application/pdf",
+        docx_bytes,
+        "tz_article_ai.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         field_name="file",
     )
     if st == 200:
-        print(
-            f"  tz_article_ai.pdf → конкурс {c2['id']} ок "
-            f"({len(pdf_bytes)} байт)"
-        )
+        print(f"  tz_article_ai.docx → конкурс {c2['id']} ок ({len(docx_bytes)} байт)")
     else:
-        print(f"  tz_article_ai.pdf → ошибка {st} {resp}")
+        print(f"  tz_article_ai.docx → ошибка {st} {resp}")
 else:
     print("  пропуск — нет c2 или токена")
 
 # ── Загрузка ТЗ в виде PDF для конкурса c4 ──────────────────────────────────
 
-print("\n=== Загрузка ТЗ в PDF (конкурс c4) ===")
+print("\n=== Загрузка ТЗ в DOCX (конкурс c4) ===")
 
 if c4 and customer_token:
     tz_c4_text = (
@@ -1010,21 +1023,19 @@ if c4 and customer_token:
         "- CI/CD пайплайн\n"
         "- Развёртывание на облачном сервере\n"
     )
-    pdf_bytes = make_pdf(tz_c4_text)
+    docx_bytes = make_docx(tz_c4_text)
     st, resp = upload_file_multipart(
         f"{CONTEST_API}/contests/{c4['id']}/tz-file",
         customer_token,
-        pdf_bytes,
-        "tz_rest_api_shop.pdf",
-        "application/pdf",
+        docx_bytes,
+        "tz_rest_api_shop.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         field_name="file",
     )
     if st == 200:
-        print(
-            f"  tz_rest_api_shop.pdf → конкурс {c4['id']} ок ({len(pdf_bytes)} байт)"
-        )
+        print(f"  tz_rest_api_shop.docx → конкурс {c4['id']} ок ({len(docx_bytes)} байт)")
     else:
-        print(f"  tz_rest_api_shop.pdf → ошибка {st} {resp}")
+        print(f"  tz_rest_api_shop.docx → ошибка {st} {resp}")
 else:
     print("  пропуск — нет c4 или токена")
 
@@ -1234,7 +1245,9 @@ print("\n=== Добавление рецензий ===")
 
 if s1 and customer_token:
     add_review(
-        s1["id"], customer_token, 7.5,
+        s1["id"],
+        customer_token,
+        7.5,
         "Хороший минималистичный логотип. Синяя гамма соответствует ТЗ, буква T читается хорошо. "
         "Хотелось бы видеть больше вариантов с разными насыщенностями цвета. PNG с прозрачным фоном — ок.",
         "лого TechFlow",
@@ -1242,7 +1255,9 @@ if s1 and customer_token:
 
 if s2 and customer_token:
     add_review(
-        s2["id"], customer_token, 8.0,
+        s2["id"],
+        customer_token,
+        8.0,
         "Отличный динамичный дизайн. Градиент от синего к голубому смотрится современно. "
         "Символ бесконечности оригинален. Минус — слегка сложно читается на тёмном фоне.",
         "лого градиент",
@@ -1250,7 +1265,9 @@ if s2 and customer_token:
 
 if s3 and customer_token:
     add_review(
-        s3["id"], customer_token, 9.0,
+        s3["id"],
+        customer_token,
+        9.0,
         "Превосходная статья! Все разделы присутствуют, 7 источников из авторитетных журналов "
         "(Nature Medicine, BMJ). Кейсы Mayo Clinic и Сколтеха очень уместны. "
         "Введение и заключение хорошо структурированы. Объём около 4200 слов — соответствует ТЗ. "
@@ -1260,7 +1277,9 @@ if s3 and customer_token:
 
 if s4 and customer_token:
     add_review(
-        s4["id"], customer_token, 6.5,
+        s4["id"],
+        customer_token,
+        6.5,
         "Баннеры представлены в правильных размерах. Цвета соответствуют брендбуку (#FF6B35, #2C3E50). "
         "Однако CTA 'Начать бесплатно' мог бы быть крупнее и заметнее. "
         "HTML5 анимация пока не загружена — жду финальную версию.",
@@ -1269,7 +1288,9 @@ if s4 and customer_token:
 
 if s5 and customer_token:
     add_review(
-        s5["id"], customer_token, 9.5,
+        s5["id"],
+        customer_token,
+        9.5,
         "Отличная работа! FastAPI + PostgreSQL + JWT — всё по ТЗ. "
         "Docker-compose работает с первой команды. Покрытие тестами 87% — выше требуемых 80%. "
         "Swagger автоматически сгенерирован. Код чистый, архитектура правильная. "
@@ -1279,7 +1300,9 @@ if s5 and customer_token:
 
 if s6 and customer_token:
     add_review(
-        s6["id"], customer_token, 2.0,
+        s6["id"],
+        customer_token,
+        2.0,
         "К сожалению, работа не соответствует критическим требованиям ТЗ. "
         "Использован SQLite вместо PostgreSQL — критическое нарушение. "
         "JWT аутентификация отсутствует (Basic Auth не принимается) — критическое нарушение. "
@@ -1324,18 +1347,28 @@ print("  Тестовые пары 'хорошее / плохое' решени�
 print()
 if c4 and s5 and s6:
     print(f"  Конкурс: 'REST API магазин' id={c4['id']}")
-    print(f"  ✅ ОК: решение id={s5['id']} (FastAPI+PostgreSQL+JWT+Docker+тесты+Swagger)")
+    print(
+        f"  ✅ ОК: решение id={s5['id']} (FastAPI+PostgreSQL+JWT+Docker+тесты+Swagger)"
+    )
     print(f"       → Ожидаемый AI score: высокий (80-100)")
-    print(f"  ❌ Не прошло: решение id={s6['id']} (Flask+SQLite+BasicAuth, без Docker/тестов/Swagger)")
+    print(
+        f"  ❌ Не прошло: решение id={s6['id']} (Flask+SQLite+BasicAuth, без Docker/тестов/Swagger)"
+    )
     print(f"       → Ожидаемый AI score: низкий (0-30)")
 print()
 print("  Другие тестовые файлы:")
 if s3:
-    print(f"  📄 DOCX Статья ИИ (executor1)      id={s3['id']} → article_ai_cardiology.docx")
-    print(f"       ТЗ: 5+ источников, структура, 3000+ слов | Статья: 7 источников, 5 разделов, ~4200 слов")
+    print(
+        f"  📄 DOCX Статья ИИ (executor1)      id={s3['id']} → article_ai_cardiology.docx"
+    )
+    print(
+        f"       ТЗ: 5+ источников, структура, 3000+ слов | Статья: 7 источников, 5 разделов, ~4200 слов"
+    )
     print(f"       → Ожидаемый AI score: высокий (85-100)")
 if s4:
-    print(f"  🖼️  PNG  Баннеры (executor2)         id={s4['id']} → 3 PNG разных размеров")
+    print(
+        f"  🖼️  PNG  Баннеры (executor2)         id={s4['id']} → 3 PNG разных размеров"
+    )
     print(f"       → Тест vision модели (llava:7b)")
 if s1:
     print(f"  🖼️  PNG  Лого TechFlow (executor1)   id={s1['id']} → logo_techflow.png")
@@ -1346,7 +1379,9 @@ print()
 print("  Как запустить AI-оценку:")
 print("  1. Убедись что EVALUATION_STUB=false в .env evaluation-service")
 print("  2. Скачай модель: ollama pull llava:7b  (или llama3.2-vision)")
-print("  3. Открой решение → нажми 'Запустить оценку' (или оно запустится автоматически при загрузке файлов)")
+print(
+    "  3. Открой решение → нажми 'Запустить оценку' (или оно запустится автоматически при загрузке файлов)"
+)
 print("  4. Результат появится через ~30-60 сек (AI score badge в карточке решения)")
 print()
 print("  Прямой вызов для проверки (пример):")
@@ -1356,44 +1391,55 @@ if s5:
     print(f"  curl -X POST http://localhost:8003/evaluation/evaluate \\")
     print(f"    -H 'X-Internal-Secret: cafdgadhffdah' \\")
     print(f"    -H 'Content-Type: application/json' \\")
-    print("    -d '{\"submission_id\": " + str(sid) + ", \"contest_id\": " + str(cid) + ",")
-    print("         \"tz_text\": \"JWT обязателен, PostgreSQL обязателен, Docker обязателен\",")
-    print("         \"submission_text\": \"FastAPI + PostgreSQL + JWT + Docker-compose + pytest 87%\"}'")
+    print(
+        '    -d \'{"submission_id": ' + str(sid) + ', "contest_id": ' + str(cid) + ","
+    )
+    print(
+        '         "tz_text": "JWT обязателен, PostgreSQL обязателен, Docker обязателен",'
+    )
+    print(
+        '         "submission_text": "FastAPI + PostgreSQL + JWT + Docker-compose + pytest 87%"}\''
+    )
 
 print("\n=== Отзывы (avg_score) ===")
 print("  Добавлены отзывы customer1 на все 6 решений:")
-if s1: print(f"  • submission {s1['id']} (лого TechFlow)   → score=7.5")
-if s2: print(f"  • submission {s2['id']} (лого градиент)   → score=8.0")
-if s3: print(f"  • submission {s3['id']} (статья ИИ)       → score=9.0  [статус: принята]")
-if s4: print(f"  • submission {s4['id']} (баннеры)         → score=6.5")
-if s5: print(f"  • submission {s5['id']} (API PASS)        → score=9.5  [статус: принята]")
-if s6: print(f"  • submission {s6['id']} (API FAIL)        → score=2.0  [статус: отклонена]")
+if s1:
+    print(f"  • submission {s1['id']} (лого TechFlow)   → score=7.5")
+if s2:
+    print(f"  • submission {s2['id']} (лого градиент)   → score=8.0")
+if s3:
+    print(f"  • submission {s3['id']} (статья ИИ)       → score=9.0  [статус: принята]")
+if s4:
+    print(f"  • submission {s4['id']} (баннеры)         → score=6.5")
+if s5:
+    print(f"  • submission {s5['id']} (API PASS)        → score=9.5  [статус: принята]")
+if s6:
+    print(
+        f"  • submission {s6['id']} (API FAIL)        → score=2.0  [статус: отклонена]"
+    )
 
 print("\n=== История статусов ===")
 print("  Изменения статусов (для тестирования status log):")
-if s3: print(f"  • submission {s3['id']}: 1 → 2 → 3 (принята)")
-if s5: print(f"  • submission {s5['id']}: 1 → 2 → 3 (принята)")
-if s6: print(f"  • submission {s6['id']}: 1 → 5 (отклонена)")
+if s3:
+    print(f"  • submission {s3['id']}: 1 → 2 → 3 (принята)")
+if s5:
+    print(f"  • submission {s5['id']}: 1 → 2 → 3 (принята)")
+if s6:
+    print(f"  • submission {s6['id']}: 1 → 5 (отклонена)")
 
 print("\n=== Конкурсы с этапами ===")
 if c1:
     stages_info = " | ".join(
-        f"{s['name']}: {s.get('prize_amount', 0)} ₽"
-        for s in c1.get("stages", [])
+        f"{s['name']}: {s.get('prize_amount', 0)} ₽" for s in c1.get("stages", [])
     )
     print(f"  1. 'Логотип для стартапа' id={c1['id']}  [{stages_info}]")
 if c3:
     stages_info = " | ".join(
-        f"{s['name']}: {s.get('prize_amount', 0)} ₽"
-        for s in c3.get("stages", [])
+        f"{s['name']}: {s.get('prize_amount', 0)} ₽" for s in c3.get("stages", [])
     )
     print(f"  2. 'Баннеры для рекламной кампании' id={c3['id']}  [{stages_info}]")
 if c4:
     stages_info = " | ".join(
-        f"{s['name']}: {s.get('prize_amount', 0)} ₽"
-        for s in c4.get("stages", [])
+        f"{s['name']}: {s.get('prize_amount', 0)} ₽" for s in c4.get("stages", [])
     )
     print(f"  3. 'REST API для интернет-магазина' id={c4['id']}  [{stages_info}]")
-
-print()
-print("  Re-run безопасен: балансы не дублируются, конкурсы не создаются повторно.")

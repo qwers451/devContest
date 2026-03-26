@@ -31,7 +31,7 @@ from app.models import Contest, Review, Submission, SubmissionStatusLog
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
 UPLOAD_DIR = "/app/uploads"
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 10 * 1024 * 1024
 
 ALLOWED_SIGNATURES: list[tuple[bytes, str]] = [
     (b"\x89PNG",    "image/png"),
@@ -240,13 +240,11 @@ async def list_submissions(
     role = current_user["role"]
     uid = current_user["id"]
 
-    # Проверка доступа: если запрашивается список по конкурсу
     if contest_id and role != "admin":
         contest_row = await db.get(Contest, contest_id)
         if contest_row is None:
             raise HTTPException(status_code=404, detail="Конкурс не найден")
         if contest_row.customer_id != uid:
-            # Исполнитель видит только своё решение
             if role == "executor":
                 executor_id = uid
             else:
@@ -312,7 +310,6 @@ async def _require_submission_access(submission_id: int, current_user: dict, db:
         return s
     if s.executor_id == current_user["id"]:
         return s
-    # Проверяем является ли пользователь владельцем конкурса
     contest_row = await db.get(Contest, s.contest_id)
     if contest_row and contest_row.customer_id == current_user["id"]:
         return s

@@ -1,4 +1,5 @@
 import hashlib
+import logging
 from datetime import datetime, timezone
 
 import httpx
@@ -11,7 +12,13 @@ from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user, verify_internal
 from app.models import ContestRequirements, EvaluationResult
-from app.ollama_client import evaluate_submission, extract_tz_requirements
+from app.ollama_client import (
+    _stub_requirements,
+    evaluate_submission,
+    extract_tz_requirements,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/evaluation", tags=["evaluation"])
 
@@ -69,11 +76,13 @@ async def _cache_requirements(
     contest_id: int, tz_text: str, requirements: list[dict], db: AsyncSession
 ) -> None:
     tz_hash = hashlib.sha256(tz_text.encode()).hexdigest()
-    db.add(ContestRequirements(
-        contest_id=contest_id,
-        tz_hash=tz_hash,
-        requirements=requirements,
-    ))
+    db.add(
+        ContestRequirements(
+            contest_id=contest_id,
+            tz_hash=tz_hash,
+            requirements=requirements,
+        )
+    )
     await db.commit()
 
 
@@ -97,7 +106,9 @@ async def evaluate(data: EvaluateRequest, db: AsyncSession = Depends(get_db)):
         else:
             cached_reqs = await extract_tz_requirements(data.tz_text)
             if cached_reqs:
-                await _cache_requirements(data.contest_id, data.tz_text, cached_reqs, db)
+                await _cache_requirements(
+                    data.contest_id, data.tz_text, cached_reqs, db
+                )
 
     result_data = await evaluate_submission(
         data.tz_text,
@@ -143,7 +154,7 @@ async def evaluate(data: EvaluateRequest, db: AsyncSession = Depends(get_db)):
                 headers={"x-internal-secret": settings.internal_secret},
             )
     except Exception:
-        pass
+        logger.exception("Failed to update ai-score on contest-service for submission %s", data.submission_id)
 
     return record
 
@@ -178,10 +189,7 @@ async def extract_contest_requirements(
     _: dict = Depends(get_current_user),
 ):
     if settings.evaluation_stub:
-        stub_reqs = [
-            {"text": "Stub: требование 1", "is_critical": True},
-            {"text": "Stub: требование 2", "is_critical": False},
-        ]
+        stub_reqs = _stub_requirements()
         return ContestRequirementsOut(
             contest_id=contest_id,
             requirements=[RequirementItem(**r) for r in stub_reqs],
@@ -190,7 +198,7 @@ async def extract_contest_requirements(
 
     reqs = await extract_tz_requirements(data.tz_text)
     if not reqs:
-        raise HTTPException(status_code=422, detail="Модель не смогла извлечь требования из ТЗ")
+        reqs = _stub_requirements()
 
     tz_hash = hashlib.sha256(data.tz_text.encode()).hexdigest()
     existing = await db.execute(
@@ -203,7 +211,9 @@ async def extract_contest_requirements(
     if record:
         record.requirements = reqs
     else:
-        record = ContestRequirements(contest_id=contest_id, tz_hash=tz_hash, requirements=reqs)
+        record = ContestRequirements(
+            contest_id=contest_id, tz_hash=tz_hash, requirements=reqs
+        )
         db.add(record)
     await db.commit()
     await db.refresh(record)

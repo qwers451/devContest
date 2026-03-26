@@ -53,6 +53,7 @@ jobs:
           sed -i 's/PAYMENT_DB_PASSWORD=.*/PAYMENT_DB_PASSWORD=123/' .env
           sed -i 's/JWT_SECRET=.*/JWT_SECRET=ci_secret_key_123/' .env
           sed -i 's/INTERNAL_SECRET=.*/INTERNAL_SECRET=ci_internal_secret_123/' .env
+          sed -i 's/EVALUATION_STUB=.*/EVALUATION_STUB=true/' .env
 
       - name: Start services
         run: docker compose up -d --build
@@ -78,6 +79,7 @@ jobs:
         uses: matt-ball/newman-action@master
         with:
           collection: tests/postman/devContest_collection.json
+          envVar: '[{"key":"INTERNAL_SECRET","value":"ci_internal_secret_123"}]'
 
       - name: Stop services
         if: always()

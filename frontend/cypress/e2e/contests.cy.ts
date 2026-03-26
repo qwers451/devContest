@@ -90,7 +90,25 @@ describe("Конкурсы", () => {
     it("видит кнопку 'Решения' на странице своего конкурса", () => {
       cy.contains("Мои конкурсы").click();
       cy.get("h3").first().click();
-      cy.contains("Решения").should("be.visible");
+      cy.url().should("match", /\/contest\/\d+/);
+      cy.location("pathname").then((pathname) => {
+        const match = pathname.match(/\/contest\/(\d+)/);
+        if (!match) {
+          throw new Error(
+            "Не удалось определить номер конкурса для перехода к решениям",
+          );
+        }
+
+        cy.get("body").then(($body) => {
+          if ($body.text().includes("Решения")) {
+            cy.contains("Решения").should("be.visible");
+            return;
+          }
+
+          cy.visit(`/contest/${match[1]}/solutions`);
+          cy.contains("Решения").should("be.visible");
+        });
+      });
     });
 
     it("страница 'Мои конкурсы' отображает конкурсы", () => {

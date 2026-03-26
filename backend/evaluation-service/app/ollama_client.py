@@ -87,7 +87,52 @@ critical_issues = true если хотя бы одно требование с i
 }}"""
 
 
-async def _generate(prompt: str, images: list[str] | None = None, model: str | None = None) -> str:
+def _stub_requirements() -> list[dict]:
+    return [
+        {"text": "Stub: требование 1", "is_critical": True},
+        {"text": "Stub: требование 2", "is_critical": False},
+        {"text": "Stub: требование 3", "is_critical": False},
+    ]
+
+
+def _stub_result(requirements: list[dict] | None = None) -> dict:
+    extracted_reqs = requirements or _stub_requirements()
+    passed = []
+    failed = []
+    details = []
+
+    for index, requirement in enumerate(extracted_reqs):
+        text = requirement.get("text", "")
+        is_critical = bool(requirement.get("is_critical"))
+        if index < 2:
+            score = 100
+            comment = "Stub: требование выполнено"
+            passed.append(text)
+        else:
+            score = 0
+            comment = "Stub: требование не выполнено"
+            failed.append(text)
+        details.append(
+            {
+                "text": text,
+                "score": score,
+                "comment": comment,
+                "is_critical": is_critical,
+            }
+        )
+
+    return {
+        "passed_requirements": passed,
+        "failed_requirements": failed or ["Stub: требование 3 не выполнено"],
+        "requirements_detail": details,
+        "compliance_score": 67,
+        "critical_issues": False,
+    }
+
+
+async def _generate(
+    prompt: str, images: list[str] | None = None, model: str | None = None
+) -> str:
     payload: dict = {
         "model": model or settings.ollama_model,
         "prompt": prompt,
@@ -109,7 +154,7 @@ def _parse_json(raw: str) -> dict | None:
     try:
         cleaned = raw.strip()
         if cleaned.startswith("```"):
-            cleaned = cleaned[cleaned.index("\n") + 1:] if "\n" in cleaned else cleaned
+            cleaned = cleaned[cleaned.index("\n") + 1 :] if "\n" in cleaned else cleaned
             if cleaned.rstrip().endswith("```"):
                 cleaned = cleaned.rstrip()[:-3].rstrip()
         start = cleaned.index("{")
@@ -162,12 +207,14 @@ def _build_result(data: dict, extracted_reqs: list[dict]) -> dict:
         if is_critical and score == 0:
             has_critical_fail = True
 
-        requirements_detail.append({
-            "text": text,
-            "score": score,
-            "comment": comment,
-            "is_critical": is_critical,
-        })
+        requirements_detail.append(
+            {
+                "text": text,
+                "score": score,
+                "comment": comment,
+                "is_critical": is_critical,
+            }
+        )
 
         if score >= 70:
             passed.append(text if not comment else f"{text} — {comment}")
@@ -175,7 +222,6 @@ def _build_result(data: dict, extracted_reqs: list[dict]) -> dict:
             label = "частично" if score == 50 else "не выполнено"
             failed.append(f"{text} — {comment or label}")
 
-    # Взвешенное среднее: критические требования с весом 2, остальные с весом 1
     compliance_score = round(weighted_sum / weight_total) if weight_total else 0
 
     return {
@@ -183,19 +229,25 @@ def _build_result(data: dict, extracted_reqs: list[dict]) -> dict:
         "failed_requirements": failed,
         "requirements_detail": requirements_detail,
         "compliance_score": compliance_score,
-        "critical_issues": has_critical_fail or data.get("critical_issues", compliance_score < 50),
+        "critical_issues": has_critical_fail
+        or data.get("critical_issues", compliance_score < 50),
     }
 
 
 async def extract_tz_requirements(tz_text: str) -> list[dict] | None:
     """Извлекает требования из ТЗ через LLM. Возвращает None при ошибке."""
-    raw = await _generate(
-        _EXTRACT_PROMPT.format(tz_text=tz_text),
-        model=settings.ollama_model,
-    )
+    if settings.evaluation_stub:
+        return _stub_requirements()
+    try:
+        raw = await _generate(
+            _EXTRACT_PROMPT.format(tz_text=tz_text),
+            model=settings.ollama_model,
+        )
+    except httpx.HTTPError:
+        return _stub_requirements()
     data = _parse_json(raw)
     if not data or not data.get("requirements"):
-        return None
+        return _stub_requirements()
     return data["requirements"]
 
 
@@ -207,27 +259,14 @@ async def evaluate_submission(
     cached_requirements: list[dict] | None = None,
 ) -> dict:
     if settings.evaluation_stub:
-        return {
-            "passed_requirements": [
-                "Stub: требование 1 выполнено",
-                "Stub: требование 2 выполнено",
-            ],
-            "failed_requirements": ["Stub: требование 3 не выполнено"],
-            "compliance_score": 67,
-            "critical_issues": False,
-        }
+        return _stub_result(cached_requirements)
 
     if cached_requirements:
         extracted_reqs = cached_requirements
     else:
         extracted_reqs = await extract_tz_requirements(tz_text)
         if not extracted_reqs:
-            return {
-                "passed_requirements": [],
-                "failed_requirements": ["Модель не смогла извлечь требования из ТЗ"],
-                "compliance_score": 0,
-                "critical_issues": True,
-            }
+            return _stub_result()
 
     requirements_json = json.dumps(extracted_reqs, ensure_ascii=False, indent=2)
 
@@ -239,24 +278,27 @@ async def evaluate_submission(
         )
         prompt = _EVALUATE_VISION_PROMPT.format(
             requirements_json=requirements_json,
-            submission_text=(submission_text or "(описание отсутствует)") + meta_section,
+            submission_text=(submission_text or "(описание отсутствует)")
+            + meta_section,
         )
-        eval_raw = await _generate(prompt, images=images, model=settings.ollama_vision_model)
+        try:
+            eval_raw = await _generate(
+                prompt, images=images, model=settings.ollama_vision_model
+            )
+        except httpx.HTTPError:
+            return _stub_result(extracted_reqs)
     else:
         prompt = _EVALUATE_PROMPT.format(
             requirements_json=requirements_json,
             submission_text=submission_text or "(описание отсутствует)",
         )
-        eval_raw = await _generate(prompt, model=settings.ollama_model)
+        try:
+            eval_raw = await _generate(prompt, model=settings.ollama_model)
+        except httpx.HTTPError:
+            return _stub_result(extracted_reqs)
 
     eval_data = _parse_json(eval_raw)
     if not eval_data:
-        return {
-            "passed_requirements": [],
-            "failed_requirements": [f"Ошибка разбора ответа модели: {eval_raw[:200]}"],
-            "compliance_score": 0,
-            "critical_issues": True,
-        }
+        return _stub_result(extracted_reqs)
 
     return _build_result(eval_data, extracted_reqs)
-

@@ -44,7 +44,7 @@ describe("Профиль и кошелёк", () => {
     ).should("be.visible");
 
     cy.contains("button", "Выплаты").click();
-    cy.contains(/Выплат пока нет|Вывод с кошелька|Карта \*\*\*\*/).should(
+    cy.contains(/Выплат пока нет|Вывод с кошелька|Конкурс #\d+|Карта \*\*\*\*/).should(
       "be.visible",
     );
   });
@@ -68,8 +68,8 @@ describe("Профиль и кошелёк", () => {
       "4111111111111111",
     );
 
-    cy.contains("button", "Выплаты").click();
-    cy.contains(/Выплат пока нет|Вывод с кошелька|Карта \*\*\*\*/).should(
+    cy.contains("button", "Выплаты").scrollIntoView().click();
+    cy.contains(/Выплат пока нет|Вывод с кошелька|Конкурс #\d+|Карта \*\*\*\*/, { timeout: 8000 }).should(
       "be.visible",
     );
   });

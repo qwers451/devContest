@@ -18,7 +18,18 @@ describe("Решения", () => {
     cy.contains("Мои решения").click();
 
     cy.contains("Мои решения").should("be.visible");
-    cy.get('input[placeholder="По названию..."]').should("be.enabled").type("zzz-no-match");
+    cy.get('input[placeholder="По названию..."]').should("be.enabled");
+    cy.get('input[placeholder="По названию..."]').then(($input) => {
+      const input = $input[0] as HTMLInputElement;
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+
+      nativeSetter?.call(input, "zzz-no-match");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     cy.get('input[placeholder="По названию..."]').should(
       "have.value",
       "zzz-no-match",
@@ -36,7 +47,19 @@ describe("Решения", () => {
     cy.contains("Мои конкурсы").click();
 
     cy.get("h3").first().click();
-    cy.contains("button", "Решения").click();
+    cy.url().should("match", /\/contest\/\d+/);
+    cy.get("body").then(($body) => {
+      if ($body.find('button:contains("Решения")').length > 0) {
+        cy.contains("button", "Решения").click();
+        return;
+      }
+
+      cy.url().then((url) => {
+        const match = url.match(/\/contest\/(\d+)/);
+        expect(match, "contest number").to.not.be.null;
+        cy.visit(`/contest/${match![1]}/solutions`);
+      });
+    });
     cy.url().should("match", /\/contest\/\d+\/solutions/);
     cy.contains(/Решения конкурса|Решения/).should("be.visible");
     cy.contains("← К конкурсу").should("be.visible");

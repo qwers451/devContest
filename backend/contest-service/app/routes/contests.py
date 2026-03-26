@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import date, datetime, time, timezone
 from typing import List
@@ -16,6 +17,8 @@ from app.database import get_db
 from app.dependencies import get_current_user, require_role, verify_internal
 from app.file_text import extract_file_text
 from app.models import Contest, ContestStage, ContestStatus, Submission, Winner
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/contests", tags=["contests"])
 
@@ -331,47 +334,6 @@ async def get_contest_by_number(number: int, db: AsyncSession = Depends(get_db))
     return contest
 
 
-@router.get("/statistics")
-async def get_statistics(
-    x: str = Query("type"),
-    y: str = Query("count"),
-    db: AsyncSession = Depends(get_db),
-    _: dict = Depends(require_role("admin")),
-):
-    if x == "type":
-        group_col = func.coalesce(Contest.type_id, 0)
-    elif x == "status":
-        group_col = cast(Contest.status, String)
-    elif x == "createdAt":
-        group_col = func.to_char(Contest.created_at, "YYYY-MM")
-    elif x == "endBy":
-        group_col = func.to_char(Contest.ends_at, "YYYY-MM")
-    elif x == "prizepool":
-        group_col = case(
-            (Contest.prizepool < 10000, "< 10 тыс"),
-            (Contest.prizepool < 50000, "10–50 тыс"),
-            else_="50 тыс+",
-        )
-    else:
-        group_col = func.coalesce(Contest.type_id, 0)
-
-    y_agg = func.sum(Contest.prizepool) if y == "prizepool" else func.count(Contest.id)
-
-    stmt = (
-        select(group_col.label("x_val"), y_agg.label("y_val"))
-        .group_by(group_col)
-        .order_by(group_col)
-    )
-    result = await db.execute(stmt)
-    rows = result.all()
-
-    x_labels = [str(r.x_val) if r.x_val is not None else "Без типа" for r in rows]
-    data = [int(r.y_val) if r.y_val is not None else 0 for r in rows]
-    dataset_label = "Сумма призов (₽)" if y == "prizepool" else "Количество"
-
-    return {"x_labels": x_labels, "datasets": [{"label": dataset_label, "data": data}]}
-
-
 @router.get("/{contest_id}", response_model=ContestOut)
 async def get_contest(contest_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -594,7 +556,7 @@ async def select_winner(
                 contest_title=contest.title,
             )
         except Exception:
-            pass
+            logger.exception("Failed to release stage escrow for contest %s stage %s", contest_id, stage_id)
 
         await db.commit()
         db.expire_all()
@@ -622,7 +584,7 @@ async def select_winner(
     try:
         await release_escrow(contest_id, executor_id, contest_title=contest.title)
     except Exception:
-        pass
+        logger.exception("Failed to release escrow for contest %s", contest_id)
 
     await db.commit()
     db.expire_all()

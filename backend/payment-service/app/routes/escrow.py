@@ -7,7 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user, verify_internal
-from app.models import EscrowAccount, MilestoneRelease, Payment, PaymentStatus, Payout, Transaction, WalletTxType
+from app.models import (
+    EscrowAccount,
+    MilestoneRelease,
+    Payment,
+    PaymentStatus,
+    PaymentType,
+    Payout,
+    Transaction,
+    WalletTxType,
+)
 from app.wallet_helpers import credit_wallet
 
 router = APIRouter(prefix="/escrow", tags=["escrow"])
@@ -40,7 +49,9 @@ async def reserve_escrow(data: ReserveRequest, db: AsyncSession = Depends(get_db
         select(EscrowAccount).where(EscrowAccount.contest_id == data.contest_id)
     )
     if existing_escrow.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Escrow already exists for this contest")
+        raise HTTPException(
+            status_code=409, detail="Escrow already exists for this contest"
+        )
 
     payment_result = await db.execute(
         select(Payment).where(Payment.contest_id == data.contest_id)
@@ -53,10 +64,17 @@ async def reserve_escrow(data: ReserveRequest, db: AsyncSession = Depends(get_db
             customer_id=data.customer_id,
             amount=data.amount,
             status=PaymentStatus.held,
+            payment_type=PaymentType.contest,
             yookassa_payment_id=f"stub_{data.contest_id}",
+            paid_at=datetime.now(timezone.utc),
         )
         db.add(payment)
         await db.flush()
+    else:
+        payment.status = PaymentStatus.held
+        payment.payment_type = PaymentType.contest
+        payment.paid_at = payment.paid_at or datetime.now(timezone.utc)
+        payment.updated_at = datetime.now(timezone.utc)
 
     escrow = EscrowAccount(
         payment_id=payment.id,
@@ -75,7 +93,11 @@ async def reserve_escrow(data: ReserveRequest, db: AsyncSession = Depends(get_db
     db.add(tx)
 
     await db.commit()
-    return {"status": "held", "contest_id": data.contest_id, "amount": float(payment.amount)}
+    return {
+        "status": "held",
+        "contest_id": data.contest_id,
+        "amount": float(payment.amount),
+    }
 
 
 @router.post("/release", dependencies=[Depends(verify_internal)])
@@ -98,7 +120,9 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
     escrow.released_at = datetime.now(timezone.utc)
     escrow.released_amount = escrow.amount
 
-    payment_result = await db.execute(select(Payment).where(Payment.id == escrow.payment_id))
+    payment_result = await db.execute(
+        select(Payment).where(Payment.id == escrow.payment_id)
+    )
     if payment_obj := payment_result.scalar_one_or_none():
         payment_obj.status = PaymentStatus.released
         payment_obj.updated_at = datetime.now(timezone.utc)
@@ -133,7 +157,12 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
     db.add(tx)
 
     await db.commit()
-    return {"status": "released", "contest_id": data.contest_id, "executor_id": data.executor_id, "amount": remaining}
+    return {
+        "status": "released",
+        "contest_id": data.contest_id,
+        "executor_id": data.executor_id,
+        "amount": remaining,
+    }
 
 
 @router.post("/release-stage", dependencies=[Depends(verify_internal)])
@@ -162,7 +191,9 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Stage already released for this executor")
+        raise HTTPException(
+            status_code=409, detail="Stage already released for this executor"
+        )
 
     milestone = MilestoneRelease(
         escrow_id=escrow.id,
@@ -180,7 +211,9 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
     if float(escrow.released_amount) >= float(escrow.amount):
         escrow.status = PaymentStatus.released
         escrow.released_at = datetime.now(timezone.utc)
-        payment_result = await db.execute(select(Payment).where(Payment.id == escrow.payment_id))
+        payment_result = await db.execute(
+            select(Payment).where(Payment.id == escrow.payment_id)
+        )
         if payment_obj := payment_result.scalar_one_or_none():
             payment_obj.status = PaymentStatus.released
             payment_obj.updated_at = datetime.now(timezone.utc)
@@ -273,7 +306,11 @@ async def escrow_status(contest_id: int, db: AsyncSession = Depends(get_db)):
         payment = payment_result.scalar_one_or_none()
         if not payment:
             return {"contest_id": contest_id, "status": "not_found", "held": False}
-        return {"contest_id": contest_id, "status": payment.status, "held": payment.status == PaymentStatus.held}
+        return {
+            "contest_id": contest_id,
+            "status": payment.status,
+            "held": payment.status == PaymentStatus.held,
+        }
 
     return {
         "contest_id": contest_id,
