@@ -1,12 +1,13 @@
 import React, { useContext, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Context } from "../context";
 import SolutionListWithFilters from "../components/SolutionListWithFilters";
 
 const Solutions = () => {
   const { contest, solution, user } = useContext(Context);
   const { number } = useParams();
+  const navigate = useNavigate();
   const [contestTitle, setContestTitle] = useState("");
 
   useEffect(() => {
@@ -18,6 +19,18 @@ const Solutions = () => {
         if (!currentContest) {
           currentContest = await contest.fetchOneContestByNumber(number);
           contest.setCurrentContest(currentContest);
+        }
+
+        if (!currentContest) {
+          navigate("/");
+          return;
+        }
+
+        const isOwner = currentContest.customer_id === user.user.id;
+        const isAdmin = user.user.role === "admin";
+        if (!isOwner && !isAdmin) {
+          navigate(`/contest/${number}`);
+          return;
         }
 
         if (currentContest?.id) {

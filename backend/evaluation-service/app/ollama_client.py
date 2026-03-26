@@ -33,6 +33,11 @@ _EVALUATE_PROMPT = """Ты — эксперт по оценке конкурсн
 - Комментарий — одна фраза на русском языке: что именно есть или чего нет в работе.
 - critical_issues = true если хотя бы одно требование с is_critical: true имеет score = 0.
 
+Пример:
+Требования: [{{"text": "Логотип в шапке страницы", "is_critical": true}}]
+Работа: "Сайт-портфолио. В шапке размещён логотип компании и навигация."
+Ответ: {{"requirements": [{{"text": "Логотип в шапке страницы", "score": 100, "comment": "Логотип присутствует в шапке"}}], "critical_issues": false}}
+
 Требования:
 {requirements_json}
 
@@ -60,6 +65,11 @@ _EVALUATE_VISION_PROMPT = """Ты — эксперт по оценке конк�
 Для требований к цветам, стилю, визуальным элементам — смотри на изображения.
 Комментарий — одна фраза на русском языке.
 critical_issues = true если хотя бы одно требование с is_critical: true имеет score = 0.
+
+Пример:
+Требования: [{{"text": "Размер баннера 1920×1080 пикселей", "is_critical": true}}]
+Работа: "banner.png: 1920×1080 px, 245 КБ"
+Ответ: {{"requirements": [{{"text": "Размер баннера 1920×1080 пикселей", "score": 100, "comment": "Размер точно соответствует требованию"}}], "critical_issues": false}}
 
 Требования:
 {requirements_json}
@@ -134,18 +144,30 @@ def _build_result(data: dict, extracted_reqs: list[dict]) -> dict:
 
     passed = []
     failed = []
-    scores = []
+    requirements_detail = []
+    weighted_sum = 0
+    weight_total = 0
     has_critical_fail = False
 
     for i, r in enumerate(reqs):
         text = r.get("text", "")
         score = r.get("score", 0)
         comment = r.get("comment", "")
-        scores.append(score)
 
         is_critical = critical_flags[i] if i < len(critical_flags) else False
+        weight = 2 if is_critical else 1
+        weighted_sum += weight * score
+        weight_total += weight
+
         if is_critical and score == 0:
             has_critical_fail = True
+
+        requirements_detail.append({
+            "text": text,
+            "score": score,
+            "comment": comment,
+            "is_critical": is_critical,
+        })
 
         if score >= 70:
             passed.append(text if not comment else f"{text} — {comment}")
@@ -153,14 +175,28 @@ def _build_result(data: dict, extracted_reqs: list[dict]) -> dict:
             label = "частично" if score == 50 else "не выполнено"
             failed.append(f"{text} — {comment or label}")
 
-    compliance_score = round(sum(scores) / len(scores)) if scores else 0
+    # Взвешенное среднее: критические требования с весом 2, остальные с весом 1
+    compliance_score = round(weighted_sum / weight_total) if weight_total else 0
 
     return {
         "passed_requirements": passed,
         "failed_requirements": failed,
+        "requirements_detail": requirements_detail,
         "compliance_score": compliance_score,
         "critical_issues": has_critical_fail or data.get("critical_issues", compliance_score < 50),
     }
+
+
+async def extract_tz_requirements(tz_text: str) -> list[dict] | None:
+    """Извлекает требования из ТЗ через LLM. Возвращает None при ошибке."""
+    raw = await _generate(
+        _EXTRACT_PROMPT.format(tz_text=tz_text),
+        model=settings.ollama_model,
+    )
+    data = _parse_json(raw)
+    if not data or not data.get("requirements"):
+        return None
+    return data["requirements"]
 
 
 async def evaluate_submission(
@@ -168,6 +204,7 @@ async def evaluate_submission(
     submission_text: str,
     images: list[str] | None = None,
     image_meta: list[dict] | None = None,
+    cached_requirements: list[dict] | None = None,
 ) -> dict:
     if settings.evaluation_stub:
         return {
@@ -180,20 +217,18 @@ async def evaluate_submission(
             "critical_issues": False,
         }
 
-    extract_raw = await _generate(
-        _EXTRACT_PROMPT.format(tz_text=tz_text),
-        model=settings.ollama_model,
-    )
-    extract_data = _parse_json(extract_raw)
-    if not extract_data or not extract_data.get("requirements"):
-        return {
-            "passed_requirements": [],
-            "failed_requirements": ["Модель не смогла извлечь требования из ТЗ"],
-            "compliance_score": 0,
-            "critical_issues": True,
-        }
+    if cached_requirements:
+        extracted_reqs = cached_requirements
+    else:
+        extracted_reqs = await extract_tz_requirements(tz_text)
+        if not extracted_reqs:
+            return {
+                "passed_requirements": [],
+                "failed_requirements": ["Модель не смогла извлечь требования из ТЗ"],
+                "compliance_score": 0,
+                "critical_issues": True,
+            }
 
-    extracted_reqs = extract_data["requirements"]
     requirements_json = json.dumps(extracted_reqs, ensure_ascii=False, indent=2)
 
     if images:
@@ -225,6 +260,3 @@ async def evaluate_submission(
 
     return _build_result(eval_data, extracted_reqs)
 
-
-async def extract_requirements(tz_text: str) -> list[str]:
-    return []

@@ -171,23 +171,44 @@ const EvaluationSection = ({
           </div>
         </div>
 
-        {(evaluation.passed_requirements.length > 0 ||
-          evaluation.failed_requirements.length > 0) && (
+        {evaluation.requirements_detail?.length > 0 ? (
+          <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 space-y-2">
+            {evaluation.requirements_detail.map((req, index) => {
+              const isGood = req.score >= 70;
+              const isMidReq = req.score === 50;
+              const scoreCls = isGood
+                ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                : isMidReq
+                  ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                  : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300";
+              return (
+                <div key={index} className="flex items-start gap-2">
+                  <span className={`flex-shrink-0 inline-flex items-center justify-center w-9 h-5 rounded text-xs font-bold tabular-nums ${scoreCls}`}>
+                    {req.score}
+                  </span>
+                  {req.is_critical && (
+                    <span className="flex-shrink-0 inline-flex items-center justify-center w-4 h-5 text-xs font-bold text-red-500 dark:text-red-400" title="Критическое требование">!</span>
+                  )}
+                  <span className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {req.text}
+                    {req.comment && (
+                      <span className="text-gray-400 dark:text-gray-500"> — {req.comment}</span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (evaluation.passed_requirements.length > 0 ||
+          evaluation.failed_requirements.length > 0) ? (
           <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 grid gap-2 sm:grid-cols-2">
             {evaluation.passed_requirements.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">
-                  Выполнено
-                </p>
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">Выполнено</p>
                 <ul className="space-y-1">
                   {evaluation.passed_requirements.map((requirement, index) => (
-                    <li
-                      key={index}
-                      className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
-                    >
-                      <span className="text-emerald-500 flex-shrink-0 font-bold mt-px">
-                        ✓
-                      </span>
+                    <li key={index} className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed">
+                      <span className="text-emerald-500 flex-shrink-0 font-bold mt-px">✓</span>
                       {requirement}
                     </li>
                   ))}
@@ -196,18 +217,11 @@ const EvaluationSection = ({
             )}
             {evaluation.failed_requirements.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">
-                  Не выполнено
-                </p>
+                <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">Не выполнено</p>
                 <ul className="space-y-1">
                   {evaluation.failed_requirements.map((requirement, index) => (
-                    <li
-                      key={index}
-                      className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
-                    >
-                      <span className="text-red-400 flex-shrink-0 font-bold mt-px">
-                        ✗
-                      </span>
+                    <li key={index} className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed">
+                      <span className="text-red-400 flex-shrink-0 font-bold mt-px">✗</span>
                       {requirement}
                     </li>
                   ))}
@@ -215,7 +229,7 @@ const EvaluationSection = ({
               </div>
             )}
           </div>
-        )}
+        ) : null}
         <div className="px-5 py-2 border-t border-gray-100 dark:border-gray-700">
           <p className="text-xs text-gray-400 dark:text-gray-500">
             Оценка сформирована автоматически · Окончательное решение принимает
@@ -544,6 +558,17 @@ const SolutionPage = () => {
           sol.contest_id,
         );
         setCurrentContest(fetchedContest);
+
+        const uid = user.user?.id;
+        const role = user.user?.role;
+        const allowed =
+          role === "admin" ||
+          sol.executor_id === uid ||
+          fetchedContest?.customer_id === uid;
+        if (!allowed) {
+          navigate(`/contest/${fetchedContest?.number ?? ""}`);
+          return;
+        }
 
         const hasPrizeStages = fetchedContest?.stages?.some(
           (s) => s.prize_amount > 0,
@@ -934,7 +959,7 @@ const SolutionPage = () => {
 
           <StatusHistorySection
             statusLog={statusLog}
-            getStatus={solution.getStatus}
+            getStatus={(n) => solution.getStatus(n)}
           />
 
           <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">

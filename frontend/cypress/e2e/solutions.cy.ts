@@ -4,7 +4,8 @@ describe("Решения", () => {
     cy.contains("Мои решения").click();
 
     cy.contains("Мои решения").should("be.visible");
-    cy.get("select").select("По названию");
+    cy.get("h3", { timeout: 10000 }).should("have.length.greaterThan", 0);
+    cy.get("select").select("По названию", { force: true });
     cy.contains("button", "Сбросить").click();
 
     cy.get("h3").first().click();
@@ -16,7 +17,8 @@ describe("Решения", () => {
     cy.loginAsExecutor();
     cy.contains("Мои решения").click();
 
-    cy.get('input[placeholder="По названию..."]').type("zzz-no-match");
+    cy.contains("Мои решения").should("be.visible");
+    cy.get('input[placeholder="По названию..."]').should("be.enabled").type("zzz-no-match");
     cy.get('input[placeholder="По названию..."]').should(
       "have.value",
       "zzz-no-match",

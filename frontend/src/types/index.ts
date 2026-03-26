@@ -78,14 +78,40 @@ export interface Review {
   created_at: string;
 }
 
+export interface RequirementResult {
+  text: string;
+  score: number;
+  comment: string;
+  is_critical: boolean;
+}
+
 export interface EvaluationResult {
   submission_id: number;
   contest_id: number;
   compliance_score: number;
   passed_requirements: string[];
   failed_requirements: string[];
+  requirements_detail: RequirementResult[];
   critical_issues: boolean;
   created_at: string;
+}
+
+export interface RequirementItem {
+  text: string;
+  is_critical: boolean;
+}
+
+export interface ContestRequirementsOut {
+  contest_id: number;
+  requirements: RequirementItem[];
+  cached_at: string;
+}
+
+export interface ContestStatsOut {
+  contest_id: number;
+  evaluated_count: number;
+  avg_score: number | null;
+  critical_issues_count: number;
 }
 
 export interface WalletBalance {

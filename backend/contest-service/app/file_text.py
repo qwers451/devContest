@@ -33,6 +33,7 @@ CODE_EXTENSIONS = {
 }
 _MAX_ZIP_FILE_BYTES = 50_000
 _MAX_ZIP_TOTAL_BYTES = 200_000
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
 
 def extract_text_pdf(data: bytes) -> str:
@@ -66,24 +67,54 @@ def extract_text_zip(data: bytes) -> str:
         for info in zf.infolist():
             if info.is_dir():
                 continue
-            ext = (
-                "." + info.filename.rsplit(".", 1)[-1].lower()
-                if "." in info.filename
-                else ""
-            )
-            if ext not in CODE_EXTENSIONS:
-                continue
-            file_data = zf.read(info.filename)[:_MAX_ZIP_FILE_BYTES]
-            try:
-                text = file_data.decode("utf-8", errors="replace")
-            except Exception:
-                continue
-            parts.append(f"=== {info.filename} ===\n{text}")
-            total += len(text)
-            if total >= _MAX_ZIP_TOTAL_BYTES:
-                parts.append("... (truncated)")
-                break
+            name = info.filename.lower()
+            ext = ("." + name.rsplit(".", 1)[-1]) if "." in name else ""
+            file_data = zf.read(info.filename)
+            text: str | None = None
+            if ext in CODE_EXTENSIONS:
+                try:
+                    text = file_data[:_MAX_ZIP_FILE_BYTES].decode("utf-8", errors="replace")
+                except Exception:
+                    continue
+            elif ext == ".pdf":
+                try:
+                    text = extract_text_pdf(file_data)
+                except Exception:
+                    continue
+            elif ext == ".docx":
+                try:
+                    text = extract_text_docx(file_data)
+                except Exception:
+                    continue
+            if text:
+                parts.append(f"=== {info.filename} ===\n{text}")
+                total += len(text)
+                if total >= _MAX_ZIP_TOTAL_BYTES:
+                    parts.append("... (truncated)")
+                    break
     return "\n\n".join(parts)
+
+
+_MAX_ZIP_IMAGES = 10
+
+
+def extract_zip_images(data: bytes) -> list[tuple[str, bytes]]:
+    """Возвращает список (имя_файла, байты) для изображений внутри ZIP (макс. 10)."""
+    result = []
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            for info in zf.infolist():
+                if info.is_dir():
+                    continue
+                name = info.filename.lower()
+                ext = ("." + name.rsplit(".", 1)[-1]) if "." in name else ""
+                if ext in _IMAGE_EXTENSIONS:
+                    result.append((info.filename, zf.read(info.filename)))
+                    if len(result) >= _MAX_ZIP_IMAGES:
+                        break
+    except Exception:
+        pass
+    return result
 
 
 def extract_file_text(filename: str, data: bytes) -> str | None:

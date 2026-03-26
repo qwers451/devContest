@@ -139,6 +139,7 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llava:7b}
+      OLLAMA_VISION_MODEL: ${OLLAMA_VISION_MODEL:-llava:7b}
       EVALUATION_STUB: ${EVALUATION_STUB:-false}
       CONTEST_SERVICE_URL: http://contest-service:8000
     extra_hosts:
@@ -230,6 +231,10 @@ services:
     environment:
       PYTEST_USER_URL: http://user-service:8000
       PYTEST_CONTEST_URL: http://contest-service:8000
+      PYTEST_EVAL_URL: http://evaluation-service:8000
+      PYTEST_PAYMENT_URL: http://payment-service:8000
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      EVALUATION_STUB: "true"
       PYTEST_SERVICE_STARTUP_TIMEOUT: ${PYTEST_SERVICE_STARTUP_TIMEOUT:-45}
       PYTEST_SERVICE_POLL_INTERVAL: ${PYTEST_SERVICE_POLL_INTERVAL:-1}
     volumes:

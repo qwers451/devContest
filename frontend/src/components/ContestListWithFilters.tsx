@@ -4,21 +4,28 @@ import { Context } from "../context";
 import FiltersBar from "./FiltersBar";
 import { observer } from "mobx-react-lite";
 
-const ContestListWithFilters = observer(() => {
+interface Props {
+  header?: React.ReactNode;
+  onReset?: () => void;
+}
+
+const ContestListWithFilters = observer(({ header, onReset }: Props) => {
   const { contest } = useContext(Context);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-            Конкурсы
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Найдите задачи, предложите лучшее решение и выиграйте приз
-          </p>
+      {header !== undefined ? header : (
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+              Конкурсы
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              Найдите задачи, предложите лучшее решение и выиграйте приз
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex gap-6 items-start">
@@ -64,7 +71,7 @@ const ContestListWithFilters = observer(() => {
                   {contest.sortDir === "desc" ? "↓" : "↑"}
                 </button>
                 <button
-                  onClick={() => contest.resetFilters()}
+                  onClick={() => onReset ? onReset() : contest.resetFilters()}
                   className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium transition-colors"
                 >
                   Сбросить

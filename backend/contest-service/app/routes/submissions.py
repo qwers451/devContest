@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import io
 import os
 import struct
 from datetime import date, datetime, time, timezone
@@ -22,7 +23,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients import get_user, trigger_evaluation
-from app.file_text import extract_file_text
+from app.file_text import extract_file_text, extract_zip_images
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
 from app.models import Contest, Review, Submission, SubmissionStatusLog
@@ -56,15 +57,39 @@ def _check_file(filename: str, content: bytes) -> None:
     )
 
 
-def _png_size(data: bytes) -> tuple[int, int] | None:
+_MAX_IMAGE_SIDE = 1920
+
+
+def _image_size(data: bytes) -> tuple[int, int] | None:
     try:
-        if data[:8] != b"\x89PNG\r\n\x1a\n":
-            return None
-        w = struct.unpack(">I", data[16:20])[0]
-        h = struct.unpack(">I", data[20:24])[0]
-        return w, h
+        if data[:8] == b"\x89PNG\r\n\x1a\n":
+            w = struct.unpack(">I", data[16:20])[0]
+            h = struct.unpack(">I", data[20:24])[0]
+            return w, h
     except Exception:
-        return None
+        pass
+    return None
+
+
+def _resize_if_needed(data: bytes, filename: str) -> bytes:
+    """Уменьшает изображение до _MAX_IMAGE_SIDE пикселей по длинной стороне."""
+    try:
+        from PIL import Image
+        img = Image.open(io.BytesIO(data))
+        w, h = img.size
+        if max(w, h) <= _MAX_IMAGE_SIDE:
+            return data
+        ratio = _MAX_IMAGE_SIDE / max(w, h)
+        new_size = (int(w * ratio), int(h * ratio))
+        img = img.resize(new_size, Image.LANCZOS)
+        buf = io.BytesIO()
+        fmt = "JPEG" if filename.lower().endswith((".jpg", ".jpeg")) else "PNG"
+        if fmt == "JPEG" and img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        img.save(buf, format=fmt, optimize=True)
+        return buf.getvalue()
+    except Exception:
+        return data
 
 
 def _parse_csv_ints(raw: str | None) -> list[int]:
@@ -210,8 +235,23 @@ async def list_submissions(
     sort_by: str = Query("created_at", regex="^(title|created_at|status|ai_score)$"),
     sort_dir: str = Query("desc", regex="^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
+    role = current_user["role"]
+    uid = current_user["id"]
+
+    # Проверка доступа: если запрашивается список по конкурсу
+    if contest_id and role != "admin":
+        contest_row = await db.get(Contest, contest_id)
+        if contest_row is None:
+            raise HTTPException(status_code=404, detail="Конкурс не найден")
+        if contest_row.customer_id != uid:
+            # Исполнитель видит только своё решение
+            if role == "executor":
+                executor_id = uid
+            else:
+                raise HTTPException(status_code=403, detail="Доступ запрещён")
+
     q = select(Submission)
     filters = []
     if contest_id:
@@ -252,25 +292,40 @@ async def list_submissions(
 async def get_submission_by_number(
     number: int,
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     result = await db.execute(select(Submission).where(Submission.number == number))
     s = result.scalar_one_or_none()
     if not s:
         raise HTTPException(status_code=404, detail="Submission not found")
+    await _require_submission_access(s.id, current_user, db)
     return (await _enrich_submissions([s], db))[0]
+
+
+async def _require_submission_access(submission_id: int, current_user: dict, db: AsyncSession) -> Submission:
+    """Возвращает submission если доступ разрешён, иначе 403/404."""
+    result = await db.execute(select(Submission).where(Submission.id == submission_id))
+    s = result.scalar_one_or_none()
+    if not s:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    if current_user["role"] == "admin":
+        return s
+    if s.executor_id == current_user["id"]:
+        return s
+    # Проверяем является ли пользователь владельцем конкурса
+    contest_row = await db.get(Contest, s.contest_id)
+    if contest_row and contest_row.customer_id == current_user["id"]:
+        return s
+    raise HTTPException(status_code=403, detail="Доступ запрещён")
 
 
 @router.get("/{submission_id}", response_model=SubmissionOut)
 async def get_submission(
     submission_id: int,
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
-    result = await db.execute(select(Submission).where(Submission.id == submission_id))
-    s = result.scalar_one_or_none()
-    if not s:
-        raise HTTPException(status_code=404, detail="Submission not found")
+    s = await _require_submission_access(submission_id, current_user, db)
     return (await _enrich_submissions([s], db))[0]
 
 
@@ -353,21 +408,33 @@ async def retrigger_evaluation(
     images_b64 = []
     image_meta = []
     doc_texts = []
+
+    def _add_image(filename: str, data: bytes) -> None:
+        data = _resize_if_needed(data, filename)
+        size = _image_size(data)
+        images_b64.append(base64.b64encode(data).decode())
+        image_meta.append({
+            "filename": filename,
+            "size_bytes": len(data),
+            "width": size[0] if size else None,
+            "height": size[1] if size else None,
+        })
+
     if s.files:
         for fname in s.files:
             path = f"{UPLOAD_DIR}/{submission_id}/{fname}"
             try:
                 async with aiofiles.open(path, "rb") as f:
                     data = await f.read()
-                if fname.lower().endswith(".png"):
-                    images_b64.append(base64.b64encode(data).decode())
-                    size = _png_size(data)
-                    image_meta.append({
-                        "filename": fname,
-                        "size_bytes": len(data),
-                        "width": size[0] if size else None,
-                        "height": size[1] if size else None,
-                    })
+                lower = fname.lower()
+                if lower.endswith((".png", ".jpg", ".jpeg", ".webp")):
+                    _add_image(fname, data)
+                elif lower.endswith(".zip"):
+                    text = extract_file_text(fname, data)
+                    if text:
+                        doc_texts.append(f"[{fname}]\n{text}")
+                    for img_name, img_data in extract_zip_images(data):
+                        _add_image(img_name, img_data)
                 else:
                     text = extract_file_text(fname, data)
                     if text:
@@ -482,14 +549,9 @@ async def download_file(
     submission_id: int,
     filename: str,
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Submission).where(Submission.id == submission_id)
-    )
-    submission = result.scalar_one_or_none()
-    if not submission:
-        raise HTTPException(status_code=404, detail="Submission not found")
+    submission = await _require_submission_access(submission_id, current_user, db)
     safe_name = os.path.basename(filename)
     if safe_name not in (submission.files or []):
         raise HTTPException(status_code=404, detail="File not found")
@@ -508,9 +570,9 @@ async def add_review(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    result = await db.execute(select(Submission).where(Submission.id == submission_id))
-    if not result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Submission not found")
+    if current_user["role"] not in ("customer", "admin"):
+        raise HTTPException(status_code=403, detail="Только заказчик может оставлять отзыв")
+    await _require_submission_access(submission_id, current_user, db)
 
     max_num = await db.execute(
         select(func.max(Review.number)).where(Review.submission_id == submission_id)
@@ -534,8 +596,9 @@ async def add_review(
 async def list_reviews(
     submission_id: int,
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
+    await _require_submission_access(submission_id, current_user, db)
     result = await db.execute(
         select(Review)
         .where(Review.submission_id == submission_id)
@@ -706,8 +769,9 @@ class StatusLogOut(BaseModel):
 async def get_status_log(
     submission_id: int,
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
+    await _require_submission_access(submission_id, current_user, db)
     result = await db.execute(
         select(SubmissionStatusLog)
         .where(SubmissionStatusLog.submission_id == submission_id)

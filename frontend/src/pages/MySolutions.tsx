@@ -10,8 +10,9 @@ const MySolutions = () => {
         if (user.user.id) {
             solution.setFreelancerId(user.user.id);
             solution.setContestId(null);
+            void solution.fetchSolutionsFiltered();
         }
-    }, [user]);
+    }, [user.user.id]);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950">

@@ -81,7 +81,7 @@ export default class SolutionStore {
   private _addedAfter: Date | null = null;
   private _freelancerId: number | null = null;
   private _contestId: number | null = null;
-  isLoading: boolean = true;
+  isLoading: boolean = false;
   private _lastFilterParams: FilterParams | null = null;
   private _searchForMySolutions: boolean | null = null;
   evaluation: EvaluationResult | null = null;

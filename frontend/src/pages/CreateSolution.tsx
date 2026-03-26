@@ -22,6 +22,12 @@ const CreateSolution = () => {
   const [state, setState] = useState(false);
   const [submitURL, setSubmitURL] = useState("/submissions");
 
+  useEffect(() => {
+    if (user.user?.id && user.user.role !== "executor" && user.user.role !== "admin") {
+      navigate(-1);
+    }
+  }, [user.user?.id]);
+
   const regex = /(!\[[^\]]*\])\(([^)]+)\)/g;
   const isEditing = state;
   const currentTitle = solution.form.title.value;

@@ -470,3 +470,128 @@ async def test_submission_has_enriched_fields(executor_token, submission):
     assert data["executor_login"] is not None
     assert "contest_title" in data
     assert data["contest_title"] is not None
+
+
+# ── Контроль доступа (новые проверки) ─────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_other_customer_cannot_list_submissions(contest, submission):
+    """AC1. Заказчик, не владеющий конкурсом, получает 403 при запросе решений."""
+    import time as t
+    ts = int(t.time())
+    async with httpx.AsyncClient() as c:
+        r = await c.post(
+            f"{USER_URL}/auth/register",
+            json={
+                "login": f"other_cust_{ts}",
+                "email": f"other_cust_{ts}@test.com",
+                "password": "Test1234!",
+                "role": "customer",
+            },
+        )
+        assert r.status_code in (200, 201)
+        other_token = r.json()["access_token"]
+
+        r = await c.get(
+            f"{CONTEST_URL}/submissions",
+            params={"contest_id": contest["id"]},
+            headers=auth_headers(other_token),
+        )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_executor_sees_only_own_submission(contest, submission):
+    """AC2. Другой исполнитель видит только свои решения (пустой список) по чужому конкурсу."""
+    import time as t
+    ts = int(t.time())
+    async with httpx.AsyncClient() as c:
+        r = await c.post(
+            f"{USER_URL}/auth/register",
+            json={
+                "login": f"other_exec_{ts}",
+                "email": f"other_exec_{ts}@test.com",
+                "password": "Test1234!",
+                "role": "executor",
+            },
+        )
+        assert r.status_code in (200, 201)
+        other_token = r.json()["access_token"]
+
+        r = await c.get(
+            f"{CONTEST_URL}/submissions",
+            params={"contest_id": contest["id"]},
+            headers=auth_headers(other_token),
+        )
+    assert r.status_code == 200
+    # Другой исполнитель не подавал решения — список пустой
+    assert r.json() == []
+
+
+@pytest.mark.asyncio
+async def test_unauthenticated_cannot_get_submission(submission):
+    """AC3. Без токена GET /submissions/{id} возвращает 401/403."""
+    async with httpx.AsyncClient() as c:
+        r = await c.get(f"{CONTEST_URL}/submissions/{submission['id']}")
+    assert r.status_code in (401, 403)
+
+
+@pytest.mark.asyncio
+async def test_other_user_cannot_get_submission(contest, submission):
+    """AC4. Посторонний пользователь не может получить чужое решение — 403."""
+    import time as t
+    ts = int(t.time())
+    async with httpx.AsyncClient() as c:
+        r = await c.post(
+            f"{USER_URL}/auth/register",
+            json={
+                "login": f"stranger_{ts}",
+                "email": f"stranger_{ts}@test.com",
+                "password": "Test1234!",
+                "role": "customer",
+            },
+        )
+        other_token = r.json()["access_token"]
+
+        r = await c.get(
+            f"{CONTEST_URL}/submissions/{submission['id']}",
+            headers=auth_headers(other_token),
+        )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_executor_cannot_post_review(executor_token, submission):
+    """AC5. Исполнитель не может оставить отзыв — только заказчик."""
+    async with httpx.AsyncClient() as c:
+        r = await c.post(
+            f"{CONTEST_URL}/submissions/{submission['id']}/reviews",
+            json={"score": 5, "commentary": "Отличная работа"},
+            headers=auth_headers(executor_token),
+        )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_owner_can_see_submission(customer_token, submission):
+    """AC6. Владелец конкурса может просматривать решения своего конкурса."""
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/submissions/{submission['id']}",
+            headers=auth_headers(customer_token),
+        )
+    assert r.status_code == 200
+    assert r.json()["id"] == submission["id"]
+
+
+@pytest.mark.asyncio
+async def test_executor_can_see_own_submission(executor_token, submission):
+    """AC7. Исполнитель может просматривать своё решение."""
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            f"{CONTEST_URL}/submissions/{submission['id']}",
+            headers=auth_headers(executor_token),
+        )
+    assert r.status_code == 200
+    assert r.json()["id"] == submission["id"]

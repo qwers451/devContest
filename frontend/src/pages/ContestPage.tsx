@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Context } from '../context';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
-import { deleteData, sendData, downloadFileOrZip } from '../services/apiService.js';
+import { deleteData, fetchData, sendData, downloadFileOrZip } from '../services/apiService.js';
+import type { ContestRequirementsOut, ContestStatsOut } from '../types';
 import { BsTrophy } from 'react-icons/bs';
 
 const statusConfig = {
@@ -23,6 +24,9 @@ const ContestPage = () => {
     const [savingStages, setSavingStages] = useState(false);
     const [uploadingTz, setUploadingTz] = useState(false);
     const [uploadingFiles, setUploadingFiles] = useState(false);
+    const [requirements, setRequirements] = useState<ContestRequirementsOut | null>(null);
+    const [stats, setStats] = useState<ContestStatsOut | null>(null);
+    const [extractingReqs, setExtractingReqs] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -45,6 +49,17 @@ const ContestPage = () => {
     useEffect(() => {
         contest.fetchTypes();
     }, []);
+
+    useEffect(() => {
+        if (!currentContest) return;
+        const id = currentContest.id;
+        fetchData<ContestRequirementsOut>(`/evaluation/requirements/${id}`, {}, { silent: true })
+            .then(setRequirements)
+            .catch(() => setRequirements(null));
+        fetchData<ContestStatsOut>(`/evaluation/contest/${id}/stats`, {}, { silent: true })
+            .then(setStats)
+            .catch(() => setStats(null));
+    }, [currentContest?.id]);
 
     if (error) return <div className="max-w-5xl mx-auto px-4 py-10 text-red-500">{error}</div>;
     if (!currentContest) return (
@@ -98,6 +113,22 @@ const ContestPage = () => {
         } finally {
             setUploadingFiles(false);
             e.target.value = '';
+        }
+    };
+
+    const handleExtractRequirements = async () => {
+        if (!currentContest.tz_text) return;
+        setExtractingReqs(true);
+        try {
+            const result = await sendData<ContestRequirementsOut>(
+                `/evaluation/requirements/${currentContest.id}`,
+                { tz_text: currentContest.tz_text }
+            );
+            setRequirements(result);
+        } catch (err) {
+            alert(err?.response?.data?.detail || 'Не удалось извлечь требования');
+        } finally {
+            setExtractingReqs(false);
         }
     };
 
@@ -272,6 +303,15 @@ const ContestPage = () => {
                                             <input type="file" accept=".pdf,.docx" className="hidden" onChange={handleTzFileUpload} />
                                         </label>
                                     )}
+                                    {(isOwner || isAdmin) && currentContest.tz_text && (
+                                        <button
+                                            onClick={handleExtractRequirements}
+                                            disabled={extractingReqs}
+                                            className={`${btnSecondary} ${extractingReqs ? 'opacity-50 pointer-events-none' : ''}`}
+                                        >
+                                            {extractingReqs ? 'Анализ ТЗ…' : '⚙ Извлечь требования'}
+                                        </button>
+                                    )}
                                 </div>
                                 {currentContest.tz_text ? (
                                     <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
@@ -434,6 +474,53 @@ const ContestPage = () => {
                             </>
                         )}
 
+                        {(stats || requirements) && (
+                            <>
+                                <hr className="my-5 border-gray-100 dark:border-gray-700" />
+                                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-3">Анализ ИИ</h3>
+
+                                {stats && stats.evaluated_count > 0 && (
+                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-center">
+                                            <div className="text-2xl font-black text-gray-800 dark:text-gray-100">{stats.evaluated_count}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">оценено</div>
+                                        </div>
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-center">
+                                            <div className="text-2xl font-black text-violet-600 dark:text-violet-400">
+                                                {stats.avg_score !== null ? `${stats.avg_score}%` : '—'}
+                                            </div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">средний балл</div>
+                                        </div>
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-center">
+                                            <div className="text-2xl font-black text-red-500 dark:text-red-400">{stats.critical_issues_count}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">крит. нарушений</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {requirements && requirements.requirements.length > 0 && (
+                                    <div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                            Требования извлечены из ТЗ · {new Date(requirements.cached_at).toLocaleDateString('ru-RU')}
+                                        </p>
+                                        <ul className="space-y-1">
+                                            {requirements.requirements.map((req, i) => (
+                                                <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                                    <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${req.is_critical ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
+                                                        {req.is_critical ? '!' : '·'}
+                                                    </span>
+                                                    {req.text}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <p className="text-xs text-gray-400 dark:text-gray-600 mt-2">
+                                            ! — критическое требование
+                                        </p>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
                     </div>
 
                     {(isFreelancer && !isFinished) && (
@@ -449,6 +536,14 @@ const ContestPage = () => {
 
                     {(isAdmin || isOwner) && (
                         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex flex-wrap gap-2">
+                            {isOwner && currentContest.status === 'draft' && (
+                                <button
+                                    onClick={() => navigate(`/payment/checkout?contest_id=${currentContest.id}&amount=${currentContest.prizepool}`)}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors"
+                                >
+                                    Оплатить и опубликовать
+                                </button>
+                            )}
                             <button
                                 onClick={() => navigate(`/contest/${currentContest.number}/solutions`)}
                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"

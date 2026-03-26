@@ -13,6 +13,7 @@ import pytest_asyncio
 
 USER_URL = os.getenv("PYTEST_USER_URL", "http://localhost:8001")
 CONTEST_URL = os.getenv("PYTEST_CONTEST_URL", "http://localhost:8002")
+EVAL_URL = os.getenv("PYTEST_EVAL_URL", "http://localhost:8003")
 PAYMENT_URL = os.getenv("PYTEST_PAYMENT_URL", "http://localhost:8004")
 INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "cafdgadhffdah")
 SERVICE_STARTUP_TIMEOUT = float(os.getenv("PYTEST_SERVICE_STARTUP_TIMEOUT", "30"))
@@ -56,6 +57,7 @@ async def wait_for_service(base_url: str) -> None:
 async def wait_for_stack():
     await wait_for_service(USER_URL)
     await wait_for_service(CONTEST_URL)
+    await wait_for_service(EVAL_URL)
     await wait_for_service(PAYMENT_URL)
 
 
