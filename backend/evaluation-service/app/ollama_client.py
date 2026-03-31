@@ -138,7 +138,7 @@ async def _generate(
         "model": model or settings.ollama_model,
         "prompt": prompt,
         "stream": False,
-        "options": {"num_ctx": 16384},
+        "options": {"num_ctx": 16384, "temperature": 0.1, "top_p": 0.9},
     }
     if images:
         payload["images"] = images

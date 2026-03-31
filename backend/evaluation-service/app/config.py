@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     internal_secret: str
     ollama_url: str = "http://ollama:11434"
-    ollama_model: str = "mistral"
+    ollama_model: str = "mistral-small:24b"
     ollama_vision_model: str = "pixtral:12b"
     evaluation_stub: bool = False
     contest_service_url: str = "http://contest-service:8000"

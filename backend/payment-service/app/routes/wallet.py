@@ -9,7 +9,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
+from app.config import get_yk_lock, settings
 from app.database import get_db
 from app.dependencies import get_current_user, verify_internal
 from app.models import Payment, PaymentStatus, PaymentType, Payout, WalletTxType
@@ -23,35 +23,40 @@ def _yk_configured() -> bool:
     return bool(settings.yookassa_shop_id and settings.yookassa_secret_key)
 
 
+def _yk_payout_configured() -> bool:
+    return bool(settings.yookassa_payout_agent_id and settings.yookassa_payout_secret_key)
+
+
 async def _yk_create_wallet_payment(
     amount: float, user_id: int, payment_id_hint: int
 ) -> dict:
     from yookassa import Configuration
     from yookassa import Payment as YKPayment
 
-    Configuration.account_id = settings.yookassa_shop_id
-    Configuration.secret_key = settings.yookassa_secret_key
+    async with get_yk_lock():
+        Configuration.account_id = settings.yookassa_shop_id
+        Configuration.secret_key = settings.yookassa_secret_key
 
-    wallet_return_url = (
-        f"{settings.frontend_url.rstrip('/')}/wallet"
-        f"?wallet_topup=1&payment_id={payment_id_hint}"
-    )
+        wallet_return_url = (
+            f"{settings.frontend_url.rstrip('/')}/wallet"
+            f"?wallet_topup=1&payment_id={payment_id_hint}"
+        )
 
-    idempotency_key = str(uuid.uuid4())
-    payload = {
-        "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
-        "capture": False,
-        "confirmation": {
-            "type": "redirect",
-            "return_url": wallet_return_url,
-        },
-        "description": f"Пополнение кошелька пользователя #{user_id}",
-        "metadata": {
-            "payment_type": "wallet_topup",
-            "user_id": str(user_id),
-        },
-    }
-    result = await asyncio.to_thread(YKPayment.create, payload, idempotency_key)
+        idempotency_key = str(uuid.uuid4())
+        payload = {
+            "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
+            "capture": False,
+            "confirmation": {
+                "type": "redirect",
+                "return_url": wallet_return_url,
+            },
+            "description": f"Пополнение кошелька пользователя #{user_id}",
+            "metadata": {
+                "payment_type": "wallet_topup",
+                "user_id": str(user_id),
+            },
+        }
+        result = await asyncio.to_thread(YKPayment.create, payload, idempotency_key)
     return result.dict() if hasattr(result, "dict") else dict(result)
 
 
@@ -60,12 +65,39 @@ async def _yk_verify_payment(yk_payment_id: str) -> str | None:
         from yookassa import Configuration
         from yookassa import Payment as YKPayment
 
-        Configuration.account_id = settings.yookassa_shop_id
-        Configuration.secret_key = settings.yookassa_secret_key
-        obj = await asyncio.to_thread(YKPayment.find_one, yk_payment_id)
+        async with get_yk_lock():
+            Configuration.account_id = settings.yookassa_shop_id
+            Configuration.secret_key = settings.yookassa_secret_key
+            obj = await asyncio.to_thread(YKPayment.find_one, yk_payment_id)
         return getattr(obj, "status", None)
-    except Exception as e:
-        print(f"[wallet] ошибка проверки YooKassa: {e}")
+    except Exception:
+        return None
+
+
+async def _yk_create_yoomoney_payout(
+    amount: float, executor_id: int, account_number: str
+) -> dict | None:
+    try:
+        from yookassa import Configuration
+        from yookassa import Payout as YKPayout
+
+        async with get_yk_lock():
+            Configuration.account_id = settings.yookassa_payout_agent_id
+            Configuration.secret_key = settings.yookassa_payout_secret_key
+
+            idempotency_key = str(uuid.uuid4())
+            payload = {
+                "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
+                "payout_destination_data": {
+                    "type": "yoo_money",
+                    "account_number": account_number,
+                },
+                "description": f"Вывод с кошелька, пользователь #{executor_id}",
+                "metadata": {"executor_id": str(executor_id)},
+            }
+            result = await asyncio.to_thread(YKPayout.create, payload, idempotency_key)
+        return result.dict() if hasattr(result, "dict") else dict(result)
+    except Exception:
         return None
 
 
@@ -76,23 +108,23 @@ async def _yk_create_payout_local(
         from yookassa import Configuration
         from yookassa import Payout as YKPayout
 
-        Configuration.account_id = settings.yookassa_shop_id
-        Configuration.secret_key = settings.yookassa_secret_key
+        async with get_yk_lock():
+            Configuration.account_id = settings.yookassa_payout_agent_id
+            Configuration.secret_key = settings.yookassa_payout_secret_key
 
-        idempotency_key = str(uuid.uuid4())
-        payload = {
-            "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
-            "payout_destination_data": {
-                "type": "bank_card",
-                "card": {"number": card_number},
-            },
-            "description": f"Вывод с кошелька, пользователь #{executor_id}",
-            "metadata": {"executor_id": str(executor_id)},
-        }
-        result = await asyncio.to_thread(YKPayout.create, payload, idempotency_key)
+            idempotency_key = str(uuid.uuid4())
+            payload = {
+                "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
+                "payout_destination_data": {
+                    "type": "bank_card",
+                    "card": {"number": card_number},
+                },
+                "description": f"Вывод с кошелька, пользователь #{executor_id}",
+                "metadata": {"executor_id": str(executor_id)},
+            }
+            result = await asyncio.to_thread(YKPayout.create, payload, idempotency_key)
         return result.dict() if hasattr(result, "dict") else dict(result)
-    except Exception as e:
-        print(f"[wallet] ошибка выплаты YooKassa: {e}")
+    except Exception:
         return None
 
 
@@ -113,7 +145,9 @@ class InternalCreditRequest(BaseModel):
 
 class WithdrawWalletRequest(BaseModel):
     amount: float
+    payout_type: str = "bank_card"  # "bank_card" | "yoo_money"
     card_number: str | None = None
+    yoo_money_account: str | None = None
 
 
 class WalletTransactionOut(BaseModel):
@@ -245,15 +279,16 @@ async def refund_wallet_topup(
             from yookassa import Configuration
             from yookassa import Refund as YKRefund
 
-            Configuration.account_id = settings.yookassa_shop_id
-            Configuration.secret_key = settings.yookassa_secret_key
-            payload = {
-                "payment_id": yk_id,
-                "amount": {"value": f"{float(payment.amount):.2f}", "currency": "RUB"},
-            }
-            import uuid as _uuid
+            async with get_yk_lock():
+                Configuration.account_id = settings.yookassa_shop_id
+                Configuration.secret_key = settings.yookassa_secret_key
+                payload = {
+                    "payment_id": yk_id,
+                    "amount": {"value": f"{float(payment.amount):.2f}", "currency": "RUB"},
+                }
+                import uuid as _uuid
 
-            await asyncio.to_thread(YKRefund.create, payload, str(_uuid.uuid4()))
+                await asyncio.to_thread(YKRefund.create, payload, str(_uuid.uuid4()))
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"YooKassa refund error: {e}")
 
@@ -315,26 +350,46 @@ async def withdraw_from_wallet(
     if data.amount <= 0:
         raise HTTPException(status_code=400, detail="Сумма должна быть больше нуля")
 
+    description = "Вывод средств на ЮMoney" if data.payout_type == "yoo_money" else "Вывод средств на карту"
     await debit_wallet(
         current_user["id"],
         data.amount,
         WalletTxType.withdrawal,
-        "Вывод средств на карту",
+        description,
         None,
         db,
     )
 
     yk_payout_id = None
     paid_at = None
+    recipient = None
 
-    if _yk_configured() and data.card_number:
-        yk = await _yk_create_payout_local(
-            data.amount, current_user["id"], data.card_number
-        )
-        if yk:
-            yk_payout_id = yk.get("id")
-            if yk.get("status") == "succeeded":
-                paid_at = datetime.now(timezone.utc)
+    if data.payout_type == "yoo_money" and data.yoo_money_account:
+        recipient = data.yoo_money_account
+        if _yk_payout_configured():
+            yk = await _yk_create_yoomoney_payout(
+                data.amount, current_user["id"], data.yoo_money_account
+            )
+            if yk:
+                yk_payout_id = yk.get("id")
+                if yk.get("status") == "succeeded":
+                    paid_at = datetime.now(timezone.utc)
+        else:
+            yk_payout_id = f"yoomoney_stub_{current_user['id']}_{uuid.uuid4().hex[:8]}"
+            paid_at = datetime.now(timezone.utc)
+    elif data.payout_type == "bank_card" and data.card_number:
+        recipient = data.card_number
+        if _yk_payout_configured():
+            yk = await _yk_create_payout_local(
+                data.amount, current_user["id"], data.card_number
+            )
+            if yk:
+                yk_payout_id = yk.get("id")
+                if yk.get("status") == "succeeded":
+                    paid_at = datetime.now(timezone.utc)
+        else:
+            yk_payout_id = f"wallet_payout_stub_{current_user['id']}_{uuid.uuid4().hex[:8]}"
+            paid_at = datetime.now(timezone.utc)
     else:
         yk_payout_id = f"wallet_payout_stub_{current_user['id']}_{uuid.uuid4().hex[:8]}"
         paid_at = datetime.now(timezone.utc)
@@ -344,7 +399,7 @@ async def withdraw_from_wallet(
         contest_id=None,
         amount=data.amount,
         yookassa_payout_id=yk_payout_id,
-        recipient_account=data.card_number,
+        recipient_account=recipient,
         status=PaymentStatus.released if paid_at else PaymentStatus.pending,
         paid_at=paid_at,
     )
@@ -352,29 +407,6 @@ async def withdraw_from_wallet(
     await db.commit()
     await db.refresh(payout)
     return payout
-
-
-class InternalCreditRequest(BaseModel):
-    user_id: int
-    amount: float
-    description: str = "Internal credit"
-
-
-@router.post("/internal/credit")
-async def internal_credit_wallet(
-    data: InternalCreditRequest,
-    db: AsyncSession = Depends(get_db),
-    _: None = Depends(verify_internal),
-):
-    wallet = await credit_wallet(
-        data.user_id,
-        data.amount,
-        WalletTxType.topup,
-        data.description,
-        None,
-        db,
-    )
-    return {"user_id": data.user_id, "balance": float(wallet.balance)}
 
 
 @router.get("/payment/{payment_id}")
@@ -407,20 +439,21 @@ async def get_wallet_payment_status(
                 from yookassa import Configuration
                 from yookassa import Payment as YKPayment
 
-                Configuration.account_id = settings.yookassa_shop_id
-                Configuration.secret_key = settings.yookassa_secret_key
-                await asyncio.to_thread(
-                    YKPayment.capture,
-                    payment.yookassa_payment_id,
-                    {
-                        "amount": {
-                            "value": f"{float(payment.amount):.2f}",
-                            "currency": "RUB",
-                        }
-                    },
-                )
-            except Exception as e:
-                print(f"[wallet] подтверждение платежа не удалось: {e}")
+                async with get_yk_lock():
+                    Configuration.account_id = settings.yookassa_shop_id
+                    Configuration.secret_key = settings.yookassa_secret_key
+                    await asyncio.to_thread(
+                        YKPayment.capture,
+                        payment.yookassa_payment_id,
+                        {
+                            "amount": {
+                                "value": f"{float(payment.amount):.2f}",
+                                "currency": "RUB",
+                            }
+                        },
+                    )
+            except Exception:
+                pass
         if yk_status in ("waiting_for_capture", "succeeded"):
             await _confirm_wallet_topup(payment.id, db)
             await db.refresh(payment)

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
+from app.config import get_yk_lock, settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import (
@@ -34,24 +34,25 @@ async def _yk_create_payment(amount: float, contest_id: int, customer_id: int) -
     from yookassa import Configuration
     from yookassa import Payment as YKPayment
 
-    Configuration.account_id = settings.yookassa_shop_id
-    Configuration.secret_key = settings.yookassa_secret_key
+    async with get_yk_lock():
+        Configuration.account_id = settings.yookassa_shop_id
+        Configuration.secret_key = settings.yookassa_secret_key
 
-    idempotency_key = str(uuid.uuid4())
-    payload = {
-        "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
-        "capture": False,
-        "confirmation": {
-            "type": "redirect",
-            "return_url": f"{settings.yookassa_return_url}?contest_id={contest_id}",
-        },
-        "description": f"Призовой фонд конкурса #{contest_id}",
-        "metadata": {
-            "contest_id": str(contest_id),
-            "customer_id": str(customer_id),
-        },
-    }
-    result = await asyncio.to_thread(YKPayment.create, payload, idempotency_key)
+        idempotency_key = str(uuid.uuid4())
+        payload = {
+            "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
+            "capture": False,
+            "confirmation": {
+                "type": "redirect",
+                "return_url": f"{settings.yookassa_return_url}?contest_id={contest_id}",
+            },
+            "description": f"Призовой фонд конкурса #{contest_id}",
+            "metadata": {
+                "contest_id": str(contest_id),
+                "customer_id": str(customer_id),
+            },
+        }
+        result = await asyncio.to_thread(YKPayment.create, payload, idempotency_key)
     return result.dict() if hasattr(result, "dict") else dict(result)
 
 
@@ -59,14 +60,15 @@ async def _yk_capture_payment(yk_payment_id: str, amount: float) -> dict:
     from yookassa import Configuration
     from yookassa import Payment as YKPayment
 
-    Configuration.account_id = settings.yookassa_shop_id
-    Configuration.secret_key = settings.yookassa_secret_key
+    async with get_yk_lock():
+        Configuration.account_id = settings.yookassa_shop_id
+        Configuration.secret_key = settings.yookassa_secret_key
 
-    result = await asyncio.to_thread(
-        YKPayment.capture,
-        yk_payment_id,
-        {"amount": {"value": f"{amount:.2f}", "currency": "RUB"}},
-    )
+        result = await asyncio.to_thread(
+            YKPayment.capture,
+            yk_payment_id,
+            {"amount": {"value": f"{amount:.2f}", "currency": "RUB"}},
+        )
     return result.dict() if hasattr(result, "dict") else dict(result)
 
 
@@ -79,23 +81,24 @@ async def _yk_create_payout(
         from yookassa import Configuration
         from yookassa import Payout as YKPayout
 
-        Configuration.account_id = settings.yookassa_shop_id
-        Configuration.secret_key = settings.yookassa_secret_key
+        async with get_yk_lock():
+            Configuration.account_id = settings.yookassa_shop_id
+            Configuration.secret_key = settings.yookassa_secret_key
 
-        idempotency_key = str(uuid.uuid4())
-        payload = {
-            "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
-            "payout_destination_data": {
-                "type": "bank_card",
-                "card": {"number": card_number},
-            },
-            "description": f"Выплата за конкурс #{contest_id}, исполнитель #{executor_id}",
-            "metadata": {
-                "contest_id": str(contest_id),
-                "executor_id": str(executor_id),
-            },
-        }
-        result = await asyncio.to_thread(YKPayout.create, payload, idempotency_key)
+            idempotency_key = str(uuid.uuid4())
+            payload = {
+                "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
+                "payout_destination_data": {
+                    "type": "bank_card",
+                    "card": {"number": card_number},
+                },
+                "description": f"Выплата за конкурс #{contest_id}, исполнитель #{executor_id}",
+                "metadata": {
+                    "contest_id": str(contest_id),
+                    "executor_id": str(executor_id),
+                },
+            }
+            result = await asyncio.to_thread(YKPayout.create, payload, idempotency_key)
         return result.dict() if hasattr(result, "dict") else dict(result)
     except Exception as e:
         print(f"[payment-service] ошибка выплаты YooKassa: {e}")
@@ -106,15 +109,16 @@ async def _yk_create_refund(yk_payment_id: str, amount: float) -> dict:
     from yookassa import Configuration
     from yookassa import Refund as YKRefund
 
-    Configuration.account_id = settings.yookassa_shop_id
-    Configuration.secret_key = settings.yookassa_secret_key
+    async with get_yk_lock():
+        Configuration.account_id = settings.yookassa_shop_id
+        Configuration.secret_key = settings.yookassa_secret_key
 
-    idempotency_key = str(uuid.uuid4())
-    payload = {
-        "payment_id": yk_payment_id,
-        "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
-    }
-    result = await asyncio.to_thread(YKRefund.create, payload, idempotency_key)
+        idempotency_key = str(uuid.uuid4())
+        payload = {
+            "payment_id": yk_payment_id,
+            "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
+        }
+        result = await asyncio.to_thread(YKRefund.create, payload, idempotency_key)
     return result.dict() if hasattr(result, "dict") else dict(result)
 
 
@@ -335,12 +339,14 @@ async def get_payment(
         try:
             from yookassa import Configuration
             from yookassa import Payment as YKPayment
+            from app.config import get_yk_lock
 
-            Configuration.account_id = settings.yookassa_shop_id
-            Configuration.secret_key = settings.yookassa_secret_key
-            yk_obj = await asyncio.to_thread(
-                YKPayment.find_one, payment.yookassa_payment_id
-            )
+            async with get_yk_lock():
+                Configuration.account_id = settings.yookassa_shop_id
+                Configuration.secret_key = settings.yookassa_secret_key
+                yk_obj = await asyncio.to_thread(
+                    YKPayment.find_one, payment.yookassa_payment_id
+                )
             yk_status = getattr(yk_obj, "status", None)
 
             if yk_status == "waiting_for_capture":
@@ -536,9 +542,10 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
             from yookassa import Configuration
             from yookassa import Payment as YKPayment
 
-            Configuration.account_id = settings.yookassa_shop_id
-            Configuration.secret_key = settings.yookassa_secret_key
-            yk_obj = await asyncio.to_thread(YKPayment.find_one, yk_payment_id)
+            async with get_yk_lock():
+                Configuration.account_id = settings.yookassa_shop_id
+                Configuration.secret_key = settings.yookassa_secret_key
+                yk_obj = await asyncio.to_thread(YKPayment.find_one, yk_payment_id)
             yk_status = getattr(yk_obj, "status", None)
         except Exception as e:
             print(f"[webhook] не удалось получить статус YooKassa: {e}")

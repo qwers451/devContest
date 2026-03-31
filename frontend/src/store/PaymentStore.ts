@@ -92,14 +92,18 @@ export default class PaymentStore {
 
   async withdrawFromWallet(
     amount: number,
-    card_number?: string,
+    card_number?: string | null,
+    payout_type: string = "yoo_money",
+    yoo_money_account?: string | null,
   ): Promise<Payout> {
     this.loading = true;
     this.error = null;
     try {
       const res = await paymentApi.post<Payout>("/wallet/withdraw", {
         amount,
-        card_number,
+        payout_type,
+        card_number: card_number ?? undefined,
+        yoo_money_account: yoo_money_account ?? undefined,
       });
       runInAction(() => {
         this.withdrawals = [res.data, ...this.withdrawals];

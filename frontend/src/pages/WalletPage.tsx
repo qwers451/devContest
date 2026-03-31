@@ -321,27 +321,79 @@ const WithdrawTab = ({
           className={inputCls}
         />
       </div>
+
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-          Номер банковской карты
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          Способ вывода
         </label>
-        <input
-          type="text"
-          placeholder="Номер карты (необязательно)"
-          value={withdrawForm.card_number}
-          onChange={(e) =>
-            setWithdrawForm((form) => ({
-              ...form,
-              card_number: e.target.value,
-            }))
-          }
-          className={inputCls}
-          maxLength={19}
-        />
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          Без номера карты — средства списываются с баланса без перевода.
-        </p>
+        <div className="flex gap-3">
+          {[
+            { value: "yoo_money", label: "ЮMoney" },
+            { value: "bank_card", label: "Банковская карта" },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() =>
+                setWithdrawForm((form) => ({ ...form, payout_type: opt.value }))
+              }
+              className={`flex-1 py-2 rounded-xl border text-sm font-semibold transition-colors ${
+                withdrawForm.payout_type === opt.value
+                  ? "border-violet-600 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                  : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {withdrawForm.payout_type === "yoo_money" && (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            Номер кошелька ЮMoney
+          </label>
+          <input
+            type="text"
+            placeholder="Например: 41001234567890"
+            value={withdrawForm.yoo_money_account}
+            onChange={(e) =>
+              setWithdrawForm((form) => ({
+                ...form,
+                yoo_money_account: e.target.value,
+              }))
+            }
+            className={inputCls}
+            maxLength={20}
+          />
+        </div>
+      )}
+
+      {withdrawForm.payout_type === "bank_card" && (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            Номер банковской карты
+          </label>
+          <input
+            type="text"
+            placeholder="Номер карты"
+            value={withdrawForm.card_number}
+            onChange={(e) =>
+              setWithdrawForm((form) => ({
+                ...form,
+                card_number: e.target.value,
+              }))
+            }
+            className={inputCls}
+            maxLength={19}
+          />
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Выплаты на карту доступны после верификации в ЮKassa.
+          </p>
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={withdrawing || balance <= 0}
@@ -420,7 +472,9 @@ const WalletPage = () => {
 
   const [withdrawForm, setWithdrawForm] = useState({
     amount: "",
+    payout_type: "yoo_money",
     card_number: "",
+    yoo_money_account: "",
   });
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
@@ -613,9 +667,11 @@ const WalletPage = () => {
       await payment.withdrawFromWallet(
         amount,
         withdrawForm.card_number || null,
+        withdrawForm.payout_type,
+        withdrawForm.yoo_money_account || null,
       );
       setWithdrawSuccess(`Заявка на вывод ${formatMoney(amount)} отправлена!`);
-      setWithdrawForm({ amount: "", card_number: "" });
+      setWithdrawForm({ amount: "", payout_type: "yoo_money", card_number: "", yoo_money_account: "" });
       await payment.fetchWalletTransactions();
     } catch {
       setWithdrawError(payment.error || "Ошибка при выводе средств");
