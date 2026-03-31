@@ -148,10 +148,12 @@ describe("withdrawFromWallet", () => {
     store.balance = 1000;
     const payout = { id: 1, amount: 300, status: "pending" };
     vi.mocked(api.paymentApi.post).mockResolvedValue({ data: payout });
-    const result = await store.withdrawFromWallet(300, "4111111111111111");
+    const result = await store.withdrawFromWallet(300, "4111111111111111", "bank_card");
     expect(api.paymentApi.post).toHaveBeenCalledWith("/wallet/withdraw", {
       amount: 300,
       card_number: "4111111111111111",
+      payout_type: "bank_card",
+      yoo_money_account: undefined,
     });
     expect(result).toEqual(payout);
     expect(store.balance).toBe(700);
