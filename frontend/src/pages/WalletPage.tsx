@@ -681,7 +681,7 @@ const WalletPage = () => {
   };
 
   const inputCls =
-    "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 dark:text-gray-100 text-sm bg-white dark:bg-gray-700 transition-all";
+    "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 text-gray-800 dark:text-gray-100 text-sm bg-white dark:bg-gray-700 transition-all";
 
   const tabs = [
     { key: "balance", label: "Баланс" },
@@ -705,19 +705,20 @@ const WalletPage = () => {
           <div className="text-4xl font-black tracking-tight mb-4">
             {balanceLabel} <span className="text-2xl opacity-70">₽</span>
           </div>
-          <form onSubmit={handleTopup} className="flex gap-2">
+          <form onSubmit={handleTopup} className="flex flex-wrap gap-2">
             <input
               type="number"
               min="1"
               placeholder="Сумма пополнения"
               value={topupAmount}
               onChange={(e) => setTopupAmount(e.target.value)}
-              className="flex-1 px-4 py-2 rounded-xl bg-white/20 border border-white/30 text-white placeholder-white/60 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="flex-1 min-w-[150px] px-4 py-2 rounded-xl bg-white/20 border border-white/30 text-white placeholder-white/60 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-violet-600"
+              aria-label="Сумма пополнения"
             />
             <button
               type="submit"
               disabled={topupLoading}
-              className="px-5 py-2 rounded-xl bg-white text-violet-700 font-semibold text-sm hover:bg-violet-50 transition-colors disabled:opacity-60 whitespace-nowrap"
+              className="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-white text-violet-700 font-semibold text-sm hover:bg-violet-50 transition-colors disabled:opacity-60 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-violet-600 min-h-[44px]"
             >
               {topupLoading ? "…" : "Пополнить"}
             </button>
@@ -740,16 +741,17 @@ const WalletPage = () => {
           )}
         </div>
 
-        <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto pb-1">
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+              className={`pb-2 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 rounded-t-lg ${
                 tab === t.key
                   ? "border-violet-600 text-violet-700 dark:text-violet-400"
                   : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               }`}
+              aria-current={tab === t.key ? "page" : undefined}
             >
               {t.label}
             </button>

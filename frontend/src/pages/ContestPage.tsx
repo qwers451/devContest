@@ -27,6 +27,7 @@ const ContestPage = () => {
     const [requirements, setRequirements] = useState<ContestRequirementsOut | null>(null);
     const [stats, setStats] = useState<ContestStatsOut | null>(null);
     const [extractingReqs, setExtractingReqs] = useState(false);
+    const [activeTab, setActiveTab] = useState('description');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -208,16 +209,22 @@ const ContestPage = () => {
     const status = statusConfig[currentContest.status] || statusConfig.draft;
     const typeName = contest.getTypeNameById(currentContest.type_id);
 
-    const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 dark:text-gray-200 text-sm bg-white dark:bg-gray-700';
-    const btnSecondary = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors';
+    const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:outline-none text-gray-800 dark:text-gray-200 text-sm bg-white dark:bg-gray-700';
+    const btnSecondary = 'inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none';
+
+    const tabs = [
+        { id: 'description', label: 'Описание' },
+        { id: 'stages', label: 'Этапы' },
+        ...((stats || requirements || isAdmin || isOwner) ? [{ id: 'ai', label: 'Анализ ИИ' }] : [])
+    ];
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
             <div className="max-w-4xl mx-auto px-4">
-                <nav className="flex items-center gap-2 mb-4 text-sm">
+                <nav className="flex items-center gap-2 mb-4 text-sm" aria-label="Хлебные крошки">
                     <button
                         onClick={() => navigate('/contests')}
-                        className="text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                        className="text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 focus:outline-none rounded"
                     >
                         Конкурсы
                     </button>
@@ -225,7 +232,7 @@ const ContestPage = () => {
                     <span className="text-gray-700 dark:text-gray-300 font-medium truncate max-w-xs">{currentContest.title}</span>
                 </nav>
 
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
                     <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
                         <div className="flex items-start justify-between gap-4 flex-wrap">
                             <div className="flex-1 min-w-0">
@@ -259,113 +266,122 @@ const ContestPage = () => {
                         </div>
                     </div>
 
-                    <div className="px-6 py-5">
-                        {isFinished && (
-                            <div className="mb-5 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3">
-                                <span className="text-emerald-600 dark:text-emerald-400"><BsTrophy className="w-5 h-5" /></span>
+                    {isFinished && currentContest.winner && (
+                        <div className="px-6 py-4 bg-emerald-50 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-800/50 flex items-center gap-3">
+                            <span className="text-emerald-600 dark:text-emerald-400"><BsTrophy className="w-5 h-5" /></span>
+                            <div>
+                                <p className="font-semibold text-emerald-800 dark:text-emerald-300 text-sm">Конкурс завершён — победитель выбран!</p>
+                                <button
+                                    onClick={() => navigate(`/solution/${currentContest.winner.submission_id}`)}
+                                    className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 font-medium text-sm underline mt-0.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-emerald-900 focus:outline-none rounded"
+                                >
+                                    Перейти к победившему решению
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex gap-1 border-b border-gray-100 dark:border-gray-700 overflow-x-auto px-4 pt-2">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded-t-lg ${activeTab === tab.id
+                                    ? 'border-violet-600 text-violet-700 dark:text-violet-400'
+                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex-1 px-6 py-5">
+                        {activeTab === 'description' && (
+                            <div className="space-y-6 animate-fade-in">
                                 <div>
-                                    <p className="font-semibold text-emerald-800 dark:text-emerald-300 text-sm">Конкурс завершён — победитель выбран!</p>
-                                    {currentContest.winner && (
-                                        <button
-                                            onClick={() => navigate(`/solution/${currentContest.winner.submission_id}`)}
-                                            className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 font-medium text-sm underline mt-0.5"
-                                        >
-                                            Перейти к победившему решению
-                                        </button>
-                                    )}
+                                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">Описание проекта</h2>
+                                    <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                                        <Markdown options={{ disableParsingRawHTML: true }}>
+                                            {currentContest.description || ''}
+                                        </Markdown>
+                                    </div>
                                 </div>
+
+                                {(currentContest.tz_text || currentContest.tz_filename || (isOwner || isAdmin)) && (
+                                    <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                                        <div className="flex items-center gap-3 mb-3 flex-wrap">
+                                            <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Техническое задание</h3>
+                                            {currentContest.tz_filename && (
+                                                <button
+                                                    onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/tz-file`, currentContest.tz_filename)}
+                                                    className={btnSecondary}
+                                                    aria-label={`Скачать ТЗ ${currentContest.tz_filename}`}
+                                                >
+                                                    ↓ {currentContest.tz_filename}
+                                                </button>
+                                            )}
+                                            {(isOwner || isAdmin) && !isFinished && (
+                                                <label className={`${btnSecondary} cursor-pointer ${uploadingTz ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                    {uploadingTz ? 'Загрузка...' : '↑ PDF / DOCX'}
+                                                    <input type="file" accept=".pdf,.docx" className="hidden" onChange={handleTzFileUpload} />
+                                                </label>
+                                            )}
+                                        </div>
+                                        {currentContest.tz_text ? (
+                                            <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 font-sans">
+                                                {currentContest.tz_text}
+                                            </pre>
+                                        ) : (
+                                            <p className="text-sm text-gray-400 dark:text-gray-500 italic">Текст ТЗ не извлечён. Загрузите PDF или DOCX.</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {(currentContest.files?.length > 0 || (isOwner || isAdmin)) && (
+                                    <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Файлы</h3>
+                                            {(isOwner || isAdmin) && !isFinished && (
+                                                <label className={`${btnSecondary} cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                    {uploadingFiles ? 'Загрузка...' : '↑ Добавить файлы'}
+                                                    <input type="file" multiple className="hidden" onChange={handleUploadFiles} />
+                                                </label>
+                                            )}
+                                        </div>
+                                        {currentContest.files?.length > 0 ? (
+                                            <ul className="space-y-2">
+                                                {currentContest.files.map((fileName, idx) => (
+                                                    <li key={idx} className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/files/${fileName}`, fileName)}
+                                                            className="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium hover:underline focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded"
+                                                        >
+                                                            {fileName}
+                                                        </button>
+                                                        {(isOwner || isAdmin) && !isFinished && (
+                                                            <button
+                                                                onClick={() => handleDeleteFile(fileName)}
+                                                                className="text-red-400 hover:text-red-600 dark:hover:text-red-400 px-2 py-1 rounded transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none"
+                                                                aria-label={`Удалить файл ${fileName}`}
+                                                                title="Удалить файл"
+                                                            >✕</button>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-gray-400 dark:text-gray-500 italic">Файлы не прикреплены.</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">Описание проекта</h2>
-                        <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
-                            <Markdown options={{ disableParsingRawHTML: true }}>
-                                {currentContest.description || ''}
-                            </Markdown>
-                        </div>
-
-                        {(currentContest.tz_text || (isOwner || isAdmin)) && (
-                            <>
-                                <hr className="my-5 border-gray-100 dark:border-gray-700" />
-                                <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Техническое задание</h3>
-                                    {currentContest.tz_filename && (
-                                        <button
-                                            onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/tz-file`, currentContest.tz_filename)}
-                                            className={btnSecondary}
-                                        >
-                                            ↓ {currentContest.tz_filename}
-                                        </button>
-                                    )}
-                                    {(isOwner || isAdmin) && !isFinished && (
-                                        <label className={`${btnSecondary} cursor-pointer ${uploadingTz ? 'opacity-50 pointer-events-none' : ''}`}>
-                                            {uploadingTz ? 'Загрузка...' : '↑ PDF / DOCX'}
-                                            <input type="file" accept=".pdf,.docx" className="hidden" onChange={handleTzFileUpload} />
-                                        </label>
-                                    )}
-                                    {(isOwner || isAdmin) && currentContest.tz_text && (
-                                        <button
-                                            onClick={handleExtractRequirements}
-                                            disabled={extractingReqs}
-                                            className={`${btnSecondary} ${extractingReqs ? 'opacity-50 pointer-events-none' : ''}`}
-                                        >
-                                            {extractingReqs ? 'Анализ ТЗ…' : '⚙ Извлечь требования'}
-                                        </button>
-                                    )}
-                                </div>
-                                {currentContest.tz_text ? (
-                                    <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                                        {currentContest.tz_text}
-                                    </pre>
-                                ) : (
-                                    <p className="text-sm text-gray-400 dark:text-gray-500 italic">Техническое задание не заполнено. Загрузите PDF или DOCX.</p>
-                                )}
-                            </>
-                        )}
-
-                        {(currentContest.files?.length > 0 || (isOwner || isAdmin)) && (
-                            <>
-                                <hr className="my-5 border-gray-100 dark:border-gray-700" />
-                                <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Файлы</h3>
-                                    {(isOwner || isAdmin) && !isFinished && (
-                                        <label className={`${btnSecondary} cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
-                                            {uploadingFiles ? 'Загрузка...' : '↑ Добавить файлы'}
-                                            <input type="file" multiple className="hidden" onChange={handleUploadFiles} />
-                                        </label>
-                                    )}
-                                </div>
-                                {currentContest.files?.length > 0 ? (
-                                    <ul className="space-y-1">
-                                        {currentContest.files.map((fileName, idx) => (
-                                            <li key={idx} className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/files/${fileName}`, fileName)}
-                                                    className="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium hover:underline"
-                                                >
-                                                    {fileName}
-                                                </button>
-                                                {(isOwner || isAdmin) && !isFinished && (
-                                                    <button
-                                                        onClick={() => handleDeleteFile(fileName)}
-                                                        className="text-red-400 hover:text-red-600 dark:hover:text-red-400 text-xs transition-colors"
-                                                        title="Удалить файл"
-                                                    >✕</button>
-                                                )}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="text-sm text-gray-400 dark:text-gray-500 italic">Файлы не прикреплены.</p>
-                                )}
-                            </>
-                        )}
-
-                        {(sortedStages.length > 0 || ((isOwner || isAdmin) && !isFinished)) && (
-                            <>
-                                <hr className="my-5 border-gray-100 dark:border-gray-700" />
-                                <div className="flex justify-between items-center mb-3">
-                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Этапы конкурса</h3>
+                        {activeTab === 'stages' && (
+                            <div className="animate-fade-in">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Таймлайн конкурса</h3>
                                     {(isOwner || isAdmin) && !isFinished && !editingStages && (
                                         <button onClick={startEditingStages} className={btnSecondary}>
                                             Редактировать этапы
@@ -376,43 +392,47 @@ const ContestPage = () => {
                                 {editingStages ? (
                                     <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-gray-50 dark:bg-gray-800">
                                         {draftStages.map((stage, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 mb-2 flex-wrap">
-                                                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 w-5">{idx + 1}.</span>
+                                            <div key={idx} className="flex flex-wrap items-center gap-2 mb-3">
+                                                <span className="text-sm font-bold text-gray-500 dark:text-gray-400 w-5">{idx + 1}.</span>
                                                 <input
                                                     placeholder="Название этапа"
                                                     value={stage.name}
                                                     onChange={e => updateDraftStage(idx, 'name', e.target.value)}
-                                                    className={`flex-1 min-w-32 ${inputCls}`}
+                                                    className={`flex-1 min-w-[150px] ${inputCls}`}
+                                                    aria-label={`Название этапа ${idx + 1}`}
                                                 />
                                                 <input
                                                     type="date"
                                                     value={stage.deadline}
                                                     onChange={e => updateDraftStage(idx, 'deadline', e.target.value)}
-                                                    className={`w-36 ${inputCls}`}
+                                                    className={`w-36 flex-shrink-0 ${inputCls}`}
+                                                    aria-label={`Дедлайн этапа ${idx + 1}`}
                                                 />
                                                 <input
                                                     placeholder="Описание (необязательно)"
                                                     value={stage.description || ''}
                                                     onChange={e => updateDraftStage(idx, 'description', e.target.value)}
-                                                    className={`flex-1 min-w-32 ${inputCls}`}
+                                                    className={`flex-1 min-w-[150px] ${inputCls}`}
+                                                    aria-label={`Описание этапа ${idx + 1}`}
                                                 />
                                                 <button
                                                     onClick={() => removeDraftStage(idx)}
-                                                    className="p-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs transition-colors"
+                                                    className="p-2 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus:outline-none"
+                                                    aria-label={`Удалить этап ${idx + 1}`}
                                                 >✕</button>
                                             </div>
                                         ))}
-                                        <div className="flex gap-2 mt-3">
+                                        <div className="flex flex-wrap gap-2 mt-4">
                                             <button
                                                 onClick={addDraftStage}
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-violet-200 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 text-xs font-medium transition-colors"
+                                                className="inline-flex items-center gap-1 px-4 py-2 rounded-xl border border-violet-200 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus:outline-none"
                                             >
                                                 + Добавить этап
                                             </button>
                                             <button
                                                 onClick={saveStages}
                                                 disabled={savingStages}
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold transition-colors disabled:opacity-60"
+                                                className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-emerald-500 focus:outline-none"
                                             >
                                                 {savingStages ? 'Сохранение...' : 'Сохранить'}
                                             </button>
@@ -425,9 +445,9 @@ const ContestPage = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         {sortedStages.length === 0 && (
-                                            <p className="text-sm text-gray-400 dark:text-gray-500">Этапы не добавлены. Нажмите «Редактировать этапы», чтобы добавить.</p>
+                                            <p className="text-sm text-gray-400 dark:text-gray-500">Этапы не добавлены. Конкурс завершится в указанный срок.</p>
                                         )}
                                         {sortedStages.map((stage) => {
                                             const isActive = stage.id === activeStageId;
@@ -435,33 +455,33 @@ const ContestPage = () => {
                                             return (
                                                 <div
                                                     key={stage.id}
-                                                    className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800' : 'bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700'}`}
+                                                    className={`flex items-start gap-4 p-4 rounded-xl transition-colors ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800' : 'bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700'}`}
                                                 >
-                                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isActive ? 'bg-emerald-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                                                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isActive ? 'bg-emerald-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>
                                                         {stage.order}
                                                     </span>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{stage.name}</span>
+                                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                            <span className="font-semibold text-gray-800 dark:text-gray-200">{stage.name}</span>
                                                             {isActive && (
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
                                                                     Текущий {isManual ? '' : '(авто)'}
                                                                 </span>
                                                             )}
                                                             {stage.deadline && (
-                                                                <span className="text-xs text-gray-400 dark:text-gray-500">
+                                                                <span className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-2 py-0.5 rounded shadow-sm border border-gray-100 dark:border-gray-700">
                                                                     до {new Date(stage.deadline).toLocaleDateString('ru-RU')}
                                                                 </span>
                                                             )}
                                                         </div>
                                                         {stage.description && (
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{stage.description}</p>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{stage.description}</p>
                                                         )}
                                                     </div>
                                                     {(isOwner || isAdmin) && !isFinished && (
                                                         <button
                                                             onClick={() => handleSetCurrentStage(stage.id)}
-                                                            className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isActive && isManual ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                                            className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus:outline-none ${isActive && isManual ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                                                         >
                                                             {isActive && isManual ? '✓ Текущий' : 'Назначить'}
                                                         </button>
@@ -471,103 +491,114 @@ const ContestPage = () => {
                                         })}
                                     </div>
                                 )}
-                            </>
+                            </div>
                         )}
 
-                        {(stats || requirements) && (
-                            <>
-                                <hr className="my-5 border-gray-100 dark:border-gray-700" />
-                                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-3">Анализ ИИ</h3>
+                        {activeTab === 'ai' && (
+                            <div className="animate-fade-in">
+                                <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Система оценки требований</h3>
+                                    {(isOwner || isAdmin) && currentContest.tz_text && (
+                                        <button
+                                            onClick={handleExtractRequirements}
+                                            disabled={extractingReqs}
+                                            className={`${btnSecondary} ${extractingReqs ? 'opacity-50 pointer-events-none' : ''}`}
+                                        >
+                                            {extractingReqs ? 'Анализ ТЗ...' : '⚙ Извлечь/Обновить требования'}
+                                        </button>
+                                    )}
+                                </div>
 
                                 {stats && stats.evaluated_count > 0 && (
-                                    <div className="grid grid-cols-3 gap-3 mb-4">
-                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-center">
-                                            <div className="text-2xl font-black text-gray-800 dark:text-gray-100">{stats.evaluated_count}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">оценено</div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-700">
+                                            <div className="text-3xl font-black text-gray-800 dark:text-gray-100">{stats.evaluated_count}</div>
+                                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Решений оценено</div>
                                         </div>
-                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-center">
-                                            <div className="text-2xl font-black text-violet-600 dark:text-violet-400">
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-700">
+                                            <div className="text-3xl font-black text-violet-600 dark:text-violet-400">
                                                 {stats.avg_score !== null ? `${stats.avg_score}%` : '—'}
                                             </div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">средний балл</div>
+                                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Средний балл</div>
                                         </div>
-                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-center">
-                                            <div className="text-2xl font-black text-red-500 dark:text-red-400">{stats.critical_issues_count}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">крит. нарушений</div>
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-700">
+                                            <div className="text-3xl font-black text-red-500 dark:text-red-400">{stats.critical_issues_count}</div>
+                                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Крит. нарушений</div>
                                         </div>
                                     </div>
                                 )}
 
-                                {requirements && requirements.requirements.length > 0 && (
+                                {requirements && requirements.requirements.length > 0 ? (
                                     <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                            Требования извлечены из ТЗ · {new Date(requirements.cached_at).toLocaleDateString('ru-RU')}
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                            Критерии извлечены из ТЗ · <span className="font-medium">{new Date(requirements.cached_at).toLocaleDateString('ru-RU')}</span>
                                         </p>
-                                        <ul className="space-y-1">
+                                        <ul className="space-y-2">
                                             {requirements.requirements.map((req, i) => (
-                                                <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                                    <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold ${req.is_critical ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
+                                                <li key={i} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                                                    <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${req.is_critical ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`} title={req.is_critical ? 'Критическое требование' : 'Обычное требование'}>
                                                         {req.is_critical ? '!' : '·'}
                                                     </span>
-                                                    {req.text}
+                                                    <span className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 leading-snug">
+                                                        {req.text}
+                                                    </span>
                                                 </li>
                                             ))}
                                         </ul>
-                                        <p className="text-xs text-gray-400 dark:text-gray-600 mt-2">
-                                            ! — критическое требование
-                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                                        <p className="text-gray-500 dark:text-gray-400">Требования пока не извлечены. Анализ недоступен.</p>
                                     </div>
                                 )}
-                            </>
+                            </div>
                         )}
-
                     </div>
 
-                    {(isFreelancer && !isFinished) && (
-                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex flex-wrap gap-3 mt-auto">
+                        {(isFreelancer && !isFinished) && (
                             <button
                                 onClick={() => navigate(`/contest/${currentContest.number}/create-solution`)}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-all duration-200 shadow-sm"
+                                className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-all duration-200 shadow-sm focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
                             >
                                 Отправить решение
                             </button>
-                        </div>
-                    )}
-
-                    {(isAdmin || isOwner) && (
-                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex flex-wrap gap-2">
-                            {isOwner && currentContest.status === 'draft' && (
+                        )}
+                        {(isAdmin || isOwner) && (
+                            <>
+                                {isOwner && currentContest.status === 'draft' && (
+                                    <button
+                                        onClick={() => navigate(`/payment/checkout?contest_id=${currentContest.id}&amount=${currentContest.prizepool}`)}
+                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
+                                    >
+                                        Оплатить и опубликовать
+                                    </button>
+                                )}
                                 <button
-                                    onClick={() => navigate(`/payment/checkout?contest_id=${currentContest.id}&amount=${currentContest.prizepool}`)}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors"
+                                    onClick={() => navigate(`/contest/${currentContest.number}/solutions`)}
+                                    className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
                                 >
-                                    Оплатить и опубликовать
+                                    Решения
                                 </button>
-                            )}
-                            <button
-                                onClick={() => navigate(`/contest/${currentContest.number}/solutions`)}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
-                            >
-                                Решения
-                            </button>
-                            {isOwner && !isFinished && (
-                                <button
-                                    onClick={() => navigate(`/contest/edit/${currentContest.number}`, { state: JSON.parse(JSON.stringify(currentContest)) })}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 font-semibold text-sm transition-colors"
-                                >
-                                    Редактировать
-                                </button>
-                            )}
-                            {isAdmin && (
-                                <button
-                                    onClick={handleDelete}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors"
-                                >
-                                    Удалить
-                                </button>
-                            )}
-                        </div>
-                    )}
+                                {isOwner && !isFinished && (
+                                    <button
+                                        onClick={() => navigate(`/contest/edit/${currentContest.number}`, { state: JSON.parse(JSON.stringify(currentContest)) })}
+                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 font-semibold text-sm transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
+                                    >
+                                        Редактировать
+                                    </button>
+                                )}
+                                {isAdmin && (
+                                    <button
+                                        onClick={handleDelete}
+                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
+                                    >
+                                        Удалить
+                                    </button>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

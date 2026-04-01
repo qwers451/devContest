@@ -97,7 +97,7 @@ const NavBar = observer(() => {
   };
 
   const linkClass = ({ isActive }) =>
-    `text-sm font-medium transition-colors duration-150 ${isActive ? "text-violet-600 dark:text-violet-400" : "text-gray-600 hover:text-violet-600 dark:text-gray-300 dark:hover:text-violet-400"}`;
+    `text-sm font-medium transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded-xl px-3 py-2.5 md:px-1 md:py-0.5 md:rounded md:block ${isActive ? "text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/40 md:bg-transparent md:text-violet-600 md:dark:text-violet-400" : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 md:hover:bg-transparent md:text-gray-600 md:hover:text-violet-600 md:dark:text-gray-300 md:dark:hover:text-violet-400"}`;
 
   const links = () => {
     if (!user.isAuth) return null;
@@ -156,7 +156,8 @@ const NavBar = observer(() => {
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
         <button
           onClick={() => navigate(CONTESTS_ROUTE)}
-          className="flex items-center gap-2 font-black text-lg tracking-tight text-gray-900 dark:text-white hover:text-violet-700 dark:hover:text-violet-400 transition-colors"
+          className="flex items-center gap-2 font-black text-lg tracking-tight text-gray-900 dark:text-white hover:text-violet-700 dark:hover:text-violet-400 transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded"
+          aria-label="На главную"
         >
           <img src="/logo.svg" alt="logo" className="w-7 h-7" />
           devContest
@@ -168,7 +169,8 @@ const NavBar = observer(() => {
           <button
             ref={desktopThemeButtonRef}
             onClick={toggleTheme}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-all focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none"
+            aria-label={isDark ? "Включить светлую тему" : "Включить тёмную тему"}
             title={isDark ? "Светлая тема" : "Тёмная тема"}
           >
             {isDark ? <BsSun size={16} /> : <BsMoon size={16} />}
@@ -177,7 +179,8 @@ const NavBar = observer(() => {
             <>
               <NavLink
                 to={WALLET_ROUTE}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900 transition-colors group"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900 transition-colors group focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none"
+                aria-label="Кошелёк"
                 title="Кошелёк"
               >
                 <BsWallet2 className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
@@ -187,7 +190,7 @@ const NavBar = observer(() => {
               </NavLink>
               <button
                 onClick={() => navigate(PROFILE_ROUTE)}
-                className="text-sm font-semibold text-gray-700 dark:text-gray-200 hover:text-violet-600 dark:hover:text-violet-400 transition-colors flex items-center gap-1.5"
+                className="text-sm font-semibold text-gray-700 dark:text-gray-200 hover:text-violet-600 dark:hover:text-violet-400 transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded"
               >
                 <span className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 flex items-center justify-center text-xs font-black">
                   {user.user?.login?.[0]?.toUpperCase()}
@@ -196,7 +199,7 @@ const NavBar = observer(() => {
               </button>
               <button
                 onClick={logOut}
-                className="px-3.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-medium"
+                className="px-3.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-medium focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none"
               >
                 Выйти
               </button>
@@ -204,7 +207,7 @@ const NavBar = observer(() => {
           ) : (
             <button
               onClick={() => navigate(LOGIN_ROUTE)}
-              className="px-4 py-1.5 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 transition-colors"
+              className="px-4 py-1.5 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none"
             >
               Войти
             </button>
@@ -212,40 +215,46 @@ const NavBar = observer(() => {
         </div>
 
         <button
-          className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none"
           onClick={() => setOpen((o) => !o)}
+          aria-label={open ? "Закрыть меню" : "Открыть меню"}
+          aria-expanded={open}
         >
-          <div
-            className={`w-5 h-0.5 bg-current transition-all duration-200 ${open ? "rotate-45 translate-y-1.5" : ""}`}
-          />
-          <div
-            className={`w-5 h-0.5 bg-current my-1 transition-all duration-200 ${open ? "opacity-0" : ""}`}
-          />
-          <div
-            className={`w-5 h-0.5 bg-current transition-all duration-200 ${open ? "-rotate-45 -translate-y-1.5" : ""}`}
-          />
+          <div className="flex flex-col justify-center items-center">
+            <div
+              className={`w-5 h-0.5 bg-current transition-all duration-200 ${open ? "rotate-45 translate-y-1.5" : ""}`}
+            />
+            <div
+              className={`w-5 h-0.5 bg-current my-1 transition-all duration-200 ${open ? "opacity-0" : ""}`}
+            />
+            <div
+              className={`w-5 h-0.5 bg-current transition-all duration-200 ${open ? "-rotate-45 -translate-y-1.5" : ""}`}
+            />
+          </div>
         </button>
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 animate-slide-down px-4 py-3 flex flex-col gap-3">
-          {links()}
+        <div className="md:hidden border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 animate-slide-down px-4 py-4 flex flex-col gap-2 shadow-lg">
+          <div className="flex flex-col gap-1 mb-2">
+            {links()}
+          </div>
           {user.isAuth && (
             <NavLink
               to={WALLET_ROUTE}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 text-sm font-bold text-violet-700 dark:text-violet-300"
+              className="flex items-center gap-2 text-sm font-bold text-violet-700 dark:text-violet-300 px-3 py-2.5 rounded-xl bg-violet-50 dark:bg-violet-900/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
             >
-              <BsWallet2 className="w-3.5 h-3.5" />
+              <BsWallet2 className="w-4 h-4" />
               {Number(payment.balance).toLocaleString("ru-RU")} ₽
             </NavLink>
           )}
           <button
             ref={mobileThemeButtonRef}
             onClick={toggleTheme}
-            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 text-left"
+            className="flex items-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-200 text-left px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
           >
-            {isDark ? <BsSun size={16} /> : <BsMoon size={16} />}
+            {isDark ? <BsSun size={18} className="text-gray-500 dark:text-gray-400" /> : <BsMoon size={18} className="text-gray-500 dark:text-gray-400" />}
             {isDark ? "Светлая тема" : "Тёмная тема"}
           </button>
           {user.isAuth ? (
@@ -255,13 +264,16 @@ const NavBar = observer(() => {
                   navigate(PROFILE_ROUTE);
                   setOpen(false);
                 }}
-                className="text-sm text-gray-600 dark:text-gray-300 text-left"
+                className="text-sm font-medium text-gray-700 dark:text-gray-200 text-left px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 flex items-center gap-2"
               >
+                <span className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 flex items-center justify-center text-xs font-black">
+                  {user.user?.login?.[0]?.toUpperCase()}
+                </span>
                 {user.user?.login}
               </button>
               <button
                 onClick={logOut}
-                className="text-sm text-red-500 text-left"
+                className="text-sm font-medium text-red-600 dark:text-red-400 text-left px-3 py-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 mt-2 border border-red-100 dark:border-red-900/30 text-center flex justify-center"
               >
                 Выйти
               </button>
@@ -272,7 +284,7 @@ const NavBar = observer(() => {
                 navigate(LOGIN_ROUTE);
                 setOpen(false);
               }}
-              className="text-sm text-violet-600 font-semibold text-left"
+              className="text-sm text-white bg-violet-600 hover:bg-violet-700 font-semibold text-center px-4 py-3 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 mt-2"
             >
               Войти
             </button>

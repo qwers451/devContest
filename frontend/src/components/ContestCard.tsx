@@ -34,11 +34,18 @@ const ContestCard = observer(({ contest: item }) => {
         contest.setCurrentContest(item);
         navigate(CONTEST_ROUTE + "/" + item.number);
       }}
-      className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-500 hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden animate-fade-in"
+      className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-500 hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          contest.setCurrentContest(item);
+          navigate(CONTEST_ROUTE + "/" + item.number);
+        }
+      }}
     >
-      <div className="flex items-stretch">
+      <div className="flex flex-col sm:flex-row items-stretch">
         <div className="flex-1 px-5 py-4 min-w-0">
-          <div className="flex items-center gap-2 mb-2.5">
+          <div className="flex flex-wrap items-center gap-2 mb-2.5">
             <span
               className={`w-2 h-2 rounded-full flex-shrink-0 ${status.dot}`}
             />
@@ -71,10 +78,10 @@ const ContestCard = observer(({ contest: item }) => {
           )}
         </div>
 
-        <div className="flex-shrink-0 w-40 border-l border-gray-100 dark:border-gray-700 px-4 py-4 flex flex-col items-end justify-between">
-          <div className="text-right">
+        <div className="flex-shrink-0 sm:w-40 border-t sm:border-t-0 sm:border-l border-gray-100 dark:border-gray-700 px-5 py-4 sm:px-4 flex flex-row sm:flex-col items-center sm:items-end justify-between bg-gray-50/50 dark:bg-gray-800/50 sm:bg-transparent">
+          <div className="text-left sm:text-right">
             <div>
-              <span className="text-2xl font-black text-gray-900 dark:text-gray-100">
+              <span className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100">
                 {Number(item.prizepool).toLocaleString("ru")}
               </span>
               <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 ml-0.5">
@@ -85,7 +92,7 @@ const ContestCard = observer(({ contest: item }) => {
               призовой фонд
             </span>
           </div>
-          <div className="text-right">
+          <div className="text-right flex flex-col items-end">
             {creator && (
               <div className="text-xs text-violet-600 dark:text-violet-400 font-medium mb-1 truncate max-w-[140px]">
                 @{creator.login}
