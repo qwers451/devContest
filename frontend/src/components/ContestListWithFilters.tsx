@@ -22,7 +22,7 @@ const ContestListWithFilters = observer(({ header, onReset }: Props) => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
               Конкурсы
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
+            <p className="text-gray-600 dark:text-gray-300 text-sm">
               Найдите задачи, предложите лучшее решение и выиграйте приз
             </p>
           </div>
@@ -54,6 +54,7 @@ const ContestListWithFilters = observer(({ header, onReset }: Props) => {
               </span>
               <div className="flex items-center gap-2 flex-wrap">
                 <select
+                  aria-label="Сортировка конкурсов"
                   value={contest.sortBy}
                   onChange={(e) => {
                     contest.setSortBy(e.target.value);

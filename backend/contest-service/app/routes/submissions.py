@@ -19,7 +19,7 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients import get_user, trigger_evaluation
@@ -204,8 +204,8 @@ async def create_submission(
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
 
-    max_num = await db.execute(select(func.max(Submission.number)))
-    next_num = (max_num.scalar() or 0) + 1
+    result = await db.execute(text("SELECT nextval('submission_number_seq')"))
+    next_num = result.scalar()
 
     submission = Submission(
         contest_id=data.contest_id,

@@ -64,6 +64,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8001:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
     environment:
       DATABASE_URL: postgresql+asyncpg://user_svc:${USER_DB_PASSWORD}@user-db:5432/user_db
       JWT_SECRET: ${JWT_SECRET}
@@ -88,6 +89,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8002:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
     environment:
       DATABASE_URL: postgresql+asyncpg://contest_svc:${CONTEST_DB_PASSWORD}@contest-db:5432/contest_db
       JWT_SECRET: ${JWT_SECRET}
@@ -123,6 +125,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8003:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
     environment:
       DATABASE_URL: postgresql+asyncpg://eval_svc:${EVAL_DB_PASSWORD}@evaluation-db:5432/evaluation_db
       JWT_SECRET: ${JWT_SECRET}
@@ -154,6 +157,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8004:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
     environment:
       DATABASE_URL: postgresql+asyncpg://payment_svc:${PAYMENT_DB_PASSWORD}@payment-db:5432/payment_db
       JWT_SECRET: ${JWT_SECRET}

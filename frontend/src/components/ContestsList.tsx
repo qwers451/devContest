@@ -32,7 +32,7 @@ const ContestsList = observer(() => {
 
   if (!contest.isLoading && contest.contests.length === 0) {
     return (
-      <div className="text-center my-10 text-gray-500 dark:text-gray-400">
+      <div className="text-center my-10 text-gray-600 dark:text-gray-300">
         Нет конкурсов по выбранным фильтрам
       </div>
     );

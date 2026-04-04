@@ -1,4 +1,4 @@
-import React, {useContext, useEffect} from 'react';
+import React, {useContext, useEffect, Suspense} from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { authRoutes, publicRoutes } from "../routes";
 import {CONTESTS_ROUTE} from "../utils/consts.js";
@@ -25,15 +25,17 @@ const AppRouter = () => {
     }, [contest]);
 
     return (
-        <Routes>
-            {user.isAuth && authRoutes.map(({ path, element }) =>
-                <Route key={path} path={path} element={element} exact />
-            )}
-            {publicRoutes.map(({ path, element }) =>
-                <Route key={path} path={path} element={element} exact />
-            )}
-            <Route path="*" element={<Navigate to={CONTESTS_ROUTE} />} />
-        </Routes>
+        <Suspense fallback={<div className="flex justify-center items-center h-32 text-gray-400">Загрузка...</div>}>
+            <Routes>
+                {user.isAuth && authRoutes.map(({ path, element }) =>
+                    <Route key={path} path={path} element={element} exact />
+                )}
+                {publicRoutes.map(({ path, element }) =>
+                    <Route key={path} path={path} element={element} exact />
+                )}
+                <Route path="*" element={<Navigate to={CONTESTS_ROUTE} />} />
+            </Routes>
+        </Suspense>
     );
 };
 

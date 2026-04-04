@@ -7,7 +7,7 @@ import aiofiles
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sqlalchemy import String, and_, case, cast, func, select
+from sqlalchemy import String, and_, case, cast, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified
@@ -187,8 +187,8 @@ async def create_contest(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("customer", "admin")),
 ):
-    max_num = await db.execute(select(func.max(Contest.number)))
-    next_num = (max_num.scalar() or 0) + 1
+    result = await db.execute(text("SELECT nextval('contest_number_seq')"))
+    next_num = result.scalar()
 
     contest = Contest(
         customer_id=current_user["id"],

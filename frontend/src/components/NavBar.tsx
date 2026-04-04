@@ -157,7 +157,7 @@ const NavBar = observer(() => {
         <button
           onClick={() => navigate(CONTESTS_ROUTE)}
           className="flex items-center gap-2 font-black text-lg tracking-tight text-gray-900 dark:text-white hover:text-violet-700 dark:hover:text-violet-400 transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded"
-          aria-label="На главную"
+          aria-label="devContest"
         >
           <img src="/logo.svg" alt="logo" className="w-7 h-7" />
           devContest
