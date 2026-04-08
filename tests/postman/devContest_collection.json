@@ -324,7 +324,12 @@
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "pm.test('Есть items', () => pm.expect(pm.response.json()).to.have.property('items'));",
-                  "pm.test('Есть total', () => pm.expect(pm.response.json()).to.have.property('total'));"
+                  "pm.test('Есть total', () => pm.expect(pm.response.json()).to.have.property('total'));",
+                  "const list = pm.response.json();",
+                  "pm.test('В списке есть хотя бы один конкурс', () => pm.expect(list.items.length).to.be.above(0));",
+                  "if (list.items.length > 0) {",
+                  "  pm.collectionVariables.set('contest_number', list.items[0].number);",
+                  "}"
                 ]
               }
             }
@@ -429,7 +434,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{CONTEST_URL}}/contests/number/1",
+            "url": "{{CONTEST_URL}}/contests/number/{{contest_number}}",
             "header": [
               {
                 "key": "Authorization",
