@@ -46,15 +46,15 @@ INTERNAL_SECRET=...
 
 | Режим | Команда | Что получится |
 |---|---|---|
-| Базовый | `docker compose -f docker-compose.yml up --build` | режим без `override`, ближе к CI |
-| Dev | `docker compose up --build` | `docker-compose.override.yml`, hot reload, Vite |
+| Обычный запуск | `docker compose -f docker-compose.yml up --build` | запуск без `docker-compose.override.yml` |
+| Режим разработки | `docker compose up --build` | запуск с `docker-compose.override.yml`, hot reload, Vite |
 
 ### 3. Адреса
 
 | Что | URL |
 |---|---|
-| Frontend, базовый режим | `http://localhost:3000` |
-| Frontend, dev режим | `http://localhost:5173` |
+| Frontend, обычный запуск | `http://localhost:3000` |
+| Frontend, режим разработки | `http://localhost:5173` |
 | Gateway | `http://localhost:8080` |
 | Swagger user-service | `http://localhost:8001/docs` |
 | Swagger contest-service | `http://localhost:8002/docs` |
@@ -65,8 +65,8 @@ INTERNAL_SECRET=...
 
 | Режим | Frontend | Backend | Когда использовать |
 |---|---|---|---|
-| Базовый | nginx + production build | обычный `uvicorn` | проверка как в CI, стабильный запуск |
-| Dev | Vite dev server | `uvicorn --reload` | локальная разработка |
+| Обычный запуск | nginx + production build | обычный `uvicorn` | проверка готового приложения |
+| Режим разработки | Vite dev server | `uvicorn --reload` | локальная разработка |
 
 Если нужен запуск без `docker-compose.override.yml`, всегда используй `-f docker-compose.yml`.
 
