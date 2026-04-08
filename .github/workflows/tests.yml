@@ -55,13 +55,17 @@ jobs:
           sed -i 's/INTERNAL_SECRET=.*/INTERNAL_SECRET=ci_internal_secret_123/' .env
           sed -i 's/EVALUATION_STUB=.*/EVALUATION_STUB=true/' .env
 
-      - name: Start services
-        run: docker compose up -d --build
+      - name: Start backend services
+        run: |
+          docker compose -f docker-compose.yml up -d --build \
+            user-db contest-db evaluation-db payment-db \
+            user-service contest-service evaluation-service payment-service
 
       - name: Wait for services to be healthy
         run: |
           timeout 90s sh -c 'until curl -sf http://localhost:8001/docs > /dev/null; do sleep 2; done'
           timeout 90s sh -c 'until curl -sf http://localhost:8002/docs > /dev/null; do sleep 2; done'
+          timeout 90s sh -c 'until curl -sf http://localhost:8003/docs > /dev/null; do sleep 2; done'
           timeout 90s sh -c 'until curl -sf http://localhost:8004/docs > /dev/null; do sleep 2; done'
 
       - name: Run Pytest
@@ -81,6 +85,12 @@ jobs:
           collection: tests/postman/devContest_collection.json
           envVar: '[{"key":"INTERNAL_SECRET","value":"ci_internal_secret_123"}]'
 
+      - name: Print backend logs on failure
+        if: failure()
+        run: |
+          docker compose -f docker-compose.yml logs \
+            user-service contest-service evaluation-service payment-service
+
       - name: Stop services
         if: always()
-        run: docker compose down
+        run: docker compose -f docker-compose.yml down -v

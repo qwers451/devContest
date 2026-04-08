@@ -239,6 +239,10 @@ services:
         condition: service_healthy
       contest-service:
         condition: service_healthy
+      evaluation-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
 
 volumes:
   user_db_data:
