@@ -41,13 +41,19 @@ async def create_tables():
                 # Sequences for race-free sequential numbering (replaces pg_advisory_xact_lock)
                 await conn.execute(text("CREATE SEQUENCE IF NOT EXISTS contest_number_seq"))
                 await conn.execute(text(
-                    "SELECT setval('contest_number_seq', "
-                    "COALESCE((SELECT MAX(number) FROM contests), 0), true)"
+                    "SELECT setval("
+                    "'contest_number_seq', "
+                    "GREATEST(COALESCE((SELECT MAX(number) FROM contests), 1), 1), "
+                    "COALESCE((SELECT MAX(number) FROM contests), 0) > 0"
+                    ")"
                 ))
                 await conn.execute(text("CREATE SEQUENCE IF NOT EXISTS submission_number_seq"))
                 await conn.execute(text(
-                    "SELECT setval('submission_number_seq', "
-                    "COALESCE((SELECT MAX(number) FROM submissions), 0), true)"
+                    "SELECT setval("
+                    "'submission_number_seq', "
+                    "GREATEST(COALESCE((SELECT MAX(number) FROM submissions), 1), 1), "
+                    "COALESCE((SELECT MAX(number) FROM submissions), 0) > 0"
+                    ")"
                 ))
             return
         except Exception as exc:
