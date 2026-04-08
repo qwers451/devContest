@@ -112,8 +112,6 @@ OLLAMA_MODEL=mistral-small:24b
 OLLAMA_VISION_MODEL=pixtral:12b
 ```
 
-Для локальной разработки обычно достаточно `EVALUATION_STUB=true`.
-
 ## Тестовые данные
 
 ```bash
@@ -177,17 +175,6 @@ npm run test
 При падении workflow печатает логи backend-сервисов.
 
 ## Основные API
-
-### user-service
-
-| Метод | Путь |
-|---|---|
-| `POST` | `/auth/register` |
-| `POST` | `/auth/login` |
-| `GET` | `/users` |
-| `GET` | `/users/profile` |
-| `PUT` | `/users/profile` |
-| `GET` | `/users/{id}` |
 
 ### contest-service
 
