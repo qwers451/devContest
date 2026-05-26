@@ -1,0 +1,19 @@
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    database_url: str
+    jwt_secret: str
+    jwt_algorithm: str = "HS256"
+    internal_secret: str
+    contest_service_url: str = "http://contest-service:8000"
+    audit_service_url: str = "http://audit-service:8000"
+    allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+
+    strict_validation: bool = True
+
+    class Config:
+        env_file = ".env"
+
+
+settings = Settings()
