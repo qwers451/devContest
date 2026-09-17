@@ -5,14 +5,14 @@ import { Context } from "../context";
 const FilterSection = ({ title, children, defaultOpen = true }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-gray-100 dark:border-gray-700 py-3 last:border-0">
+    <div className="border-b border-gray-700 py-2.5 last:border-0">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-gray-200 hover:text-violet-700 dark:hover:text-violet-400 transition-colors"
+        className="flex w-full items-center justify-between text-[13px] font-medium text-gray-300 transition-colors hover:text-gray-100"
       >
         {title}
         <span
-          className={`text-gray-400 dark:text-gray-500 text-xs transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          className={`text-[9px] text-gray-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         >
           ▼
         </span>
@@ -27,7 +27,7 @@ const FilterSection = ({ title, children, defaultOpen = true }) => {
 };
 
 const inputCls =
-  "w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-700 dark:text-gray-300 text-sm bg-white dark:bg-gray-800 transition-all";
+  "lin-input";
 
 const FiltersBar = observer(() => {
   const { contest } = useContext(Context);
@@ -77,8 +77,8 @@ const FiltersBar = observer(() => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 transition-colors duration-200">
-      <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">
+    <div className="lin-panel p-3.5">
+      <h2 className="lin-label mb-2 block">
         Фильтры
       </h2>
 
@@ -103,9 +103,9 @@ const FiltersBar = observer(() => {
                 type="checkbox"
                 checked={(contest.selectedStatuses || []).includes(s.value)}
                 onChange={() => toggleStatus(s.value)}
-                className="w-4 h-4 rounded accent-violet-600 dark:accent-violet-500 cursor-pointer bg-white dark:bg-gray-800"
+                className="h-3.5 w-3.5 cursor-pointer rounded accent-violet-600"
               />
-              <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors">
+              <span className="text-[13px] text-gray-400 transition-colors group-hover:text-gray-100">
                 {s.label}
               </span>
             </label>
@@ -127,9 +127,9 @@ const FiltersBar = observer(() => {
                     (t) => t.id === type.id,
                   )}
                   onChange={() => toggleType(type)}
-                  className="w-4 h-4 rounded accent-violet-600 dark:accent-violet-500 cursor-pointer bg-white dark:bg-gray-800"
+                  className="h-3.5 w-3.5 cursor-pointer rounded accent-violet-600"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors">
+                <span className="text-[13px] text-gray-400 transition-colors group-hover:text-gray-100">
                   {type.name}
                 </span>
               </label>
@@ -170,7 +170,7 @@ const FiltersBar = observer(() => {
       <FilterSection title="Сроки окончания" defaultOpen={false}>
         <div className="space-y-2">
           <div>
-            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+            <label className="mb-1 block text-[12px] text-gray-500">
               Не позднее
             </label>
             <input
@@ -189,7 +189,7 @@ const FiltersBar = observer(() => {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+            <label className="mb-1 block text-[12px] text-gray-500">
               Не ранее
             </label>
             <input
@@ -212,7 +212,7 @@ const FiltersBar = observer(() => {
 
       <button
         onClick={handleReset}
-        className={`mt-3 w-full py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-500/30 transition-all font-medium active:scale-95 ${isResetting ? "animate-shake" : ""}`}
+        className={`lin-btn lin-btn-secondary mt-3 w-full ${isResetting ? "animate-shake" : ""}`}
       >
         Сбросить всё
       </button>

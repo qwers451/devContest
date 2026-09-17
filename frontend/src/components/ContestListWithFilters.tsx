@@ -15,39 +15,41 @@ const ContestListWithFilters = observer(({ header, onReset }: Props) => {
   const [showFilters, setShowFilters] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-950">
       {header !== undefined ? header : (
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-              Конкурсы
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">
-              Найдите задачи, предложите лучшее решение и выиграйте приз
-            </p>
+        <div className="border-b border-gray-700">
+          <div className="mx-auto flex max-w-[1400px] items-baseline justify-between gap-4 px-5 py-5">
+            <div>
+              <h1 className="text-[20px] font-semibold tracking-tight text-gray-100">
+                Конкурсы
+              </h1>
+              <p className="mt-0.5 text-[13px] text-gray-400">
+                Задачи от заказчиков — выберите конкурс и предложите решение
+              </p>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="mx-auto max-w-[1400px] px-5 py-5">
         <div className="flex flex-col md:flex-row gap-6 items-start">
           <div className="w-full md:hidden flex justify-between items-center mb-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              className="lin-btn lin-btn-secondary"
             >
               <BsFilter size={18} />
               Фильтры
             </button>
           </div>
 
-          <aside className={`w-full md:w-64 flex-shrink-0 md:sticky md:top-16 ${showFilters ? 'block' : 'hidden md:block'}`}>
+          <aside className={`w-full md:w-64 flex-shrink-0 md:sticky md:top-[60px] ${showFilters ? 'block' : 'hidden md:block'}`}>
             <FiltersBar />
           </aside>
 
           <main className="flex-1 min-w-0 w-full">
             <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-[13px] text-gray-500">
                 {contest.contests.length > 0
                   ? `Страница ${contest.currentPage} из ${contest.totalPages}`
                   : ""}
@@ -60,7 +62,7 @@ const ContestListWithFilters = observer(({ header, onReset }: Props) => {
                     contest.setSortBy(e.target.value);
                     contest.fetchContestsFiltered(1);
                   }}
-                  className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  className="h-7 rounded-md border border-gray-700 bg-gray-900 px-2 text-[12px] text-gray-300 focus:border-violet-500 focus:outline-none"
                 >
                   <option value="created_at">По дате создания</option>
                   <option value="prizepool">По призу</option>
@@ -74,7 +76,7 @@ const ContestListWithFilters = observer(({ header, onReset }: Props) => {
                     );
                     contest.fetchContestsFiltered(1);
                   }}
-                  className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors w-8 text-center"
+                  className="h-7 w-7 rounded-md border border-gray-700 bg-gray-900 text-[12px] text-gray-300 transition-colors hover:border-gray-600 hover:text-gray-100"
                   title={
                     contest.sortDir === "desc"
                       ? "По убыванию"
@@ -85,7 +87,7 @@ const ContestListWithFilters = observer(({ header, onReset }: Props) => {
                 </button>
                 <button
                   onClick={() => onReset ? onReset() : contest.resetFilters()}
-                  className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium transition-colors ml-2"
+                  className="ml-1 h-7 rounded-md px-2 text-[12px] font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100"
                 >
                   Сбросить
                 </button>

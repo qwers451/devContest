@@ -18,10 +18,10 @@ const SolutionListWithFilters = observer(
     const totalPages = Math.ceil(solution.totalCount / solution.limit);
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+      <div className="min-h-screen bg-gray-950">
+        <div className="bg-gray-900 border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+            <h1 className="text-[20px] font-medium text-gray-100 mb-1">
               {title || "Решения"}
             </h1>
             {!isMySolutions && contest.currentContest && (
@@ -29,13 +29,13 @@ const SolutionListWithFilters = observer(
                 onClick={() =>
                   navigate(`/contest/${contest.currentContest.number}`)
                 }
-                className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium transition-colors"
+                className="text-[13px] text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium transition-colors"
               >
                 ← К конкурсу «{contest.currentContest.title}»
               </button>
             )}
             {isMySolutions && (
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
+              <p className="text-gray-400 text-[13px]">
                 Ваши отправленные работы
               </p>
             )}
@@ -50,7 +50,7 @@ const SolutionListWithFilters = observer(
 
             <main className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-[13px] text-gray-400">
                   {solution.solutions.length > 0 && totalPages > 1
                     ? `Страница ${solution.page} из ${totalPages}`
                     : ""}
@@ -62,7 +62,7 @@ const SolutionListWithFilters = observer(
                       solution.setSortBy(e.target.value);
                       solution.fetchSolutionsFiltered();
                     }}
-                    className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                    className="text-xs border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 bg-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-300"
                   >
                     <option value="created_at">По дате добавления</option>
                     <option value="status">По статусу</option>
@@ -76,7 +76,7 @@ const SolutionListWithFilters = observer(
                       );
                       solution.fetchSolutionsFiltered();
                     }}
-                    className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors w-8 text-center"
+                    className="text-xs border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors w-8 text-center"
                     title={
                       solution.sortDir === "desc"
                         ? "По убыванию"
@@ -104,14 +104,14 @@ const SolutionListWithFilters = observer(
                   <button
                     onClick={() => handlePageChange(1)}
                     disabled={solution.page === 1}
-                    className="px-3 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-[13px] text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     «
                   </button>
                   <button
                     onClick={() => handlePageChange(solution.page - 1)}
                     disabled={solution.page === 1}
-                    className="px-3 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-[13px] text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     ‹
                   </button>
@@ -121,10 +121,10 @@ const SolutionListWithFilters = observer(
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`w-9 h-9 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        className={`w-9 h-9 rounded-lg text-[13px] font-medium transition-all duration-200 ${
                           solution.page === pageNum
-                            ? "bg-violet-600 text-white shadow-sm"
-                            : "text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400"
+                            ? "bg-violet-600 text-white "
+                            : "text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400"
                         }`}
                       >
                         {pageNum}
@@ -134,14 +134,14 @@ const SolutionListWithFilters = observer(
                   <button
                     onClick={() => handlePageChange(solution.page + 1)}
                     disabled={solution.page === totalPages}
-                    className="px-3 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-[13px] text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     ›
                   </button>
                   <button
                     onClick={() => handlePageChange(totalPages)}
                     disabled={solution.page === totalPages}
-                    className="px-3 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-[13px] text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     »
                   </button>

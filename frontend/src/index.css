@@ -3,23 +3,85 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-    --color-primary: #7c3aed;
-    --color-primary-dark: #6d28d9;
-    --color-primary-light: #8b5cf6;
-    --color-surface: #ffffff;
-    --color-bg: #f9fafb;
-    --color-border: #e5e7eb;
+    /* ------------------------------------------------------------------
+       Палитра в духе Linear: почти чёрный фон с синим подтоном, тонкие
+       границы вместо теней, индиго-акцент. Переопределяем встроенные
+       шкалы Tailwind — тогда весь интерфейс переезжает разом, а не
+       по одному классу.
+    ------------------------------------------------------------------- */
+
+    /* Поверхности и текст (интерфейс тёмный, светлой темы нет). */
+    --color-gray-950: #08090a; /* фон страницы */
+    --color-gray-900: #0f1011; /* приподнятая поверхность */
+    --color-gray-800: #141517; /* карточки и панели */
+    --color-gray-700: #23252a; /* тонкая граница */
+    --color-gray-600: #2c2f36; /* граница активного элемента */
+    --color-gray-500: #62666d; /* третичный текст */
+    --color-gray-400: #8a8f98; /* вторичный текст */
+    --color-gray-300: #b4b8bf;
+    --color-gray-200: #d7d9dd;
+    --color-gray-100: #f7f8f8; /* основной текст */
+    --color-gray-50: #fbfbfb;
+
+    /* Акцент Linear — индиго. */
+    --color-violet-300: #a5abee;
+    --color-violet-400: #8b93e8;
+    --color-violet-500: #6e79d6;
+    --color-violet-600: #5e6ad2;
+    --color-violet-700: #4f59b8;
+    --color-violet-800: #3d4694;
+    --color-violet-900: #2b3170;
+
+    /* Статусные цвета — приглушённые, как в Linear. */
+    --color-emerald-400: #4cb782;
+    --color-emerald-500: #3fa873;
+    --color-emerald-600: #35935f;
+    --color-amber-400: #f2c94c;
+    --color-amber-500: #f2994a;
+    --color-amber-600: #e08c3e;
+    --color-red-400: #eb5757;
+    --color-red-500: #d94848;
+    --color-red-600: #c53d3d;
+    --color-blue-400: #4ea7fc;
+    --color-blue-500: #3d96eb;
+
+    /* Скругления: у Linear они мелкие, «блобов» нет. */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 8px;
+    --radius-2xl: 10px;
+    --radius-3xl: 12px;
+
+    /* Тени почти отсутствуют: глубину даёт граница и оттенок фона. */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.5);
+    --shadow-2xl: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+    /* Совместимость со старыми токенами проекта. */
+    --color-primary: #5e6ad2;
+    --color-primary-dark: #4f59b8;
+    --color-primary-light: #8b93e8;
+    --color-surface: #141517;
+    --color-bg: #08090a;
+    --color-border: #23252a;
 }
 
 html {
     font-family: Inter, system-ui, sans-serif;
+    /* Альтернативные начертания Inter — та самая «однорогая» a у Linear. */
+    font-feature-settings: "cv01", "cv02", "cv11", "ss03";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 :root {
     --theme-transition-x: 50vw;
     --theme-transition-y: 50vh;
     --theme-transition-radius: 140vmax;
-    color-scheme: light;
+    color-scheme: dark;
 }
 
 .dark {
@@ -27,12 +89,41 @@ html {
 }
 
 body {
-    background: #f9fafb;
-    color: #111827;
-    transition:
-        background-color 180ms ease-out,
-        color 180ms ease-out;
+    background: #08090a;
+    color: #f7f8f8;
+    /* Интерфейсный кегль Linear заметно мельче привычного. */
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.008em;
     -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    letter-spacing: -0.021em;
+}
+
+/* Скроллбар: тонкий и незаметный, как во всех панелях Linear. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #2c2f36 transparent;
+}
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+    background: #2c2f36;
+    border-radius: 4px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::selection {
+    background: rgba(94, 106, 210, 0.35);
 }
 
 button,
@@ -182,13 +273,13 @@ path {
 
 .prose {
     line-height: 1.7;
-    color: #374151;
+    color: #b4b8bf;
 }
 .prose h1,
 .prose h2,
 .prose h3 {
-    color: #111827;
-    font-weight: 700;
+    color: #f7f8f8;
+    font-weight: 600;
     margin: 1.25em 0 0.5em;
 }
 .prose h1 {
@@ -226,12 +317,12 @@ path {
     overflow-x: auto;
 }
 .prose blockquote {
-    border-left: 3px solid #e5e7eb;
+    border-left: 2px solid #2c2f36;
     padding-left: 1rem;
-    color: #6b7280;
+    color: #8a8f98;
 }
 .prose a {
-    color: #7c3aed;
+    color: #8b93e8;
     text-decoration: underline;
 }
 
@@ -251,203 +342,137 @@ path {
 }
 
 
-.dark body {
-    background: #0d1117;
-    color: #e6edf3;
-    color-scheme: dark;
-}
+/* ------------------------------------------------------------------
+   Здесь был патч тёмной темы в палитре GitHub (#0d1117, #161b22,
+   фиолетовый #7c3aed). Он переопределял утилиты Tailwind напрямую
+   и перебивал токены новой палитры. Тема теперь одна и задаётся
+   в @theme выше, поэтому патч удалён.
+------------------------------------------------------------------- */
 
-.dark .bg-white {
-    background-color: #161b22;
-}
-.dark .bg-gray-50 {
-    background-color: #0d1117;
-}
-.dark .bg-gray-100 {
-    background-color: #21262d;
-}
+/* ------------------------------------------------------------------
+   Компоненты интерфейса. Держим их здесь, чтобы разметка страниц
+   не обрастала длинными наборами утилит и выглядела одинаково.
+------------------------------------------------------------------- */
+@layer components {
+    /* Панель: основа карточек, форм и списков. */
+    .lin-panel {
+        background: #141517;
+        border: 1px solid #23252a;
+        border-radius: 8px;
+    }
 
-.dark .border-gray-200 {
-    border-color: #30363d;
-}
-.dark .border-gray-100 {
-    border-color: #21262d;
-}
+    /* Кликабельная панель: подсветка границы вместо тени. */
+    .lin-card {
+        background: #141517;
+        border: 1px solid #23252a;
+        border-radius: 8px;
+        transition:
+            background-color 120ms ease-out,
+            border-color 120ms ease-out;
+    }
+    .lin-card:hover {
+        background: #17181b;
+        border-color: #2c2f36;
+    }
 
-.dark .text-gray-900 {
-    color: #e6edf3;
-}
-.dark .text-gray-800 {
-    color: #cdd9e5;
-}
-.dark .text-gray-700 {
-    color: #adbac7;
-}
-.dark .text-gray-600 {
-    color: #8b949e;
-}
-.dark .text-gray-500 {
-    color: #6e7681;
-}
-.dark .text-gray-400 {
-    color: #484f58;
-}
-.dark .text-gray-300 {
-    color: #30363d;
-}
+    /* Кнопки: высота 32px, мелкий кегль, вес 500 — как в Linear. */
+    .lin-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        transition:
+            background-color 120ms ease-out,
+            border-color 120ms ease-out,
+            opacity 120ms ease-out;
+    }
+    .lin-btn-primary {
+        background: #5e6ad2;
+        color: #fff;
+        border: 1px solid #6e79d6;
+    }
+    .lin-btn-primary:hover {
+        background: #6e79d6;
+    }
+    .lin-btn-secondary {
+        background: #1c1d21;
+        color: #f7f8f8;
+        border: 1px solid #2c2f36;
+    }
+    .lin-btn-secondary:hover {
+        background: #23252a;
+    }
+    .lin-btn-ghost {
+        background: transparent;
+        color: #8a8f98;
+        border: 1px solid transparent;
+    }
+    .lin-btn-ghost:hover {
+        background: #1c1d21;
+        color: #f7f8f8;
+    }
 
-.dark .text-violet-600 {
-    color: #a78bfa;
-}
-.dark .text-violet-700 {
-    color: #8b5cf6;
-}
-.dark .bg-violet-50 {
-    background-color: rgba(167, 139, 250, 0.08);
-}
-.dark .bg-violet-100 {
-    background-color: rgba(167, 139, 250, 0.14);
-}
-.dark .bg-amber-50 {
-    background-color: rgba(251, 191, 36, 0.08);
-}
+    /* Поля ввода: тонкая граница, фокус — мягкое кольцо индиго. */
+    .lin-input {
+        width: 100%;
+        height: 32px;
+        padding: 0 10px;
+        background: #0f1011;
+        border: 1px solid #23252a;
+        border-radius: 6px;
+        color: #f7f8f8;
+        font-size: 13px;
+        transition:
+            border-color 120ms ease-out,
+            box-shadow 120ms ease-out;
+    }
+    .lin-input::placeholder {
+        color: #62666d;
+    }
+    .lin-input:focus {
+        outline: none;
+        border-color: #5e6ad2;
+        box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.2);
+    }
+    textarea.lin-input {
+        height: auto;
+        padding: 8px 10px;
+        line-height: 1.5;
+    }
 
-.dark .hover\:bg-gray-50:hover {
-    background-color: #21262d;
-}
-.dark .hover\:bg-gray-100:hover {
-    background-color: #30363d;
-}
-.dark .hover\:text-violet-600:hover {
-    color: #a78bfa;
-}
-.dark .hover\:text-violet-700:hover {
-    color: #a78bfa;
-}
-.dark .hover\:text-violet-800:hover {
-    color: #8b5cf6;
-}
-.dark .hover\:border-violet-300:hover {
-    border-color: #6d28d9;
-}
-.dark .hover\:bg-red-50:hover {
-    background-color: rgba(239, 68, 68, 0.08);
-}
+    /* Значок статуса. */
+    .lin-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        height: 22px;
+        padding: 0 8px;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 500;
+        background: #1c1d21;
+        border: 1px solid #23252a;
+        color: #8a8f98;
+    }
 
-.dark input,
-.dark textarea,
-.dark select {
-    background-color: #0d1117;
-    border-color: #30363d;
-    color: #e6edf3;
-}
-.dark input::placeholder,
-.dark textarea::placeholder {
-    color: #484f58;
-}
-.dark input:focus,
-.dark textarea:focus {
-    border-color: #7c3aed;
-}
+    /* Надпись-рубрика над блоком. */
+    .lin-label {
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: #62666d;
+    }
 
-.dark .prose {
-    color: #8b949e;
-}
-.dark .prose h1,
-.dark .prose h2,
-.dark .prose h3 {
-    color: #e6edf3;
-}
-.dark .prose code {
-    background: #21262d;
-}
-.dark .prose pre {
-    background: #161b22;
-    border: 1px solid #30363d;
-}
-.dark .prose blockquote {
-    border-color: #30363d;
-    color: #6e7681;
-}
-.dark .prose a {
-    color: #a78bfa;
-}
-
-.dark .bg-blue-50 {
-    background-color: rgba(96, 165, 250, 0.08);
-}
-.dark .border-blue-100 {
-    border-color: rgba(96, 165, 250, 0.2);
-}
-.dark .text-blue-700 {
-    color: #93c5fd;
-}
-.dark .text-blue-600 {
-    color: #60a5fa;
-}
-.dark .bg-emerald-50 {
-    background-color: rgba(52, 211, 153, 0.08);
-}
-.dark .border-emerald-200 {
-    border-color: rgba(52, 211, 153, 0.25);
-}
-.dark .text-emerald-700 {
-    color: #6ee7b7;
-}
-.dark .text-emerald-600 {
-    color: #34d399;
-}
-.dark .bg-emerald-100 {
-    background-color: rgba(52, 211, 153, 0.14);
-}
-.dark .text-emerald-100 {
-    color: rgba(52, 211, 153, 0.9);
-}
-.dark .bg-red-50 {
-    background-color: rgba(239, 68, 68, 0.08);
-}
-.dark .border-red-200 {
-    border-color: rgba(239, 68, 68, 0.25);
-}
-.dark .text-red-600 {
-    color: #fca5a5;
-}
-.dark .text-red-500 {
-    color: #f87171;
-}
-.dark .bg-yellow-100 {
-    background-color: rgba(251, 191, 36, 0.1);
-}
-.dark .text-yellow-700 {
-    color: #fcd34d;
-}
-.dark .bg-violet-100 {
-    background-color: rgba(167, 139, 250, 0.12);
-}
-.dark .text-violet-700 {
-    color: #c4b5fd;
-}
-.dark .bg-violet-600,
-.dark .hover\:bg-violet-700:hover {
-    background-color: #7c3aed;
-}
-.dark .shadow-2xl {
-    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.7);
-}
-.dark .shadow-lg {
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
-}
-
-.dark ::-webkit-scrollbar-thumb {
-    background: #30363d;
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-    background: #484f58;
-}
-
-.dark .shadow-sm {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-.dark .hover\:shadow-md:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    /* Разделительная линия. */
+    .lin-divider {
+        height: 1px;
+        background: #23252a;
+    }
 }

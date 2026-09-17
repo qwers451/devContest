@@ -4,7 +4,7 @@ import { observer } from "mobx-react-lite";
 import { Context } from "../context";
 
 const STATUS_LABELS = {
-  pending: { label: "Ожидание оплаты", cls: "bg-yellow-100 text-yellow-700" },
+  pending: { label: "Ожидание оплаты", cls: "border border-gray-700 bg-gray-800 text-amber-400" },
   held: { label: "Оплачено", cls: "bg-emerald-100 text-emerald-700" },
   released: { label: "Выплачено", cls: "bg-violet-100 text-violet-700" },
   failed: { label: "Ошибка оплаты", cls: "bg-red-100 text-red-600" },
@@ -117,14 +117,14 @@ const PaymentCheckoutPage = () => {
 
   if (!contestId || !amount) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+        <div className="bg-gray-900 rounded-lg border border-gray-700 p-8 text-center">
+          <p className="text-gray-400">
             Некорректные параметры оплаты.
           </p>
           <button
             onClick={() => navigate("/")}
-            className="mt-4 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm"
+            className="mt-4 px-4 py-2 rounded-md bg-violet-600 text-white text-[13px]"
           >
             На главную
           </button>
@@ -134,43 +134,43 @@ const PaymentCheckoutPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 w-full max-w-md animate-fade-in">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+      <div className="bg-gray-900 rounded-lg border border-gray-700 p-8 w-full max-w-md animate-fade-in">
+        <h1 className="text-[17px] font-medium text-gray-100 mb-2">
           Оплата призового фонда
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+        <p className="text-gray-400 text-[13px] mb-6">
           Конкурс #{contestId}
         </p>
 
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-6 text-center">
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="bg-gray-800 rounded-md p-4 mb-6 text-center">
+          <div className="text-[20px] font-medium text-gray-100">
             {amount.toLocaleString("ru-RU")} ₽
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-[13px] text-gray-400 mt-1">
             будет заморожено в эскроу до выбора победителя
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+          <div className="mb-4 px-4 py-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-[13px]">
             {error}
           </div>
         )}
 
         {method === null && balanceLoaded && (
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <p className="text-[13px] font-semibold text-gray-300 mb-1">
               Выберите способ оплаты:
             </p>
 
             <button
               onClick={handlePayByBalance}
               disabled={!hasBalance}
-              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl border text-sm font-semibold transition-all ${
+              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-md border text-[13px] font-semibold transition-all ${
                 hasBalance
-                  ? "border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/30"
-                  : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
+                  ? "border-gray-700 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/30"
+                  : "border-gray-700 bg-gray-800 text-gray-400 cursor-not-allowed"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -187,7 +187,7 @@ const PaymentCheckoutPage = () => {
 
             <button
               onClick={handlePayByCard}
-              className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+              className="w-full flex items-center justify-between px-4 py-3.5 rounded-md border border-gray-700 bg-gray-800 text-[13px] font-semibold text-gray-200 hover:bg-gray-700 transition-all"
             >
               <span className="flex items-center gap-2">
                 <span className="text-base">💳</span>
@@ -197,7 +197,7 @@ const PaymentCheckoutPage = () => {
 
             <button
               onClick={() => navigate("/")}
-              className="w-full text-center text-sm text-gray-400 hover:text-gray-600 transition-colors py-1"
+              className="w-full text-center text-[13px] text-gray-400 hover:text-gray-600 transition-colors py-1"
             >
               Отмена
             </button>
@@ -214,7 +214,7 @@ const PaymentCheckoutPage = () => {
           <div className="space-y-4">
             <div className="flex justify-center">
               <span
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${cfg.cls}`}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold ${cfg.cls}`}
               >
                 {status === "pending" && (
                   <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
@@ -224,7 +224,7 @@ const PaymentCheckoutPage = () => {
             </div>
 
             {status === "held" && (
-              <div className="px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm text-center">
+              <div className="px-4 py-3 rounded-md border border-gray-600 bg-gray-900 text-emerald-700 dark:text-emerald-400 text-[13px] text-center">
                 Платёж подтверждён!{" "}
                 {activating ? "Активируем конкурс…" : "Конкурс активирован."}
                 {contestNum && <span> Переход через 2 сек…</span>}
@@ -235,19 +235,19 @@ const PaymentCheckoutPage = () => {
               <div className="space-y-2">
                 <a
                   href={redirectUrl}
-                  className="block w-full text-center px-5 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
+                  className="block w-full text-center px-5 py-3 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors"
                 >
                   Перейти к оплате на ЮКасса
                 </a>
-                <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                <p className="text-xs text-gray-500 text-center">
                   Страница обновится автоматически после оплаты.
                   <br />
                   Тест:{" "}
-                  <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-1 rounded">
+                  <code className="bg-gray-700 dark:text-gray-200 px-1 rounded">
                     5555555555554477
                   </code>{" "}
                   — успех,{" "}
-                  <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-1 rounded">
+                  <code className="bg-gray-700 dark:text-gray-200 px-1 rounded">
                     5555555555554444
                   </code>{" "}
                   — отказ
@@ -258,7 +258,7 @@ const PaymentCheckoutPage = () => {
             {status === "held" && contestNum && (
               <button
                 onClick={() => navigate(`/contest/${contestNum}`)}
-                className="block w-full text-center px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors"
+                className="block w-full text-center px-5 py-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[13px] transition-colors"
               >
                 Перейти к конкурсу
               </button>
@@ -271,7 +271,7 @@ const PaymentCheckoutPage = () => {
                   setStatus("pending");
                   setError(null);
                 }}
-                className="block w-full text-center px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm transition-colors"
+                className="block w-full text-center px-5 py-3 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold text-[13px] transition-colors"
               >
                 Попробовать снова
               </button>
@@ -279,7 +279,7 @@ const PaymentCheckoutPage = () => {
 
             <button
               onClick={() => navigate("/")}
-              className="block w-full text-center px-5 py-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-semibold text-sm transition-colors"
+              className="block w-full text-center px-5 py-3 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-600 font-semibold text-[13px] transition-colors"
             >
               На главную
             </button>

@@ -197,16 +197,16 @@ const CreateSolution = () => {
     );
 
   const inputCls =
-    "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700";
+    "w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700";
   const inputErrCls =
-    "w-full px-4 py-2.5 rounded-xl border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700";
+    "w-full px-4 py-2.5 rounded-md border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700";
   const labelCls =
-    "block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1";
+    "block text-[13px] font-semibold text-gray-300 mb-1";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
+    <div className="min-h-screen bg-gray-950 py-6">
       <div className="max-w-3xl mx-auto px-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+        <h1 className="text-[17px] font-medium text-gray-100 mb-6">
           {pageTitle}
         </h1>
 
@@ -278,7 +278,7 @@ const CreateSolution = () => {
             {showExistingFiles && (
               <ul className="mb-2 space-y-1">
                 {existingFiles.map((f, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm">
+                  <li key={i} className="flex items-center gap-2 text-[13px]">
                     <span className="text-gray-700">{f}</span>
                     <button
                       type="button"
@@ -295,7 +295,7 @@ const CreateSolution = () => {
               type="file"
               multiple
               onChange={(e) => handleFilesChange(e.target.files)}
-              className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+              className="w-full text-[13px] text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-[13px] file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
             />
             {showSelectedFiles && (
               <ul className="mt-1.5 space-y-0.5">
@@ -330,21 +330,21 @@ const CreateSolution = () => {
           <div className="flex gap-3 flex-wrap pt-2">
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-all duration-200 shadow-sm"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-all duration-200"
             >
               Отправить
             </button>
             <button
               type="button"
               onClick={() => setShowPreview(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-all duration-200"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-[13px] transition-all duration-200"
             >
               Предпросмотр
             </button>
             <button
               type="button"
               onClick={() => setShowHelp(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-all duration-200"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-[13px] transition-all duration-200"
             >
               Справка
             </button>
@@ -352,7 +352,7 @@ const CreateSolution = () => {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-sm transition-all duration-200"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold text-[13px] transition-all duration-200"
               >
                 Отменить редактирование
               </button>
@@ -367,33 +367,33 @@ const CreateSolution = () => {
           onClick={() => setShowPreview(false)}
         >
           <div
-            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in border border-transparent dark:border-gray-700"
+            className="bg-gray-900 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in border border-transparent dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <h2 className="text-[15px] font-medium text-gray-100">
                   Предпросмотр решения
                 </h2>
                 <button
                   onClick={() => setShowPreview(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-[15px]"
                 >
                   ✕
                 </button>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+              <div className="bg-gray-800 rounded-md p-5">
+                <h1 className="text-[17px] font-medium text-gray-100 mb-1">
                   {currentTitle || "Без названия"}
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                <p className="text-[13px] text-gray-400 mb-3">
                   Конкурс «
                   {contest.currentContest?.title || "Неизвестный конкурс"}» от{" "}
                   {user.getById(contest.currentContest?.customer_id)?.login ||
                     "Неизвестно"}
                 </p>
-                <hr className="my-4 border-gray-200 dark:border-gray-700" />
-                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-2">
+                <hr className="my-4 border-gray-700" />
+                <h3 className="text-base font-medium text-gray-200 mb-2">
                   Описание
                 </h3>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -403,13 +403,13 @@ const CreateSolution = () => {
                 </div>
                 {files.length > 0 && (
                   <>
-                    <hr className="my-4 border-gray-200 dark:border-gray-700" />
-                    <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                    <hr className="my-4 border-gray-700" />
+                    <h4 className="font-medium text-gray-200 mb-2">
                       Файлы
                     </h4>
                     <ul className="space-y-1">
                       {files.map((file, idx) => (
-                        <li key={idx} className="text-sm text-violet-600">
+                        <li key={idx} className="text-[13px] text-violet-600">
                           {file.name}
                         </li>
                       ))}
@@ -418,10 +418,10 @@ const CreateSolution = () => {
                 )}
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
+            <div className="px-6 py-4 border-t border-gray-700">
               <button
                 onClick={() => setShowPreview(false)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors"
               >
                 Закрыть предпросмотр
               </button>
@@ -436,22 +436,22 @@ const CreateSolution = () => {
           onClick={() => setShowHelp(false)}
         >
           <div
-            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg animate-fade-in border border-transparent dark:border-gray-700"
+            className="bg-gray-900 rounded-lg w-full max-w-lg animate-fade-in border border-transparent dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <h2 className="text-[15px] font-medium text-gray-100">
                   Справка по оформлению
                 </h2>
                 <button
                   onClick={() => setShowHelp(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-[15px]"
                 >
                   ✕
                 </button>
               </div>
-              <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+              <div className="text-[13px] text-gray-300 space-y-2">
                 <p>
                   Название: от {solution.form.title.rules.min} до{" "}
                   {solution.form.title.rules.max} символов.
@@ -481,16 +481,16 @@ const CreateSolution = () => {
                 </p>
                 <p>
                   Пример вставки изображения:{" "}
-                  <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-1 rounded">
+                  <code className="bg-gray-700 dark:text-gray-200 px-1 rounded">
                     ![alt](image.jpg)
                   </code>
                 </p>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
+            <div className="px-6 py-4 border-t border-gray-700">
               <button
                 onClick={() => setShowHelp(false)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors"
               >
                 Закрыть
               </button>

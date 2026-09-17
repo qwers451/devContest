@@ -84,14 +84,14 @@ const CreateReview = () => {
         }
     };
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700';
-    const labelCls = 'block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1';
+    const inputCls = 'w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700';
+    const labelCls = 'block text-[13px] font-semibold text-gray-300 mb-1';
 
     if (loadingSolution) {
         return (
             <div className="flex justify-center items-center min-h-64">
                 <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
-                <span className="ml-3 text-gray-500 text-sm">Загрузка решения...</span>
+                <span className="ml-3 text-gray-500 text-[13px]">Загрузка решения...</span>
             </div>
         );
     }
@@ -99,7 +99,7 @@ const CreateReview = () => {
     if (loadError) {
         return (
             <div className="max-w-xl mx-auto px-4 py-10">
-                <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                <div className="px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-600 text-[13px]">
                     Ошибка: {loadError}
                 </div>
             </div>
@@ -107,15 +107,15 @@ const CreateReview = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
+        <div className="min-h-screen bg-gray-950 py-6">
             <div className="max-w-xl mx-auto px-4">
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 animate-fade-in">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-5">
+                <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 animate-fade-in">
+                    <h2 className="text-[15px] font-medium text-gray-100 mb-5">
                         Добавить отзыв к решению №{number}
                     </h2>
 
                     {submitError && (
-                        <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+                        <div className="mb-4 px-4 py-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-[13px]">
                             {submitError}
                         </div>
                     )}
@@ -148,7 +148,7 @@ const CreateReview = () => {
                         </div>
                         <div>
                             <label className={labelCls}>Файлы (необязательно)</label>
-                            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-700 text-[13px] text-gray-300 hover:bg-gray-700 cursor-pointer transition-colors">
                                 ↑ Добавить файлы
                                 <input
                                     type="file"
@@ -161,7 +161,7 @@ const CreateReview = () => {
                             {files.length > 0 && (
                                 <ul className="mt-2 space-y-1">
                                     {files.map(f => (
-                                        <li key={f.name} className="flex items-center gap-2 text-sm text-gray-600">
+                                        <li key={f.name} className="flex items-center gap-2 text-[13px] text-gray-600">
                                             <span className="truncate max-w-xs">{f.name}</span>
                                             <button
                                                 type="button"
@@ -178,14 +178,14 @@ const CreateReview = () => {
                                 type="button"
                                 onClick={() => navigate(`/solution/${number}`)}
                                 disabled={submitting}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-colors disabled:opacity-60"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-[13px] transition-colors disabled:opacity-60"
                             >
                                 Отмена
                             </button>
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors disabled:opacity-60"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors disabled:opacity-60"
                             >
                                 {submitting ? 'Отправка...' : 'Добавить отзыв'}
                             </button>

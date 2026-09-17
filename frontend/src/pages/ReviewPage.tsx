@@ -110,14 +110,14 @@ const ReviewPage = () => {
         }
     };
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700';
-    const labelCls = 'block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1';
+    const inputCls = 'w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700';
+    const labelCls = 'block text-[13px] font-semibold text-gray-300 mb-1';
 
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-64">
                 <div className="w-8 h-8 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
-                <span className="ml-3 text-gray-500 text-sm">Загрузка...</span>
+                <span className="ml-3 text-gray-500 text-[13px]">Загрузка...</span>
             </div>
         );
     }
@@ -125,8 +125,8 @@ const ReviewPage = () => {
     if (error) {
         return (
             <div className="max-w-3xl mx-auto px-4 py-10">
-                <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm mb-4">{error}</div>
-                <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-colors">
+                <div className="px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-600 text-[13px] mb-4">{error}</div>
+                <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-700 font-semibold text-[13px] transition-colors">
                     Назад
                 </button>
             </div>
@@ -134,31 +134,31 @@ const ReviewPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
+        <div className="min-h-screen bg-gray-950 py-6">
             <div className="max-w-3xl mx-auto px-4">
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in">
-                    <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden animate-fade-in">
+                    <div className="px-6 py-5 border-b border-gray-700">
+                        <h3 className="text-[14px] font-medium text-gray-100">
                             Ревью #{review.number} к решению №{number}
                         </h3>
                     </div>
                     <div className="px-6 py-5">
                         <div className="flex items-center gap-2 mb-4">
-                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Оценка:</span>
-                            <span className="px-3 py-1 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-bold text-sm">
+                            <span className="text-[13px] font-semibold text-gray-300">Оценка:</span>
+                            <span className="px-3 py-1 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-medium text-[13px]">
                                 {review.score} / 10
                             </span>
                         </div>
-                        <hr className="my-4 border-gray-100 dark:border-gray-700" />
-                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{review.commentary}</p>
+                        <hr className="my-4 border-gray-700" />
+                        <p className="text-gray-300 text-[13px] leading-relaxed">{review.commentary}</p>
 
                         {(review.files?.length > 0 || isOwner) && (
                             <>
-                                <hr className="my-4 border-gray-100 dark:border-gray-700" />
+                                <hr className="my-4 border-gray-700" />
                                 <div className="flex items-center gap-3 mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Файлы</h4>
+                                    <h4 className="text-[13px] font-semibold text-gray-300">Файлы</h4>
                                     {isOwner && (
-                                        <label className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        <label className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 font-medium transition-colors cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
                                             {uploadingFiles ? 'Загрузка...' : '↑ Добавить'}
                                             <input type="file" multiple accept=".pdf,.docx,.png,.jpg,.jpeg,.zip" onChange={handleUploadFiles} className="hidden" />
                                         </label>
@@ -170,7 +170,7 @@ const ReviewPage = () => {
                                             <li key={i} className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => downloadFileOrZip(`/submissions/${review.solutionId}/reviews/${review.number}/files/${f}`, f)}
-                                                    className="text-violet-600 hover:underline text-sm font-medium"
+                                                    className="text-violet-600 hover:underline text-[13px] font-medium"
                                                 >{f}</button>
                                                 {isOwner && (
                                                     <button onClick={() => handleDeleteFile(f)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
@@ -179,15 +179,15 @@ const ReviewPage = () => {
                                         ))}
                                     </ul>
                                 ) : (
-                                    <p className="text-sm text-gray-400 italic">Файлы не прикреплены.</p>
+                                    <p className="text-[13px] text-gray-400 italic">Файлы не прикреплены.</p>
                                 )}
                             </>
                         )}
                     </div>
-                    <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
+                    <div className="px-6 py-4 border-t border-gray-700 bg-gray-800/50 flex justify-between items-center">
                         <button
                             onClick={() => navigate(-1)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-[13px] transition-colors"
                         >
                             Назад
                         </button>
@@ -195,13 +195,13 @@ const ReviewPage = () => {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setShowEdit(true)}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 font-semibold text-sm transition-colors"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-700 text-violet-700 dark:text-violet-400 hover:bg-gray-800 font-semibold text-[13px] transition-colors"
                                 >
                                     Редактировать
                                 </button>
                                 <button
                                     onClick={handleDelete}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-semibold text-sm transition-colors"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-semibold text-[13px] transition-colors"
                                 >
                                     Удалить
                                 </button>
@@ -213,10 +213,10 @@ const ReviewPage = () => {
 
             {showEdit && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowEdit(false)}>
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 animate-fade-in border border-transparent dark:border-gray-700" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Редактировать отзыв #{review.number}</h3>
+                    <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4 animate-fade-in border border-transparent dark:border-gray-700" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-[14px] font-medium text-gray-100 mb-4">Редактировать отзыв #{review.number}</h3>
                         {error && (
-                            <div className="mb-3 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">{error}</div>
+                            <div className="mb-3 px-3 py-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-[13px]">{error}</div>
                         )}
                         <div className="space-y-4 mb-6">
                             <div>
@@ -243,14 +243,14 @@ const ReviewPage = () => {
                             <button
                                 onClick={() => setShowEdit(false)}
                                 disabled={saving}
-                                className="px-5 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 font-medium transition-colors disabled:opacity-60"
+                                className="px-5 py-2 rounded-md border border-gray-700 text-[13px] text-gray-600 hover:bg-gray-900 font-medium transition-colors disabled:opacity-60"
                             >
                                 Отмена
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
-                                className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors disabled:opacity-60"
+                                className="px-5 py-2 rounded-md bg-violet-600 hover:bg-violet-700 text-white text-[13px] font-semibold transition-colors disabled:opacity-60"
                             >
                                 {saving ? 'Сохранение...' : 'Сохранить'}
                             </button>

@@ -21,7 +21,7 @@ const RewardsBar = () => {
 
     return (
         <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
+            <label className="block text-[13px] font-semibold text-gray-700 mb-1">
                 <BsTrophy className="inline mr-1 text-violet-600" />
                 Приз
             </label>
@@ -32,7 +32,7 @@ const RewardsBar = () => {
                     onChange={e => setMinReward(e.target.value)}
                     min="0"
                     placeholder="от 200"
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white"
+                    className="w-full px-3 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-[13px] transition-all duration-200 bg-gray-800"
                 />
                 <input
                     type="number"
@@ -40,7 +40,7 @@ const RewardsBar = () => {
                     onChange={e => setMaxReward(e.target.value)}
                     min="0"
                     placeholder="до 999999"
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white"
+                    className="w-full px-3 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-[13px] transition-all duration-200 bg-gray-800"
                 />
             </div>
         </div>

@@ -44,24 +44,24 @@ const ImportExportPanel = () => {
 
   return (
     <div>
-      <h4 className="text-base font-bold text-gray-900 text-center mb-4">
+      <h4 className="text-base font-medium text-gray-900 text-center mb-4">
         Импорт / экспорт базы
       </h4>
       <div className="space-y-3">
-        <p className="text-sm text-gray-500 text-center">
+        <p className="text-[13px] text-gray-500 text-center">
           Архив включает данные сервисов и загруженные файлы.
         </p>
         <button
           onClick={handleExport}
           disabled={isExporting}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors shadow-sm disabled:opacity-60"
+          className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors disabled:opacity-60"
         >
           {isExporting ? "Экспорт..." : "Экспортировать"}
         </button>
         <button
           onClick={handleImportClick}
           disabled={isImporting}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-colors disabled:opacity-60"
+          className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-700 font-semibold text-[13px] transition-colors disabled:opacity-60"
         >
           {isImporting ? "Импорт..." : "Импортировать"}
         </button>
@@ -73,7 +73,7 @@ const ImportExportPanel = () => {
           className="hidden"
         />
         {importStatus && (
-          <p className="text-center text-gray-500 text-sm">{importStatus}</p>
+          <p className="text-center text-gray-500 text-[13px]">{importStatus}</p>
         )}
       </div>
     </div>

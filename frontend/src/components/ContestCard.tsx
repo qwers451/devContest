@@ -1,14 +1,14 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "../context";
 import { CONTEST_ROUTE } from "../utils/consts.js";
 
 const statusConfig = {
-  draft: { label: "Черновик", dot: "bg-gray-400 dark:bg-gray-500" },
-  active: { label: "Активный", dot: "bg-emerald-500 dark:bg-emerald-400" },
-  finished: { label: "Завершённый", dot: "bg-violet-500 dark:bg-violet-400" },
-  cancelled: { label: "Отменённый", dot: "bg-red-400 dark:bg-red-500" },
+  draft: { label: "Черновик", dot: "bg-gray-500" },
+  active: { label: "Активный", dot: "bg-emerald-400" },
+  finished: { label: "Завершён", dot: "bg-violet-400" },
+  cancelled: { label: "Отменён", dot: "bg-red-400" },
 };
 
 function daysLeft(endsAt) {
@@ -27,84 +27,69 @@ const ContestCard = observer(({ contest: item }) => {
   const typeName = contest.getTypeNameById(item.type_id);
   const remaining = item.status === "active" ? daysLeft(item.ends_at) : null;
 
+  const openContest = () => {
+    contest.setCurrentContest(item);
+    navigate(CONTEST_ROUTE + "/" + item.number);
+  };
+
   return (
     <div
       onClick={() => {
         if (window.getSelection()?.toString().length > 0) return;
-        contest.setCurrentContest(item);
-        navigate(CONTEST_ROUTE + "/" + item.number);
+        openContest();
       }}
-      className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-500 hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
-      tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          contest.setCurrentContest(item);
-          navigate(CONTEST_ROUTE + "/" + item.number);
-        }
+        if (e.key === "Enter") openContest();
       }}
+      tabIndex={0}
+      className="group cursor-pointer rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 transition-colors hover:border-gray-600 hover:bg-gray-900 focus:outline-none focus-visible:border-violet-500"
     >
-      <div className="flex flex-col sm:flex-row items-stretch">
-        <div className="flex-1 px-5 py-4 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2.5">
-            <span
-              className={`w-2 h-2 rounded-full flex-shrink-0 ${status.dot}`}
-            />
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+      <div className="flex items-start gap-4">
+        <div className="min-w-0 flex-1">
+          {/* Строка метаданных: статус, тип, номер конкурса. */}
+          <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[12px] text-gray-500">
+            <span className="inline-flex items-center gap-1.5 text-gray-400">
+              <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
               {status.label}
             </span>
             {typeName && (
               <>
-                <span className="text-gray-300 dark:text-gray-600">·</span>
-                <span className="text-xs text-gray-400 dark:text-gray-500">
-                  {typeName}
-                </span>
+                <span className="text-gray-600">·</span>
+                <span>{typeName}</span>
               </>
             )}
-            {remaining && (
-              <span className="ml-auto text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                {remaining}
-              </span>
-            )}
+            <span className="text-gray-600">·</span>
+            <span className="tabular-nums">DC-{item.number}</span>
           </div>
 
-          <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base leading-snug line-clamp-1 mb-1.5 group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors">
+          <h3 className="mb-1 truncate text-[14px] font-medium text-gray-100">
             {item.title}
           </h3>
 
           {item.annotation && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
-              {item.annotation}
-            </p>
+            <p className="line-clamp-1 text-[13px] text-gray-400">{item.annotation}</p>
           )}
         </div>
 
-        <div className="flex-shrink-0 sm:w-40 border-t sm:border-t-0 sm:border-l border-gray-100 dark:border-gray-700 px-5 py-4 sm:px-4 flex flex-row sm:flex-col items-center sm:items-end justify-between bg-gray-50/50 dark:bg-gray-800/50 sm:bg-transparent">
-          <div className="text-left sm:text-right">
-            <div>
-              <span className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100">
-                {Number(item.prizepool).toLocaleString("ru")}
-              </span>
-              <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 ml-0.5">
-                ₽
-              </span>
-            </div>
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              призовой фонд
-            </span>
+        <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+          <div className="text-[14px] font-medium tabular-nums text-gray-100">
+            {Number(item.prizepool).toLocaleString("ru")} ₽
           </div>
-          <div className="text-right flex flex-col items-end">
-            {creator && (
-              <div className="text-xs text-violet-600 dark:text-violet-400 font-medium mb-1 truncate max-w-[140px]">
-                @{creator.login}
-              </div>
+
+          <div className="flex items-center gap-2 text-[12px] text-gray-500">
+            {creator && <span className="truncate max-w-[120px]">@{creator.login}</span>}
+            {remaining ? (
+              <span className="rounded border border-gray-700 px-1.5 py-0.5 text-amber-400">
+                {remaining}
+              </span>
+            ) : (
+              <span className="tabular-nums">
+                {new Date(item.ends_at).toLocaleDateString("ru-RU", {
+                  day: "2-digit",
+                  month: "short",
+                })}
+              </span>
             )}
-            <div className="text-xs text-gray-400 dark:text-gray-500">
-              {new Date(item.ends_at).toLocaleDateString("ru-RU", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </div>
           </div>
         </div>
       </div>

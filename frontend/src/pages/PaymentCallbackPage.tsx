@@ -69,14 +69,14 @@ const PaymentCallbackPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 w-full max-w-md text-center animate-fade-in">
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+      <div className="bg-gray-900 rounded-lg border border-gray-700 p-8 w-full max-w-md text-center animate-fade-in">
         {status === "pending" && (
           <>
             <div className="flex justify-center mb-4">
               <div className="w-12 h-12 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <h2 className="text-[15px] font-medium text-gray-100 mb-2">
               Обработка платежа
             </h2>
           </>
@@ -85,7 +85,7 @@ const PaymentCallbackPage = () => {
         {status === "held" && (
           <>
             <div className="text-5xl mb-4">✓</div>
-            <h2 className="text-xl font-bold text-emerald-700 mb-2">
+            <h2 className="text-[15px] font-medium text-emerald-700 mb-2">
               Оплата успешна
             </h2>
           </>
@@ -94,19 +94,19 @@ const PaymentCallbackPage = () => {
         {status === "failed" && (
           <>
             <div className="text-5xl mb-4">✕</div>
-            <h2 className="text-xl font-bold text-red-600 mb-2">
+            <h2 className="text-[15px] font-medium text-red-600 mb-2">
               Платёж отклонён
             </h2>
           </>
         )}
 
-        <p className="text-gray-500 text-sm mb-6">{message}</p>
+        <p className="text-gray-500 text-[13px] mb-6">{message}</p>
 
         <div className="space-y-3">
           {status === "failed" && (
             <button
               onClick={() => navigate(-1)}
-              className="block w-full text-center px-5 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
+              className="block w-full text-center px-5 py-3 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors"
             >
               Попробовать снова
             </button>
@@ -114,14 +114,14 @@ const PaymentCallbackPage = () => {
           {contestNum && (
             <button
               onClick={() => navigate(`/contest/${contestNum}`)}
-              className="block w-full text-center px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors"
+              className="block w-full text-center px-5 py-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[13px] transition-colors"
             >
               Перейти к конкурсу
             </button>
           )}
           <button
             onClick={() => navigate("/")}
-            className="block w-full text-center px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-semibold text-sm transition-colors"
+            className="block w-full text-center px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-600 font-semibold text-[13px] transition-colors"
           >
             На главную
           </button>

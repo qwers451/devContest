@@ -101,9 +101,9 @@ const evaluationDefaults: EvaluationFilters = {
 };
 
 const tabButtonCls =
-  "px-4 py-2 rounded-xl text-sm font-semibold transition-colors";
+  "px-4 py-2 rounded-md text-[13px] font-semibold transition-colors";
 const inputCls =
-  "px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200";
+  "px-3 py-2 rounded-lg border border-gray-700 bg-gray-800 text-[13px] text-gray-200";
 
 const formatSummaryValue = (label: string, value: number) => {
   if (label.includes("Сумма")) {
@@ -454,7 +454,7 @@ const StatisticsPanel = observer(() => {
         }
         className={inputCls}
       />
-      <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+      <label className="inline-flex items-center gap-2 text-[13px] text-gray-200">
         <input
           type="checkbox"
           checked={evaluationFilters.criticalOnly}
@@ -489,7 +489,7 @@ const StatisticsPanel = observer(() => {
   return (
     <div>
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-        <h2 className="text-xl font-bold text-violet-700 dark:text-violet-400">
+        <h2 className="text-[15px] font-medium text-violet-700 dark:text-violet-400">
           Статистика
         </h2>
         <div className="flex items-center gap-2 flex-wrap">
@@ -504,7 +504,7 @@ const StatisticsPanel = observer(() => {
               className={`${tabButtonCls} ${
                 activeTab === tab.key
                   ? "bg-violet-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                  : "bg-gray-800 text-gray-300"
               }`}
             >
               {tab.label}
@@ -513,39 +513,39 @@ const StatisticsPanel = observer(() => {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40 p-4 mb-5">
+      <div className="rounded-lg border border-gray-700 bg-gray-800/40 p-4 mb-5">
         <div className="flex flex-wrap items-center gap-3">
           {activeTab === "contest" && renderContestFilters()}
           {activeTab === "payment" && renderPaymentFilters()}
           {activeTab === "evaluation" && renderEvaluationFilters()}
           <button
             onClick={handleApply}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors"
           >
             Применить
           </button>
           <button
             onClick={handleReset}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-700 bg-gray-900 hover:bg-gray-700 text-gray-300 font-semibold text-[13px] transition-colors"
           >
             Сбросить
           </button>
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
+      {error && <p className="text-[13px] text-red-500 mb-4">{error}</p>}
 
       {statistics && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 mb-5">
           {statistics.summary.map((item) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 p-4"
+              className="rounded-lg border border-gray-700 bg-gray-900 p-4"
             >
-              <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+              <div className="text-xs text-gray-500 mb-1">
                 {item.label}
               </div>
-              <div className="text-xl font-black text-gray-900 dark:text-gray-100">
+              <div className="text-[15px] font-semibold text-gray-100">
                 {formatSummaryValue(item.label, item.value)}
               </div>
             </div>
@@ -554,7 +554,7 @@ const StatisticsPanel = observer(() => {
       )}
 
       {loading ? (
-        <div className="text-gray-400 text-sm">Загрузка...</div>
+        <div className="text-gray-400 text-[13px]">Загрузка...</div>
       ) : chartData && chartData.labels.length > 0 ? (
         <Bar
           data={chartData}
@@ -565,7 +565,7 @@ const StatisticsPanel = observer(() => {
           }}
         />
       ) : (
-        <p className="text-gray-400 text-sm">Данных для графика пока нет</p>
+        <p className="text-gray-400 text-[13px]">Данных для графика пока нет</p>
       )}
     </div>
   );

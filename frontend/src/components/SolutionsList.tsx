@@ -16,7 +16,7 @@ const SolutionsList = ({ showContestTitle, showFreelancerLogin }) => {
 
   if (!solution.isLoading && solution.solutions.length === 0) {
     return (
-      <div className="text-center my-10 text-gray-500 dark:text-gray-400">
+      <div className="text-center my-10 text-gray-400">
         Нет решений по выбранным фильтрам
       </div>
     );

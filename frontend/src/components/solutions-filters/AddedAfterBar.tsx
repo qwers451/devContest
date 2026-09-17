@@ -30,7 +30,7 @@ const AddedAfterBar = () => {
 
     return (
         <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
+            <label className="block text-[13px] font-semibold text-gray-700 mb-1">
                 <BsCalendarEvent className="inline mr-1 text-violet-600" />
                 Добавлено после
             </label>
@@ -38,7 +38,7 @@ const AddedAfterBar = () => {
                 type="date"
                 value={addedAfter}
                 onChange={e => setAddedAfter(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-sm transition-all duration-200 bg-white"
+                className="w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 text-[13px] transition-all duration-200 bg-gray-800"
             />
         </div>
     );

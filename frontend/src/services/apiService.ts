@@ -1,5 +1,7 @@
 import axios, { type AxiosInstance, type AxiosResponse } from "axios";
 
+import { DEMO, demoAdapter } from "./demoData";
+
 const GATEWAY_URL =
   (import.meta.env.VITE_GATEWAY_URL as string | undefined) ?? "";
 
@@ -44,6 +46,9 @@ function createClient(baseURL: string): AxiosInstance {
   const client = axios.create({
     baseURL,
     headers: { "Content-Type": "application/json" },
+    // Демо-режим (VITE_DEMO=1) отвечает заготовленными данными.
+    // Без флага адаптер не подставляется и всё работает как прежде.
+    ...(DEMO ? { adapter: demoAdapter } : {}),
   });
 
   client.interceptors.request.use((config) => {

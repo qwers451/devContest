@@ -6,7 +6,7 @@ import { Context } from "../context";
 const STATUS_LABELS = {
   pending: {
     label: "В обработке",
-    cls: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300",
+    cls: "border border-gray-700 bg-gray-800 text-amber-400",
   },
   held: {
     label: "Оплачено",
@@ -22,7 +22,7 @@ const STATUS_LABELS = {
   },
   refunded: {
     label: "Возвращено",
-    cls: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400",
+    cls: "bg-gray-700 text-gray-400",
   },
 };
 
@@ -37,7 +37,7 @@ const StatusBadge = ({ status }) => {
   const cfg = STATUS_LABELS[status] || STATUS_LABELS.pending;
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.cls}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-semibold ${cfg.cls}`}
     >
       {cfg.label}
     </span>
@@ -66,7 +66,7 @@ const AlertBlock = ({ tone = "success", text, className = "mb-3" }) => {
 
   return (
     <div
-      className={`${className} px-4 py-3 rounded-xl border text-sm ${toneClass}`}
+      className={`${className} px-4 py-3 rounded-md border text-[13px] ${toneClass}`}
     >
       {text}
     </div>
@@ -81,24 +81,24 @@ const BalanceTab = ({
 }) => (
   <div className="space-y-3">
     <div className="grid grid-cols-2 gap-3">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
-        <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+      <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
+        <div className="text-xs text-gray-500 mb-1">
           Доступно
         </div>
-        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="text-[17px] font-medium text-gray-100">
           {formatMoney(balance)}
         </div>
       </div>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
-        <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">
+      <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
+        <div className="text-xs text-gray-500 mb-1">
           Транзакций
         </div>
-        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="text-[17px] font-medium text-gray-100">
           {transactionsCount}
         </div>
       </div>
     </div>
-    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 p-4 text-sm text-blue-700 dark:text-blue-300">
+    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 p-4 text-[13px] text-blue-700 dark:text-blue-300">
       <strong>Как работает кошелёк:</strong>
       <ul className="mt-1 space-y-0.5 list-disc list-inside text-blue-600 dark:text-blue-400">
         <li>Пополните баланс и используйте его для оплаты конкурсов</li>
@@ -146,18 +146,18 @@ const TransactionsTab = ({
             return (
               <div
                 key={tx.id}
-                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-between gap-3"
+                className="bg-gray-900 rounded-lg border border-gray-700 p-4 flex items-center justify-between gap-3"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  <div className="text-[13px] font-semibold text-gray-200">
                     {txConfig.label}
                   </div>
                   {tx.description && (
-                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                    <div className="text-xs text-gray-500 mt-0.5 truncate">
                       {tx.description}
                     </div>
                   )}
-                  <div className="text-xs text-gray-400 dark:text-gray-500">
+                  <div className="text-xs text-gray-500">
                     {new Date(tx.created_at).toLocaleDateString("ru-RU", {
                       day: "2-digit",
                       month: "long",
@@ -167,7 +167,7 @@ const TransactionsTab = ({
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <div
-                    className={`text-base font-bold ${isCredit ? "text-emerald-600" : "text-red-500"}`}
+                    className={`text-base font-medium ${isCredit ? "text-emerald-600" : "text-red-500"}`}
                   >
                     {isCredit ? "+" : ""}
                     {formatMoney(tx.amount)}
@@ -221,23 +221,23 @@ const PaymentHistoryTab = ({
             return (
               <div
                 key={paymentItem.id}
-                className={`rounded-2xl border p-4 flex items-center justify-between ${isFinished ? "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700" : "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700"}`}
+                className={`rounded-lg border p-4 flex items-center justify-between ${isFinished ? "bg-gray-800/50 border-gray-700" : "bg-gray-900 border-gray-700"}`}
               >
                 <div>
                   <div className="flex items-center gap-2">
                     {isFinished && (
                       <span
-                        className="text-gray-400 dark:text-gray-500"
+                        className="text-gray-500"
                         title="Конкурс завершён"
                       >
                         🔒
                       </span>
                     )}
-                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    <div className="text-[13px] font-semibold text-gray-200">
                       {getContestTitle(paymentItem.contest_id)}
                     </div>
                   </div>
-                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  <div className="text-xs text-gray-500 mt-0.5">
                     {new Date(paymentItem.created_at).toLocaleDateString(
                       "ru-RU",
                       {
@@ -248,7 +248,7 @@ const PaymentHistoryTab = ({
                     )}
                   </div>
                   {isFinished && (
-                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500 mt-1">
                       Средства выплачены исполнителю — возврат невозможен
                     </div>
                   )}
@@ -256,7 +256,7 @@ const PaymentHistoryTab = ({
                 <div className="text-right flex flex-col items-end gap-2">
                   <StatusBadge status={paymentItem.status} />
                   <span
-                    className={`text-base font-bold ${isFinished || isRefunded ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}
+                    className={`text-base font-medium ${isFinished || isRefunded ? "text-gray-500" : "text-gray-100"}`}
                   >
                     {formatMoney(paymentItem.amount)}
                   </span>
@@ -292,11 +292,11 @@ const WithdrawTab = ({
   withdrawing,
   formatMoney,
 }) => (
-  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-    <h2 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">
+  <div className="bg-gray-900 rounded-lg border border-gray-700 p-6">
+    <h2 className="text-base font-medium text-gray-200 mb-1">
       Вывести средства
     </h2>
-    <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+    <p className="text-xs text-gray-500 mb-4">
       Баланс:{" "}
       <strong className="dark:text-gray-300">{formatMoney(balance)}</strong>
     </p>
@@ -306,7 +306,7 @@ const WithdrawTab = ({
 
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+        <label className="block text-[13px] font-semibold text-gray-300 mb-1">
           Сумма вывода (₽)
         </label>
         <input
@@ -323,7 +323,7 @@ const WithdrawTab = ({
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-[13px] font-semibold text-gray-300 mb-2">
           Способ вывода
         </label>
         <div className="flex gap-3">
@@ -337,10 +337,10 @@ const WithdrawTab = ({
               onClick={() =>
                 setWithdrawForm((form) => ({ ...form, payout_type: opt.value }))
               }
-              className={`flex-1 py-2 rounded-xl border text-sm font-semibold transition-colors ${
+              className={`flex-1 py-2 rounded-md border text-[13px] font-semibold transition-colors ${
                 withdrawForm.payout_type === opt.value
                   ? "border-violet-600 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
-                  : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300"
+                  : "border-gray-700 text-gray-400 hover:border-gray-300"
               }`}
             >
               {opt.label}
@@ -351,7 +351,7 @@ const WithdrawTab = ({
 
       {withdrawForm.payout_type === "yoo_money" && (
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-[13px] font-semibold text-gray-300 mb-1">
             Номер кошелька ЮMoney
           </label>
           <input
@@ -372,7 +372,7 @@ const WithdrawTab = ({
 
       {withdrawForm.payout_type === "bank_card" && (
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-[13px] font-semibold text-gray-300 mb-1">
             Номер банковской карты
           </label>
           <input
@@ -388,7 +388,7 @@ const WithdrawTab = ({
             className={inputCls}
             maxLength={19}
           />
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             Выплаты на карту доступны после верификации в ЮKassa.
           </p>
         </div>
@@ -397,7 +397,7 @@ const WithdrawTab = ({
       <button
         type="submit"
         disabled={withdrawing || balance <= 0}
-        className="w-full px-5 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors disabled:opacity-60"
+        className="w-full px-5 py-3 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors disabled:opacity-60"
       >
         {withdrawing ? "Отправка…" : "Вывести средства"}
       </button>
@@ -417,26 +417,26 @@ const PayoutsTab = ({ loading, payouts, formatMoney }) => {
       {payouts.map((payout) => (
         <div
           key={payout.id}
-          className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-between"
+          className="bg-gray-900 rounded-lg border border-gray-700 p-4 flex items-center justify-between"
         >
           <div>
-            <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            <div className="text-[13px] font-semibold text-gray-200">
               {payout.contest_id
                 ? `Конкурс #${payout.contest_id}`
                 : "Вывод с кошелька"}
             </div>
-            <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+            <div className="text-xs text-gray-500 mt-0.5">
               {payout.recipient_account
                 ? `Карта ****${payout.recipient_account.slice(-4)}`
                 : "Реквизиты не указаны"}
             </div>
-            <div className="text-xs text-gray-400 dark:text-gray-500">
+            <div className="text-xs text-gray-500">
               {new Date(payout.created_at).toLocaleDateString("ru-RU")}
             </div>
           </div>
           <div className="text-right flex flex-col items-end gap-1">
             <StatusBadge status={payout.status} />
-            <span className="text-base font-bold text-gray-900 dark:text-gray-100">
+            <span className="text-base font-medium text-gray-100">
               {formatMoney(payout.amount)}
             </span>
           </div>
@@ -681,7 +681,7 @@ const WalletPage = () => {
   };
 
   const inputCls =
-    "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 text-gray-800 dark:text-gray-100 text-sm bg-white dark:bg-gray-700 transition-all";
+    "w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 text-gray-100 text-[13px] bg-gray-800 dark:bg-gray-700 transition-all";
 
   const tabs = [
     { key: "balance", label: "Баланс" },
@@ -692,18 +692,18 @@ const WalletPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
+    <div className="min-h-screen bg-gray-950 py-6">
       <div className="max-w-3xl mx-auto px-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+        <h1 className="text-[17px] font-medium text-gray-100 mb-6">
           Кошелёк
         </h1>
 
-        <div className="bg-gradient-to-br from-violet-600 to-violet-700 rounded-2xl p-6 mb-6 text-white shadow-lg">
-          <div className="text-sm font-medium opacity-80 mb-1">
+        <div className="lin-panel mb-6 p-5">
+          <div className="lin-label mb-1.5">
             Текущий баланс
           </div>
-          <div className="text-4xl font-black tracking-tight mb-4">
-            {balanceLabel} <span className="text-2xl opacity-70">₽</span>
+          <div className="mb-4 text-[28px] font-semibold tracking-tight tabular-nums text-gray-100">
+            {balanceLabel} <span className="text-[17px] text-gray-500">₽</span>
           </div>
           <form onSubmit={handleTopup} className="flex flex-wrap gap-2">
             <input
@@ -712,44 +712,44 @@ const WalletPage = () => {
               placeholder="Сумма пополнения"
               value={topupAmount}
               onChange={(e) => setTopupAmount(e.target.value)}
-              className="flex-1 min-w-[150px] px-4 py-2 rounded-xl bg-white/20 border border-white/30 text-white placeholder-white/60 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-violet-600"
+              className="lin-input min-w-[150px] flex-1"
               aria-label="Сумма пополнения"
             />
             <button
               type="submit"
               disabled={topupLoading}
-              className="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-white text-violet-700 font-semibold text-sm hover:bg-violet-50 transition-colors disabled:opacity-60 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-violet-600 min-h-[44px]"
+              className="lin-btn lin-btn-primary disabled:opacity-60"
             >
               {topupLoading ? "…" : "Пополнить"}
             </button>
           </form>
           {topupPollStatus === "polling" && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-white/90 bg-white/20 rounded-lg px-3 py-1.5">
-              <span className="w-3.5 h-3.5 rounded-full border-2 border-white/60 border-t-white animate-spin flex-shrink-0" />
+            <div className="mt-2 flex items-center gap-2 rounded-md border border-gray-700 px-3 py-1.5 text-[13px] text-gray-400">
+              <span className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-gray-600 border-t-gray-300" />
               Проверяем статус платежа…
             </div>
           )}
           {topupSuccess && (
-            <div className="mt-2 text-sm text-white/90 bg-white/20 rounded-lg px-3 py-1.5">
+            <div className="mt-2 text-[13px] text-white/90 bg-gray-800/20 rounded-lg px-3 py-1.5">
               ✓ {topupSuccess}
             </div>
           )}
           {topupError && (
-            <div className="mt-2 text-sm text-red-200 bg-red-500/30 rounded-lg px-3 py-1.5">
+            <div className="mt-2 text-[13px] text-red-200 bg-red-500/30 rounded-lg px-3 py-1.5">
               {topupError}
             </div>
           )}
         </div>
 
-        <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto pb-1">
+        <div className="flex gap-1 mb-6 border-b border-gray-700 overflow-x-auto pb-1">
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`pb-2 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 rounded-t-lg ${
+              className={`pb-2 px-4 text-[13px] font-semibold border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 rounded-t-lg ${
                 tab === t.key
                   ? "border-violet-600 text-violet-700 dark:text-violet-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  : "border-transparent text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               }`}
               aria-current={tab === t.key ? "page" : undefined}
             >

@@ -9,10 +9,10 @@ const AddContestTypePanel = () => {
 
     return (
         <div className="text-center">
-            <h4 className="text-base font-bold text-gray-900 mb-4">Добавление типа конкурса</h4>
+            <h4 className="text-base font-medium text-gray-900 mb-4">Добавление типа конкурса</h4>
             <button
                 onClick={() => setShowModal(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors"
             >
                 Добавить тип конкурса
             </button>

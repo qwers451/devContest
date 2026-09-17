@@ -19,21 +19,21 @@ interface ContestTemplate {
 }
 
 const ContestStagesSection = ({ stages, onAdd, onUpdate, onRemove }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
+  <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
     <div className="flex justify-between items-center mb-3">
-      <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
+      <h3 className="text-base font-medium text-gray-200">
         Этапы конкурса
       </h3>
       <button
         type="button"
         onClick={onAdd}
-        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-violet-200 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 text-xs font-medium transition-colors"
+        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-700 text-violet-600 dark:text-violet-400 hover:bg-gray-800 text-xs font-medium transition-colors"
       >
         + Добавить этап
       </button>
     </div>
     {stages.length === 0 && (
-      <p className="text-sm text-gray-400 dark:text-gray-500">
+      <p className="text-[13px] text-gray-500">
         Необязательно. Разбейте работу на части с отдельными дедлайнами.
       </p>
     )}
@@ -41,10 +41,10 @@ const ContestStagesSection = ({ stages, onAdd, onUpdate, onRemove }) => (
       {stages.map((stage, index) => (
         <div
           key={index}
-          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 border border-gray-100 dark:border-gray-600"
+          className="bg-gray-900 dark:bg-gray-700/50 rounded-md p-3 border border-gray-700"
         >
           <div className="flex items-start gap-2">
-            <span className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+            <span className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-300 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
               {stage.order}
             </span>
             <div className="flex-1 space-y-2">
@@ -52,19 +52,19 @@ const ContestStagesSection = ({ stages, onAdd, onUpdate, onRemove }) => (
                 placeholder="Название этапа *"
                 value={stage.name}
                 onChange={(e) => onUpdate(index, "name", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                className="w-full px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-800 dark:bg-gray-700 text-gray-100"
               />
               <input
                 placeholder="Описание этапа (необязательно)"
                 value={stage.description}
                 onChange={(e) => onUpdate(index, "description", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                className="w-full px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-800 dark:bg-gray-700 text-gray-100"
               />
               <input
                 type="date"
                 value={stage.deadline}
                 onChange={(e) => onUpdate(index, "deadline", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                className="w-full px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-800 dark:bg-gray-700 text-gray-100"
               />
               <input
                 type="number"
@@ -74,7 +74,7 @@ const ContestStagesSection = ({ stages, onAdd, onUpdate, onRemove }) => (
                   onUpdate(index, "prize_amount", parseInt(e.target.value) || 0)
                 }
                 min={0}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                className="w-full px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-800 dark:bg-gray-700 text-gray-100"
               />
             </div>
             <button
@@ -112,39 +112,39 @@ const PreviewModal = ({
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in border border-transparent dark:border-gray-700"
+        className="bg-gray-900 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in border border-transparent dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            <h2 className="text-[15px] font-medium text-gray-100">
               Предпросмотр
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-[15px]"
             >
               ✕
             </button>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <div className="bg-gray-800 rounded-md p-5">
+            <h1 className="text-[17px] font-medium text-gray-100 mb-2">
               {title || "Без названия"}
             </h1>
             <div className="flex gap-2 mb-3">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                 {typeName || "Тип"}
               </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                 Активный
               </span>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+            <p className="text-[13px] text-gray-400 mb-1">
               До: {new Date(endBy).toLocaleDateString("ru-RU")} &nbsp;|&nbsp;
               Приз: {prizepool} руб.
             </p>
-            <hr className="my-4 border-gray-200 dark:border-gray-700" />
-            <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-2">
+            <hr className="my-4 border-gray-700" />
+            <h3 className="text-base font-medium text-gray-200 mb-2">
               Описание проекта
             </h3>
             <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -154,38 +154,38 @@ const PreviewModal = ({
             </div>
             {tzText && (
               <>
-                <hr className="my-4 border-gray-200 dark:border-gray-700" />
-                <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                <hr className="my-4 border-gray-700" />
+                <h4 className="font-medium text-gray-200 mb-2">
                   Техническое задание
                 </h4>
-                <pre className="whitespace-pre-wrap text-sm bg-white dark:bg-gray-700 dark:text-gray-200 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
+                <pre className="whitespace-pre-wrap text-[13px] bg-gray-800 dark:bg-gray-700 dark:text-gray-200 p-3 rounded-md border border-gray-700">
                   {tzText}
                 </pre>
               </>
             )}
             {stages.length > 0 && (
               <>
-                <hr className="my-4 border-gray-200 dark:border-gray-700" />
-                <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                <hr className="my-4 border-gray-700" />
+                <h4 className="font-medium text-gray-200 mb-2">
                   Этапы
                 </h4>
                 {stages.map((stage, index) => (
                   <div key={index} className="flex items-start gap-2 mb-2">
-                    <span className="w-5 h-5 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="w-5 h-5 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-300 flex items-center justify-center text-xs font-medium flex-shrink-0">
                       {stage.order}
                     </span>
                     <div>
-                      <strong className="text-sm dark:text-gray-200">
+                      <strong className="text-[13px] dark:text-gray-200">
                         {stage.name || "(без названия)"}
                       </strong>
                       {stage.deadline && (
-                        <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                        <span className="ml-2 text-xs text-gray-500">
                           до{" "}
                           {new Date(stage.deadline).toLocaleDateString("ru-RU")}
                         </span>
                       )}
                       {stage.description && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-400">
                           {stage.description}
                         </div>
                       )}
@@ -196,10 +196,10 @@ const PreviewModal = ({
             )}
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="px-6 py-4 border-t border-gray-700">
           <button
             onClick={onClose}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors"
           >
             Закрыть предпросмотр
           </button>
@@ -220,22 +220,22 @@ const HelpModal = ({ open, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg animate-fade-in border border-transparent dark:border-gray-700"
+        className="bg-gray-900 rounded-lg w-full max-w-lg animate-fade-in border border-transparent dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            <h2 className="text-[15px] font-medium text-gray-100">
               Справка
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-[15px]"
             >
               ✕
             </button>
           </div>
-          <div className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+          <div className="text-[13px] text-gray-300 space-y-3">
             <p>
               Для создания конкурса распишите подробно всю информацию в поле
               "Полное описание" в формате Markdown.
@@ -254,7 +254,7 @@ const HelpModal = ({ open, onClose }) => {
             <p>
               Чтобы отобразить изображения загруженных файлов, укажите вместо
               ссылки название файла —{" "}
-              <code className="bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-1 rounded">
+              <code className="bg-gray-700 dark:text-gray-200 px-1 rounded">
                 ![Image](image.png)
               </code>
             </p>
@@ -269,10 +269,10 @@ const HelpModal = ({ open, onClose }) => {
             </p>
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="px-6 py-4 border-t border-gray-700">
           <button
             onClick={onClose}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors"
           >
             Закрыть справку
           </button>
@@ -511,16 +511,16 @@ const CreateContest = () => {
   }, []);
 
   const inputCls =
-    "w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700";
+    "w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700";
   const inputErrCls =
-    "w-full px-4 py-2.5 rounded-xl border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700";
+    "w-full px-4 py-2.5 rounded-md border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700";
   const labelCls =
-    "block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1";
+    "block text-[13px] font-semibold text-gray-300 mb-1";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
+    <div className="min-h-screen bg-gray-950 py-6">
       <div className="max-w-3xl mx-auto px-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+        <h1 className="text-[17px] font-medium text-gray-100 mb-6">
           {pageTitle}
         </h1>
 
@@ -547,7 +547,7 @@ const CreateContest = () => {
                 </span>
               </button>
               {typeDropdownOpen && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg overflow-hidden">
+                <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md overflow-hidden">
                   {contest.types.map((t) => (
                     <button
                       key={t.id}
@@ -556,7 +556,7 @@ const CreateContest = () => {
                         contest.setFormField("type", t.id);
                         setTypeDropdownOpen(false);
                       }}
-                      className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-700 dark:hover:text-violet-400 transition-colors"
+                      className="w-full px-4 py-2.5 text-left text-[13px] text-gray-200 hover:bg-gray-800 hover:text-violet-700 dark:hover:text-violet-400 transition-colors"
                     >
                       {t.name}
                     </button>
@@ -650,7 +650,7 @@ const CreateContest = () => {
                   </span>
                 </button>
                 {templateDropdownOpen && (
-                  <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg overflow-hidden">
+                  <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md overflow-hidden">
                     {templates.map((t) => (
                       <button
                         key={t.id}
@@ -660,13 +660,13 @@ const CreateContest = () => {
                             contest.setFormField("tz_text", t.tz_template);
                           setTemplateDropdownOpen(false);
                         }}
-                        className="w-full px-4 py-2.5 text-left hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                        className="w-full px-4 py-2.5 text-left hover:bg-gray-800 transition-colors"
                       >
-                        <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        <div className="text-[13px] font-medium text-gray-200">
                           {t.name}
                         </div>
                         {t.description && (
-                          <div className="text-xs text-gray-400 dark:text-gray-500">
+                          <div className="text-xs text-gray-500">
                             {t.description}
                           </div>
                         )}
@@ -675,7 +675,7 @@ const CreateContest = () => {
                   </div>
                 )}
               </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Шаблон заполнит поле ТЗ — вы можете отредактировать его под свою
                 задачу.
               </p>
@@ -692,7 +692,7 @@ const CreateContest = () => {
               className={inputCls}
             />
             <div className="mt-2 flex items-center gap-3">
-              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors">
+              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-xs font-medium text-gray-300 transition-colors">
                 <span>📎</span>
                 <span>
                   {tzFile ? tzFile.name : "Загрузить ТЗ (PDF / DOCX)"}
@@ -714,7 +714,7 @@ const CreateContest = () => {
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-1">
               Необязательно. Текст или файл — используется для автоматической
               оценки решений с помощью LLaMA.
               {tzFile && (
@@ -776,7 +776,7 @@ const CreateContest = () => {
             {showExistingFiles && (
               <ul className="mb-2 space-y-1">
                 {existingFiles.map((f, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm">
+                  <li key={i} className="flex items-center gap-2 text-[13px]">
                     <span className="text-gray-700">{f}</span>
                     <button
                       type="button"
@@ -793,7 +793,7 @@ const CreateContest = () => {
               type="file"
               multiple
               onChange={(e) => handleFilesChange(e.target.files)}
-              className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+              className="w-full text-[13px] text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-[13px] file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
             />
             {showSelectedFiles && (
               <ul className="mt-1.5 space-y-0.5">
@@ -828,21 +828,21 @@ const CreateContest = () => {
           <div className="flex gap-3 flex-wrap pt-2">
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-all duration-200 shadow-sm"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-all duration-200"
             >
               Опубликовать
             </button>
             <button
               type="button"
               onClick={() => setShowPreview(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-all duration-200"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-[13px] transition-all duration-200"
             >
               Предпросмотр
             </button>
             <button
               type="button"
               onClick={() => setShowHelp(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-all duration-200"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-[13px] transition-all duration-200"
             >
               Справка
             </button>
@@ -850,7 +850,7 @@ const CreateContest = () => {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-sm transition-all duration-200"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold text-[13px] transition-all duration-200"
               >
                 Отменить редактирование
               </button>

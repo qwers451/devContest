@@ -29,7 +29,7 @@ const TypeBar = () => {
 
     return (
         <div ref={ref}>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
+            <label className="block text-[13px] font-semibold text-gray-700 mb-1">
                 <BsTags className="inline mr-1 text-violet-600" />
                 Тип конкурса
             </label>
@@ -37,7 +37,7 @@ const TypeBar = () => {
                 <button
                     type="button"
                     onClick={() => setOpen(o => !o)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 text-sm bg-white text-left flex justify-between items-center transition-all duration-200"
+                    className="w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 text-[13px] bg-gray-800 text-left flex justify-between items-center transition-all duration-200"
                 >
                     <span className="text-gray-600">
                         {selectedTypes.length === 0 ? 'Все' : `Выбрано типов: ${selectedTypes.length}`}
@@ -45,11 +45,11 @@ const TypeBar = () => {
                     <span className="text-gray-400">{open ? '▲' : '▼'}</span>
                 </button>
                 {open && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                    <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md overflow-hidden">
                         {contest?.types?.map((type) => (
                             <label
                                 key={type.id}
-                                className="flex items-center gap-2 px-4 py-2 hover:bg-violet-50 cursor-pointer text-sm text-gray-700"
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-violet-50 cursor-pointer text-[13px] text-gray-700"
                             >
                                 <input
                                     type="checkbox"

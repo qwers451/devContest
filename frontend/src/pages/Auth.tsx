@@ -40,25 +40,25 @@ const Auth = () => {
         }
     };
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-800 dark:text-gray-100 text-sm transition-all duration-200 bg-white dark:bg-gray-700';
+    const inputCls = 'lin-input';
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-fade-in border border-transparent dark:border-gray-700">
+        <div className="flex min-h-screen items-center justify-center bg-gray-950 p-4">
+            <div className="animate-fade-in lin-panel w-full max-w-[360px] p-6">
                 <div className="flex items-center justify-center gap-2 mb-6">
-                    <span className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center text-base font-black">C</span>
-                    <span className="font-bold text-xl text-violet-700 dark:text-violet-400">devContest</span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-violet-600 text-[13px] font-semibold text-white">C</span>
+                    <span className="text-[15px] font-semibold tracking-tight text-gray-100">devContest</span>
                 </div>
 
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-1">
+                <h2 className="mb-1 text-center text-[17px] font-semibold tracking-tight text-gray-100">
                     {isLogin ? 'Добро пожаловать!' : 'Создать аккаунт'}
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
+                <p className="mb-5 text-center text-[13px] text-gray-400">
                     {isLogin ? 'Войдите в свой аккаунт' : 'Заполните форму для регистрации'}
                 </p>
 
                 {error && (
-                    <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+                    <div className="mb-4 rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-[13px] text-red-400">
                         {error}
                     </div>
                 )}
@@ -104,13 +104,13 @@ const Auth = () => {
 
                     <button
                         type="submit"
-                        className="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors shadow-sm mt-1"
+                        className="lin-btn lin-btn-primary mt-1 w-full"
                     >
                         {isLogin ? 'Войти' : 'Зарегистрироваться'}
                     </button>
                 </form>
 
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-5">
+                <p className="mt-5 text-center text-[13px] text-gray-500">
                     {isLogin ? (
                         <>
                             Нет аккаунта?{' '}

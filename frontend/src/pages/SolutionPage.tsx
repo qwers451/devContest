@@ -32,13 +32,13 @@ const EvaluationSection = ({
   if (showLoadingState) {
     return (
       <>
-        <hr className="my-5 border-gray-100 dark:border-gray-700" />
-        <div className="rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50/40 dark:bg-violet-900/10 px-5 py-4 flex items-center gap-4">
-          <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+        <hr className="my-5 border-gray-700" />
+        <div className="rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50/40 dark:bg-violet-900/10 px-5 py-4 flex items-center gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
             <BsCpu className="w-6 h-6 text-violet-600 dark:text-violet-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-violet-800 dark:text-violet-300 text-sm">
+            <p className="font-semibold text-violet-800 dark:text-violet-300 text-[13px]">
               Автоматическая оценка ИИ
             </p>
             {evalError ? (
@@ -62,7 +62,7 @@ const EvaluationSection = ({
             <button
               onClick={onTrigger}
               disabled={evalTriggering}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold text-xs transition-colors flex-shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-600 bg-gray-800 text-gray-100 hover:bg-gray-700 disabled:opacity-50 text-[12px] font-medium transition-colors flex-shrink-0"
             >
               {evalTriggering ? (
                 <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -95,40 +95,40 @@ const EvaluationSection = ({
       ? "bg-amber-500"
       : "bg-red-500";
   const borderColor = isHigh
-    ? "border-emerald-200 dark:border-emerald-800"
+    ? "border-gray-700"
     : isMid
-      ? "border-amber-200 dark:border-amber-800"
-      : "border-red-200 dark:border-red-800";
+      ? "border-gray-700"
+      : "border-gray-700";
   const bgColor = isHigh
-    ? "bg-emerald-50/50 dark:bg-emerald-900/10"
+    ? "bg-gray-900"
     : isMid
-      ? "bg-amber-50/50 dark:bg-amber-900/10"
-      : "bg-red-50/50 dark:bg-red-900/10";
+      ? "bg-gray-900"
+      : "bg-gray-900";
   const trackColor = isHigh
-    ? "bg-emerald-100 dark:bg-emerald-900/30"
+    ? "bg-gray-700"
     : isMid
-      ? "bg-amber-100 dark:bg-amber-900/30"
-      : "bg-red-100 dark:bg-red-900/30";
+      ? "bg-gray-700"
+      : "bg-gray-700";
 
   return (
     <>
-      <hr className="my-5 border-gray-100 dark:border-gray-700" />
+      <hr className="my-5 border-gray-700" />
       <div
-        className={`rounded-2xl border ${borderColor} ${bgColor} overflow-hidden`}
+        className={`rounded-lg border ${borderColor} ${bgColor} overflow-hidden`}
       >
         <div className="px-5 py-4 flex items-center gap-4">
-          <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center">
-            <BsCpu className="w-7 h-7 text-gray-500 dark:text-gray-400" />
+          <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center">
+            <BsCpu className="w-7 h-7 text-gray-400" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">
+              <p className="font-medium text-gray-200 text-[13px]">
                 Оценка ИИ · соответствие ТЗ
               </p>
               <button
                 onClick={onTrigger}
                 disabled={evalTriggering || isLoading}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors flex-shrink-0"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-gray-700 bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-xs text-gray-400 font-medium transition-colors flex-shrink-0"
               >
                 {evalTriggering ? (
                   <span className="w-2.5 h-2.5 rounded-full border-2 border-gray-300 border-t-gray-500 animate-spin" />
@@ -139,7 +139,7 @@ const EvaluationSection = ({
               </button>
             </div>
             <div className="mt-2 flex items-center gap-3">
-              <div className={`text-3xl font-black ${scoreColor}`}>
+              <div className={`text-[20px] font-semibold ${scoreColor}`}>
                 {score}%
               </div>
               <div className="flex-1">
@@ -161,7 +161,7 @@ const EvaluationSection = ({
                       ✓ Критических нарушений нет
                     </span>
                   )}
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                  <span className="text-xs text-gray-500">
                     {evaluation.passed_requirements.length} вып. ·{" "}
                     {evaluation.failed_requirements.length} не вып.
                   </span>
@@ -172,7 +172,7 @@ const EvaluationSection = ({
         </div>
 
         {evaluation.requirements_detail?.length > 0 ? (
-          <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 space-y-2">
+          <div className="border-t border-gray-700 px-5 py-3 space-y-2">
             {evaluation.requirements_detail.map((req, index) => {
               const isGood = req.score >= 70;
               const isMidReq = req.score === 50;
@@ -184,22 +184,22 @@ const EvaluationSection = ({
               return (
                 <div key={index} className="flex items-start gap-2">
                   <span
-                    className={`flex-shrink-0 inline-flex items-center justify-center w-9 h-5 rounded text-xs font-bold tabular-nums ${scoreCls}`}
+                    className={`flex-shrink-0 inline-flex items-center justify-center w-9 h-5 rounded text-xs font-medium tabular-nums ${scoreCls}`}
                   >
                     {req.score}
                   </span>
                   {req.is_critical && (
                     <span
-                      className="flex-shrink-0 inline-flex items-center justify-center w-4 h-5 text-xs font-bold text-red-500 dark:text-red-400"
+                      className="flex-shrink-0 inline-flex items-center justify-center w-4 h-5 text-xs font-medium text-red-500 dark:text-red-400"
                       title="Критическое требование"
                     >
                       !
                     </span>
                   )}
-                  <span className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                  <span className="text-xs text-gray-300 leading-relaxed">
                     {req.text}
                     {req.comment && (
-                      <span className="text-gray-400 dark:text-gray-500">
+                      <span className="text-gray-500">
                         {" "}
                         — {req.comment}
                       </span>
@@ -211,7 +211,7 @@ const EvaluationSection = ({
           </div>
         ) : evaluation.passed_requirements.length > 0 ||
           evaluation.failed_requirements.length > 0 ? (
-          <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 grid gap-2 sm:grid-cols-2">
+          <div className="border-t border-gray-700 px-5 py-3 grid gap-2 sm:grid-cols-2">
             {evaluation.passed_requirements.length > 0 && (
               <div>
                 <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">
@@ -221,9 +221,9 @@ const EvaluationSection = ({
                   {evaluation.passed_requirements.map((requirement, index) => (
                     <li
                       key={index}
-                      className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
+                      className="text-xs text-gray-300 flex gap-1.5 leading-relaxed"
                     >
-                      <span className="text-emerald-500 flex-shrink-0 font-bold mt-px">
+                      <span className="text-emerald-500 flex-shrink-0 font-medium mt-px">
                         ✓
                       </span>
                       {requirement}
@@ -241,9 +241,9 @@ const EvaluationSection = ({
                   {evaluation.failed_requirements.map((requirement, index) => (
                     <li
                       key={index}
-                      className="text-xs text-gray-700 dark:text-gray-300 flex gap-1.5 leading-relaxed"
+                      className="text-xs text-gray-300 flex gap-1.5 leading-relaxed"
                     >
-                      <span className="text-red-400 flex-shrink-0 font-bold mt-px">
+                      <span className="text-red-400 flex-shrink-0 font-medium mt-px">
                         ✗
                       </span>
                       {requirement}
@@ -254,8 +254,8 @@ const EvaluationSection = ({
             )}
           </div>
         ) : null}
-        <div className="px-5 py-2 border-t border-gray-100 dark:border-gray-700">
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+        <div className="px-5 py-2 border-t border-gray-700">
+          <p className="text-xs text-gray-500">
             Оценка сформирована автоматически · Окончательное решение принимает
             заказчик
           </p>
@@ -285,20 +285,20 @@ const MilestonesSection = ({
 
   return (
     <>
-      <hr className="my-5 border-gray-100 dark:border-gray-700" />
+      <hr className="my-5 border-gray-700" />
       <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
-        <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
+        <h3 className="text-base font-medium text-gray-200">
           Поэтапная выплата
         </h3>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-gray-500 dark:text-gray-400">
+        <div className="flex items-center gap-3 text-[13px]">
+          <span className="text-gray-400">
             Выплачено:{" "}
-            <span className="font-semibold text-gray-700 dark:text-gray-300">
+            <span className="font-semibold text-gray-300">
               {formatMoney(totalMilestonePaid)}
             </span>
           </span>
           <span className="text-gray-300 dark:text-gray-600">|</span>
-          <span className="text-gray-500 dark:text-gray-400">
+          <span className="text-gray-400">
             Остаток эскроу:{" "}
             <span
               className={`font-semibold ${escrowRemaining > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}`}
@@ -309,7 +309,7 @@ const MilestonesSection = ({
         </div>
       </div>
       {milestoneError && (
-        <p className="text-sm text-red-500 mb-2">{milestoneError}</p>
+        <p className="text-[13px] text-red-500 mb-2">{milestoneError}</p>
       )}
       <div className="space-y-2">
         {prizeStages.map((stage) => {
@@ -318,25 +318,25 @@ const MilestonesSection = ({
           return (
             <div
               key={stage.id}
-              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+              className="flex items-center justify-between gap-3 px-4 py-3 rounded-md border border-gray-700 bg-gray-800/50"
             >
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 dark:text-gray-200 text-sm truncate">
+                <p className="font-medium text-gray-200 text-[13px] truncate">
                   {stage.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-gray-400">
                   {formatMoney(stage.prize_amount)}
                 </p>
               </div>
               {paid ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-700">
                   ✓ Выплачено
                 </span>
               ) : isContestActive ? (
                 <button
                   onClick={() => onPay(stage)}
                   disabled={loading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-semibold text-xs transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-semibold text-xs transition-colors"
                 >
                   {loading ? (
                     <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -381,14 +381,14 @@ const FilesSection = ({
 
   return (
     <>
-      <hr className="my-5 border-gray-100 dark:border-gray-700" />
+      <hr className="my-5 border-gray-700" />
       <div className="flex items-center gap-3 mb-2">
-        <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
+        <h3 className="text-base font-medium text-gray-200">
           Файлы
         </h3>
         {canUpload && (
           <label
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors cursor-pointer ${uploadingFiles ? "opacity-50 pointer-events-none" : ""}`}
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 font-medium transition-colors cursor-pointer ${uploadingFiles ? "opacity-50 pointer-events-none" : ""}`}
           >
             {uploadingFiles ? "Загрузка..." : "↑ Добавить файлы"}
             <input
@@ -408,7 +408,7 @@ const FilesSection = ({
               <li key={index} className="flex items-center gap-2">
                 <button
                   onClick={() => onDownload(fileName)}
-                  className="text-violet-600 hover:text-violet-800 text-sm font-medium hover:underline"
+                  className="text-violet-600 hover:text-violet-800 text-[13px] font-medium hover:underline"
                 >
                   {fileName}
                 </button>
@@ -429,7 +429,7 @@ const FilesSection = ({
           </button>
         </>
       ) : (
-        <p className="text-sm text-gray-400 dark:text-gray-500 italic">
+        <p className="text-[13px] text-gray-500 italic">
           Файлы не прикреплены.
         </p>
       )}
@@ -444,13 +444,13 @@ const ReviewsSection = ({ reviews, avgScore, solutionNumber, navigate }) => {
 
   return (
     <>
-      <hr className="my-0 border-gray-100 dark:border-gray-700" />
+      <hr className="my-0 border-gray-700" />
       <div className="px-6 py-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">
+          <h3 className="text-base font-medium text-gray-200">
             Отзывы ({reviews.length})
             {avgScore != null && (
-              <span className="ml-2 text-sm font-normal text-amber-600 dark:text-amber-400">
+              <span className="ml-2 text-[13px] font-normal text-amber-600 dark:text-amber-400">
                 ★ ср. {avgScore}
               </span>
             )}
@@ -469,13 +469,13 @@ const ReviewsSection = ({ reviews, avgScore, solutionNumber, navigate }) => {
               onClick={() =>
                 navigate(`/solution/${solutionNumber}/review/${review.number}`)
               }
-              className="cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors"
+              className="cursor-pointer rounded-md border border-gray-700 px-4 py-3 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
-                <span className="px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-bold text-xs">
+                <span className="px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-medium text-xs">
                   {review.score} / 10
                 </span>
-                <span className="text-xs text-gray-400 dark:text-gray-500">
+                <span className="text-xs text-gray-500">
                   {new Date(review.created_at).toLocaleDateString("ru-RU", {
                     day: "2-digit",
                     month: "short",
@@ -483,12 +483,12 @@ const ReviewsSection = ({ reviews, avgScore, solutionNumber, navigate }) => {
                   })}
                 </span>
                 {review.files?.length > 0 && (
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                  <span className="text-xs text-gray-500">
                     📎 {review.files.length}
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+              <p className="text-[13px] text-gray-400 line-clamp-2">
                 {review.commentary}
               </p>
             </div>
@@ -506,9 +506,9 @@ const StatusHistorySection = ({ statusLog, getStatus }) => {
 
   return (
     <>
-      <hr className="my-0 border-gray-100 dark:border-gray-700" />
+      <hr className="my-0 border-gray-700" />
       <div className="px-6 py-5">
-        <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-3">
+        <h3 className="text-base font-medium text-gray-200 mb-3">
           История статусов
         </h3>
         <div className="space-y-1">
@@ -518,7 +518,7 @@ const StatusHistorySection = ({ statusLog, getStatus }) => {
             return (
               <div
                 key={log.id}
-                className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+                className="flex items-center gap-2 text-xs text-gray-400"
               >
                 <span className="text-gray-300 dark:text-gray-600 font-mono">
                   {new Date(log.changed_at).toLocaleDateString("ru-RU", {
@@ -530,10 +530,10 @@ const StatusHistorySection = ({ statusLog, getStatus }) => {
                 </span>
                 {log.old_status != null && (
                   <>
-                    <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <span className="px-1.5 py-0.5 rounded bg-gray-700 text-gray-400">
                       {fromStatus?.label || log.old_status}
                     </span>
-                    <span className="text-gray-400 dark:text-gray-500">→</span>
+                    <span className="text-gray-500">→</span>
                   </>
                 )}
                 <span className="px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-semibold">
@@ -846,54 +846,54 @@ const SolutionPage = () => {
   const statusInfo = solution.getStatus(solution.currentSolution.status);
 
   const btnPrimary =
-    "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors";
+    "inline-flex items-center gap-2 px-4 py-2 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors";
   const btnSecondary =
-    "inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm transition-colors";
+    "inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-[13px] transition-colors";
   const btnDanger =
-    "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors";
+    "inline-flex items-center gap-2 px-4 py-2 rounded-md bg-red-500 hover:bg-red-600 text-white font-semibold text-[13px] transition-colors";
   const btnWarning =
-    "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm transition-colors";
+    "inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-600 bg-gray-800 text-gray-100 hover:bg-gray-700 text-[13px] font-medium transition-colors";
   const btnSuccess =
-    "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition-colors";
+    "inline-flex items-center gap-2 px-4 py-2 rounded-md bg-violet-600 text-white hover:bg-violet-500 font-semibold text-[13px] transition-colors";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
+    <div className="min-h-screen bg-gray-950 py-6">
       <div className="max-w-4xl mx-auto px-4">
-        <nav className="flex items-center gap-2 mb-4 text-sm">
+        <nav className="flex items-center gap-2 mb-4 text-[13px]">
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+            className="inline-flex items-center gap-1 text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
           >
             ← Назад
           </button>
           <span className="text-gray-300 dark:text-gray-600">/</span>
           <button
             onClick={() => navigate(contestSolutionsRoute)}
-            className="text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+            className="text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
           >
             Решения
           </button>
           <span className="text-gray-300 dark:text-gray-600">/</span>
-          <span className="text-gray-700 dark:text-gray-300 font-medium truncate max-w-xs">
+          <span className="text-gray-300 font-medium truncate max-w-xs">
             {currentSolution.title || "Без названия"}
           </span>
         </nav>
 
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in">
-          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+        <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden animate-fade-in">
+          <div className="px-6 py-5 border-b border-gray-700">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight mb-1">
+                <h1 className="text-[17px] font-medium text-gray-100 leading-tight mb-1">
                   {currentSolution.title || "Без названия"}
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <p className="text-[13px] text-gray-400 mb-2">
                   Конкурс «{currentContest.title}» от{" "}
                   <span className="font-medium text-violet-600 dark:text-violet-400">
                     @{currentCustomer?.login || "Неизвестно"}
                   </span>
                 </p>
                 <span
-                  className="inline-block px-3 py-1 rounded-full text-sm font-semibold"
+                  className="inline-block px-3 py-1 rounded-full text-[13px] font-semibold"
                   style={{
                     color: statusInfo?.textColor,
                     backgroundColor: statusInfo?.color,
@@ -903,14 +903,14 @@ const SolutionPage = () => {
                 </span>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-semibold text-gray-700 dark:text-gray-300">
+                <p className="font-semibold text-gray-300">
                   {freelancer?.login || "Неизвестный фрилансер"}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   Создано: {formatDate(currentSolution.created_at)}
                 </p>
                 {!isCreated && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                  <p className="text-xs text-gray-500">
                     Обновлено: {formatDate(currentSolution.updated_at)}
                   </p>
                 )}
@@ -919,10 +919,10 @@ const SolutionPage = () => {
           </div>
 
           <div className="px-6 py-5">
-            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">
+            <h2 className="text-[14px] font-medium text-gray-200 mb-3">
               Описание
             </h2>
-            <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+            <div className="prose prose-sm dark:prose-invert max-w-none text-gray-300">
               <Markdown options={{ disableParsingRawHTML: true }}>
                 {currentSolution.description}
               </Markdown>
@@ -981,7 +981,7 @@ const SolutionPage = () => {
             getStatus={(n) => solution.getStatus(n)}
           />
 
-          <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="px-6 py-4 border-t border-gray-700 bg-gray-800/50">
             <div className="flex flex-wrap gap-2 justify-between">
               <div className="flex flex-wrap gap-2">
                 {(isOwner || isAdmin) && (

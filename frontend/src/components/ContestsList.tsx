@@ -32,7 +32,7 @@ const ContestsList = observer(() => {
 
   if (!contest.isLoading && contest.contests.length === 0) {
     return (
-      <div className="text-center my-10 text-gray-600 dark:text-gray-300">
+      <div className="text-center my-10 text-gray-300">
         Нет конкурсов по выбранным фильтрам
       </div>
     );
@@ -55,10 +55,10 @@ const ContestsList = observer(() => {
             <button
               key={idx + 1}
               onClick={() => handlePageChange(idx + 1)}
-              className={`w-9 h-9 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`w-9 h-9 rounded-lg text-[13px] font-medium transition-all duration-200 ${
                 contest.currentPage === idx + 1
-                  ? "bg-violet-600 text-white shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400"
+                  ? "bg-violet-600 text-white "
+                  : "text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400"
               }`}
             >
               {idx + 1}

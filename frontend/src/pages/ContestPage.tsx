@@ -8,10 +8,10 @@ import type { ContestRequirementsOut, ContestStatsOut } from '../types';
 import { BsTrophy } from 'react-icons/bs';
 
 const statusConfig = {
-    active:    { label: 'Активный',    cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    draft:     { label: 'Черновик',    cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
-    finished:  { label: 'Завершённый', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
-    cancelled: { label: 'Отменённый', cls: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
+    active:    { label: 'Активный',    cls: 'border border-gray-700 bg-gray-800 text-emerald-400' },
+    draft:     { label: 'Черновик',    cls: 'border border-gray-700 bg-gray-800 text-gray-400' },
+    finished:  { label: 'Завершённый', cls: 'border border-gray-700 bg-gray-800 text-violet-400' },
+    cancelled: { label: 'Отменённый', cls: 'border border-gray-700 bg-gray-800 text-red-400' },
 };
 
 const ContestPage = () => {
@@ -209,8 +209,8 @@ const ContestPage = () => {
     const status = statusConfig[currentContest.status] || statusConfig.draft;
     const typeName = contest.getTypeNameById(currentContest.type_id);
 
-    const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:outline-none text-gray-800 dark:text-gray-200 text-sm bg-white dark:bg-gray-700';
-    const btnSecondary = 'inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none';
+    const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-700 focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:outline-none text-gray-200 text-[13px] bg-gray-800 dark:bg-gray-700';
+    const btnSecondary = 'inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-700 text-[13px] text-gray-300 hover:bg-gray-700 font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none';
 
     const tabs = [
         { id: 'description', label: 'Описание' },
@@ -219,47 +219,47 @@ const ContestPage = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
+        <div className="min-h-screen bg-gray-950 py-6">
             <div className="max-w-4xl mx-auto px-4">
-                <nav className="flex items-center gap-2 mb-4 text-sm" aria-label="Хлебные крошки">
+                <nav className="flex items-center gap-2 mb-4 text-[13px]" aria-label="Хлебные крошки">
                     <button
                         onClick={() => navigate('/contests')}
-                        className="text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 focus:outline-none rounded"
+                        className="text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 focus:outline-none rounded"
                     >
                         Конкурсы
                     </button>
                     <span className="text-gray-300 dark:text-gray-600">/</span>
-                    <span className="text-gray-700 dark:text-gray-300 font-medium truncate max-w-xs">{currentContest.title}</span>
+                    <span className="text-gray-300 font-medium truncate max-w-xs">{currentContest.title}</span>
                 </nav>
 
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
-                    <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+                <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
+                    <div className="px-6 py-5 border-b border-gray-700">
                         <div className="flex items-start justify-between gap-4 flex-wrap">
                             <div className="flex-1 min-w-0">
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight mb-2">
+                                <h1 className="text-[17px] font-medium text-gray-100 leading-tight mb-2">
                                     {currentContest.title}
                                 </h1>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${status.cls}`}>
+                                    <span className={`inline-flex items-center px-3 py-1 rounded text-[11px] font-semibold ${status.cls}`}>
                                         {status.label}
                                     </span>
                                     {typeName && (
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                        <span className="inline-flex items-center px-3 py-1 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                                             {typeName}
                                         </span>
                                     )}
                                 </div>
                             </div>
                             <div className="text-right flex-shrink-0">
-                                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                                <div className="text-[17px] font-semibold text-emerald-600 dark:text-emerald-400">
                                     {Number(currentContest.prizepool).toLocaleString('ru')} ₽
                                 </div>
-                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                <div className="text-xs text-gray-500 mt-0.5">
                                     До {new Date(currentContest.ends_at).toLocaleDateString('ru-RU')}
                                 </div>
                             </div>
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        <div className="text-[13px] text-gray-400 mt-2">
                             Создатель: <span className="font-medium text-violet-600 dark:text-violet-400">
                                 @{user.getById(currentContest.customer_id)?.login || '...'}
                             </span>
@@ -267,13 +267,13 @@ const ContestPage = () => {
                     </div>
 
                     {isFinished && currentContest.winner && (
-                        <div className="px-6 py-4 bg-emerald-50 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-800/50 flex items-center gap-3">
+                        <div className="px-6 py-4 border-b border-gray-700 bg-gray-900 flex items-center gap-3">
                             <span className="text-emerald-600 dark:text-emerald-400"><BsTrophy className="w-5 h-5" /></span>
                             <div>
-                                <p className="font-semibold text-emerald-800 dark:text-emerald-300 text-sm">Конкурс завершён — победитель выбран!</p>
+                                <p className="font-semibold text-emerald-800 dark:text-emerald-300 text-[13px]">Конкурс завершён — победитель выбран!</p>
                                 <button
                                     onClick={() => navigate(`/solution/${currentContest.winner.submission_id}`)}
-                                    className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 font-medium text-sm underline mt-0.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-emerald-900 focus:outline-none rounded"
+                                    className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 font-medium text-[13px] underline mt-0.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-emerald-900 focus:outline-none rounded"
                                 >
                                     Перейти к победившему решению
                                 </button>
@@ -281,14 +281,14 @@ const ContestPage = () => {
                         </div>
                     )}
 
-                    <div className="flex gap-1 border-b border-gray-100 dark:border-gray-700 overflow-x-auto px-4 pt-2">
+                    <div className="flex gap-1 border-b border-gray-700 overflow-x-auto px-4 pt-2">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded-t-lg ${activeTab === tab.id
+                                className={`pb-3 px-4 text-[13px] font-semibold border-b-2 transition-colors whitespace-nowrap focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded-t-lg ${activeTab === tab.id
                                     ? 'border-violet-600 text-violet-700 dark:text-violet-400'
-                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                                    : 'border-transparent text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                 }`}
                             >
                                 {tab.label}
@@ -300,8 +300,8 @@ const ContestPage = () => {
                         {activeTab === 'description' && (
                             <div className="space-y-6 animate-fade-in">
                                 <div>
-                                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3">Описание проекта</h2>
-                                    <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                                    <h2 className="text-[14px] font-medium text-gray-200 mb-3">Описание проекта</h2>
+                                    <div className="prose prose-sm dark:prose-invert max-w-none text-gray-300">
                                         <Markdown options={{ disableParsingRawHTML: true }}>
                                             {currentContest.description || ''}
                                         </Markdown>
@@ -309,9 +309,9 @@ const ContestPage = () => {
                                 </div>
 
                                 {(currentContest.tz_text || currentContest.tz_filename || (isOwner || isAdmin)) && (
-                                    <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                                    <div className="pt-4 border-t border-gray-700">
                                         <div className="flex items-center gap-3 mb-3 flex-wrap">
-                                            <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Техническое задание</h3>
+                                            <h3 className="text-base font-medium text-gray-200">Техническое задание</h3>
                                             {currentContest.tz_filename && (
                                                 <button
                                                     onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/tz-file`, currentContest.tz_filename)}
@@ -329,19 +329,19 @@ const ContestPage = () => {
                                             )}
                                         </div>
                                         {currentContest.tz_text ? (
-                                            <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 font-sans">
+                                            <pre className="whitespace-pre-wrap text-[13px] text-gray-300 bg-gray-800 p-4 rounded-md border border-gray-700 font-sans">
                                                 {currentContest.tz_text}
                                             </pre>
                                         ) : (
-                                            <p className="text-sm text-gray-400 dark:text-gray-500 italic">Текст ТЗ не извлечён. Загрузите PDF или DOCX.</p>
+                                            <p className="text-[13px] text-gray-500 italic">Текст ТЗ не извлечён. Загрузите PDF или DOCX.</p>
                                         )}
                                     </div>
                                 )}
 
                                 {(currentContest.files?.length > 0 || (isOwner || isAdmin)) && (
-                                    <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                                    <div className="pt-4 border-t border-gray-700">
                                         <div className="flex items-center gap-3 mb-3">
-                                            <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Файлы</h3>
+                                            <h3 className="text-base font-medium text-gray-200">Файлы</h3>
                                             {(isOwner || isAdmin) && !isFinished && (
                                                 <label className={`${btnSecondary} cursor-pointer ${uploadingFiles ? 'opacity-50 pointer-events-none' : ''}`}>
                                                     {uploadingFiles ? 'Загрузка...' : '↑ Добавить файлы'}
@@ -355,7 +355,7 @@ const ContestPage = () => {
                                                     <li key={idx} className="flex items-center gap-2">
                                                         <button
                                                             onClick={() => downloadFileOrZip(`/contests/${currentContest.id}/files/${fileName}`, fileName)}
-                                                            className="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium hover:underline focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded"
+                                                            className="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-[13px] font-medium hover:underline focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded"
                                                         >
                                                             {fileName}
                                                         </button>
@@ -371,7 +371,7 @@ const ContestPage = () => {
                                                 ))}
                                             </ul>
                                         ) : (
-                                            <p className="text-sm text-gray-400 dark:text-gray-500 italic">Файлы не прикреплены.</p>
+                                            <p className="text-[13px] text-gray-500 italic">Файлы не прикреплены.</p>
                                         )}
                                     </div>
                                 )}
@@ -381,7 +381,7 @@ const ContestPage = () => {
                         {activeTab === 'stages' && (
                             <div className="animate-fade-in">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Таймлайн конкурса</h3>
+                                    <h3 className="text-base font-medium text-gray-200">Таймлайн конкурса</h3>
                                     {(isOwner || isAdmin) && !isFinished && !editingStages && (
                                         <button onClick={startEditingStages} className={btnSecondary}>
                                             Редактировать этапы
@@ -390,10 +390,10 @@ const ContestPage = () => {
                                 </div>
 
                                 {editingStages ? (
-                                    <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-gray-50 dark:bg-gray-800">
+                                    <div className="border border-gray-700 rounded-md p-4 bg-gray-800">
                                         {draftStages.map((stage, idx) => (
                                             <div key={idx} className="flex flex-wrap items-center gap-2 mb-3">
-                                                <span className="text-sm font-bold text-gray-500 dark:text-gray-400 w-5">{idx + 1}.</span>
+                                                <span className="text-[13px] font-medium text-gray-400 w-5">{idx + 1}.</span>
                                                 <input
                                                     placeholder="Название этапа"
                                                     value={stage.name}
@@ -425,14 +425,14 @@ const ContestPage = () => {
                                         <div className="flex flex-wrap gap-2 mt-4">
                                             <button
                                                 onClick={addDraftStage}
-                                                className="inline-flex items-center gap-1 px-4 py-2 rounded-xl border border-violet-200 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus:outline-none"
+                                                className="inline-flex items-center gap-1 px-4 py-2 rounded-md border border-gray-700 text-violet-600 dark:text-violet-400 hover:bg-gray-800 text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus:outline-none"
                                             >
                                                 + Добавить этап
                                             </button>
                                             <button
                                                 onClick={saveStages}
                                                 disabled={savingStages}
-                                                className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-emerald-500 focus:outline-none"
+                                                className="inline-flex items-center gap-1 px-4 py-2 rounded-md bg-violet-600 text-white hover:bg-violet-500 text-[13px] font-semibold transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-emerald-500 focus:outline-none"
                                             >
                                                 {savingStages ? 'Сохранение...' : 'Сохранить'}
                                             </button>
@@ -447,7 +447,7 @@ const ContestPage = () => {
                                 ) : (
                                     <div className="space-y-3">
                                         {sortedStages.length === 0 && (
-                                            <p className="text-sm text-gray-400 dark:text-gray-500">Этапы не добавлены. Конкурс завершится в указанный срок.</p>
+                                            <p className="text-[13px] text-gray-500">Этапы не добавлены. Конкурс завершится в указанный срок.</p>
                                         )}
                                         {sortedStages.map((stage) => {
                                             const isActive = stage.id === activeStageId;
@@ -455,33 +455,33 @@ const ContestPage = () => {
                                             return (
                                                 <div
                                                     key={stage.id}
-                                                    className={`flex items-start gap-4 p-4 rounded-xl transition-colors ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800' : 'bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700'}`}
+                                                    className={`flex items-start gap-4 p-4 rounded-md transition-colors ${isActive ? 'border border-gray-600 bg-gray-900' : 'bg-gray-800 border border-gray-700'}`}
                                                 >
-                                                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isActive ? 'bg-emerald-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>
+                                                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-medium flex-shrink-0 ${isActive ? 'bg-violet-600 text-white' : 'bg-gray-700 text-gray-300'}`}>
                                                         {stage.order}
                                                     </span>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                            <span className="font-semibold text-gray-800 dark:text-gray-200">{stage.name}</span>
+                                                            <span className="font-semibold text-gray-200">{stage.name}</span>
                                                             {isActive && (
-                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border border-gray-700 bg-gray-800 text-emerald-400">
                                                                     Текущий {isManual ? '' : '(авто)'}
                                                                 </span>
                                                             )}
                                                             {stage.deadline && (
-                                                                <span className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-2 py-0.5 rounded shadow-sm border border-gray-100 dark:border-gray-700">
+                                                                <span className="text-[13px] text-gray-400 bg-gray-900 px-2 py-0.5 rounded border border-gray-700">
                                                                     до {new Date(stage.deadline).toLocaleDateString('ru-RU')}
                                                                 </span>
                                                             )}
                                                         </div>
                                                         {stage.description && (
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{stage.description}</p>
+                                                            <p className="text-[13px] text-gray-400 mt-1">{stage.description}</p>
                                                         )}
                                                     </div>
                                                     {(isOwner || isAdmin) && !isFinished && (
                                                         <button
                                                             onClick={() => handleSetCurrentStage(stage.id)}
-                                                            className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus:outline-none ${isActive && isManual ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                                            className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus:outline-none ${isActive && isManual ? 'bg-violet-600 text-white hover:bg-violet-500' : 'border border-gray-700 text-gray-300 hover:bg-gray-700'}`}
                                                         >
                                                             {isActive && isManual ? '✓ Текущий' : 'Назначить'}
                                                         </button>
@@ -497,7 +497,7 @@ const ContestPage = () => {
                         {activeTab === 'ai' && (
                             <div className="animate-fade-in">
                                 <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-                                    <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">Система оценки требований</h3>
+                                    <h3 className="text-base font-medium text-gray-200">Система оценки требований</h3>
                                     {(isOwner || isAdmin) && currentContest.tz_text && (
                                         <button
                                             onClick={handleExtractRequirements}
@@ -511,35 +511,35 @@ const ContestPage = () => {
 
                                 {stats && stats.evaluated_count > 0 && (
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-700">
-                                            <div className="text-3xl font-black text-gray-800 dark:text-gray-100">{stats.evaluated_count}</div>
-                                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Решений оценено</div>
+                                        <div className="bg-gray-800 rounded-md p-4 text-center border border-gray-700">
+                                            <div className="text-[20px] font-semibold text-gray-100">{stats.evaluated_count}</div>
+                                            <div className="text-[13px] text-gray-400 mt-1">Решений оценено</div>
                                         </div>
-                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-700">
-                                            <div className="text-3xl font-black text-violet-600 dark:text-violet-400">
+                                        <div className="bg-gray-800 rounded-md p-4 text-center border border-gray-700">
+                                            <div className="text-[20px] font-semibold text-violet-600 dark:text-violet-400">
                                                 {stats.avg_score !== null ? `${stats.avg_score}%` : '—'}
                                             </div>
-                                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Средний балл</div>
+                                            <div className="text-[13px] text-gray-400 mt-1">Средний балл</div>
                                         </div>
-                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-700">
-                                            <div className="text-3xl font-black text-red-500 dark:text-red-400">{stats.critical_issues_count}</div>
-                                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Крит. нарушений</div>
+                                        <div className="bg-gray-800 rounded-md p-4 text-center border border-gray-700">
+                                            <div className="text-[20px] font-semibold text-red-500 dark:text-red-400">{stats.critical_issues_count}</div>
+                                            <div className="text-[13px] text-gray-400 mt-1">Крит. нарушений</div>
                                         </div>
                                     </div>
                                 )}
 
                                 {requirements && requirements.requirements.length > 0 ? (
                                     <div>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                        <p className="text-[13px] text-gray-400 mb-3">
                                             Критерии извлечены из ТЗ · <span className="font-medium">{new Date(requirements.cached_at).toLocaleDateString('ru-RU')}</span>
                                         </p>
                                         <ul className="space-y-2">
                                             {requirements.requirements.map((req, i) => (
-                                                <li key={i} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
-                                                    <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${req.is_critical ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`} title={req.is_critical ? 'Критическое требование' : 'Обычное требование'}>
+                                                <li key={i} className="flex items-start gap-3 p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+                                                    <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-medium ${req.is_critical ? 'border border-gray-700 bg-gray-800 text-red-400' : 'bg-gray-700 text-gray-400'}`} title={req.is_critical ? 'Критическое требование' : 'Обычное требование'}>
                                                         {req.is_critical ? '!' : '·'}
                                                     </span>
-                                                    <span className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 leading-snug">
+                                                    <span className="text-[13px] text-gray-200 mt-0.5 leading-snug">
                                                         {req.text}
                                                     </span>
                                                 </li>
@@ -547,19 +547,19 @@ const ContestPage = () => {
                                         </ul>
                                     </div>
                                 ) : (
-                                    <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                                        <p className="text-gray-500 dark:text-gray-400">Требования пока не извлечены. Анализ недоступен.</p>
+                                    <div className="text-center py-8 bg-gray-800/50 rounded-md border border-gray-700">
+                                        <p className="text-gray-400">Требования пока не извлечены. Анализ недоступен.</p>
                                     </div>
                                 )}
                             </div>
                         )}
                     </div>
 
-                    <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex flex-wrap gap-3 mt-auto">
+                    <div className="px-6 py-4 border-t border-gray-700 bg-gray-800/50 flex flex-wrap gap-3 mt-auto">
                         {(isFreelancer && !isFinished) && (
                             <button
                                 onClick={() => navigate(`/contest/${currentContest.number}/create-solution`)}
-                                className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-all duration-200 shadow-sm focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
+                                className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-6 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-all duration-200 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
                             >
                                 Отправить решение
                             </button>
@@ -569,21 +569,21 @@ const ContestPage = () => {
                                 {isOwner && currentContest.status === 'draft' && (
                                     <button
                                         onClick={() => navigate(`/payment/checkout?contest_id=${currentContest.id}&amount=${currentContest.prizepool}`)}
-                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
+                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[13px] transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
                                     >
                                         Оплатить и опубликовать
                                     </button>
                                 )}
                                 <button
                                     onClick={() => navigate(`/contest/${currentContest.number}/solutions`)}
-                                    className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
+                                    className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
                                 >
                                     Решения
                                 </button>
                                 {isOwner && !isFinished && (
                                     <button
                                         onClick={() => navigate(`/contest/edit/${currentContest.number}`, { state: JSON.parse(JSON.stringify(currentContest)) })}
-                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 font-semibold text-sm transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
+                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 text-violet-700 dark:text-violet-400 hover:bg-gray-800 font-semibold text-[13px] transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
                                     >
                                         Редактировать
                                     </button>
@@ -591,7 +591,7 @@ const ContestPage = () => {
                                 {isAdmin && (
                                     <button
                                         onClick={handleDelete}
-                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
+                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-md bg-red-500 hover:bg-red-600 text-white font-semibold text-[13px] transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
                                     >
                                         Удалить
                                     </button>
