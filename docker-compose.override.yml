@@ -40,3 +40,13 @@ services:
     volumes:
       - ./backend/payment-service:/app:z
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  audit-service:
+    volumes:
+      - ./backend/audit-service:/app:z
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  monitoring-service:
+    volumes:
+      - ./backend/monitoring-service:/app:z
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

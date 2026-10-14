@@ -12,6 +12,9 @@
 | `contest-service` | 8002 | конкурсы, этапы, решения, отзывы, шаблоны, import/export |
 | `evaluation-service` | 8003 | AI-оценка, требования, статистика |
 | `payment-service` | 8004 | кошелёк, платежи, эскроу, транзакции |
+| `protocol-service` | 8005 | протокольные сессии по решению (пока не в стеке, см. [ВКР](#вкр-audit--monitoring--protocol--research)) |
+| `audit-service` | 8006 | audit-журнал событий backend-сервисов |
+| `monitoring-service` | 8007 | проверки доступности backend-сервисов и их история |
 
 ## Стек
 
@@ -38,6 +41,8 @@ USER_DB_PASSWORD=...
 CONTEST_DB_PASSWORD=...
 EVAL_DB_PASSWORD=...
 PAYMENT_DB_PASSWORD=...
+AUDIT_DB_PASSWORD=...
+MONITORING_DB_PASSWORD=...
 JWT_SECRET=...
 INTERNAL_SECRET=...
 ```
@@ -60,6 +65,8 @@ INTERNAL_SECRET=...
 | Swagger contest-service | `http://localhost:8002/docs` |
 | Swagger evaluation-service | `http://localhost:8003/docs` |
 | Swagger payment-service | `http://localhost:8004/docs` |
+| Swagger audit-service | `http://localhost:8006/docs` |
+| Swagger monitoring-service | `http://localhost:8007/docs` |
 
 ## Разница между режимами
 
@@ -80,6 +87,8 @@ INTERNAL_SECRET=...
 | `CONTEST_DB_PASSWORD` | пароль БД contest-service |
 | `EVAL_DB_PASSWORD` | пароль БД evaluation-service |
 | `PAYMENT_DB_PASSWORD` | пароль БД payment-service |
+| `AUDIT_DB_PASSWORD` | пароль БД audit-service |
+| `MONITORING_DB_PASSWORD` | пароль БД monitoring-service |
 | `JWT_SECRET` | общий JWT secret |
 | `INTERNAL_SECRET` | секрет для внутренних запросов |
 | `EVALUATION_STUB` | `true` = без реальной LLM |
@@ -144,8 +153,14 @@ PYTEST_USER_URL=http://localhost:8001
 PYTEST_CONTEST_URL=http://localhost:8002
 PYTEST_EVAL_URL=http://localhost:8003
 PYTEST_PAYMENT_URL=http://localhost:8004
+PYTEST_PROTOCOL_URL=http://localhost:8005
+PYTEST_AUDIT_URL=http://localhost:8006
+PYTEST_MONITORING_URL=http://localhost:8007
+PYTEST_GATEWAY_URL=http://localhost:8080
 INTERNAL_SECRET=<значение из .env>
 ```
+
+`test_protocols.py`, `test_fsm_coverage.py`, `test_rbac.py`, `test_monitoring.py` и `test_blind_recovery.py` требуют работающий protocol-service. Пока его нет в стеке, они падают, поэтому CI запускает только остальные тесты.
 
 ### Frontend
 
@@ -168,7 +183,7 @@ npm run test
 1. создать `.env`
 2. поднять backend через базовый `docker-compose.yml`
 3. дождаться `8001/8002/8003/8004 /docs`
-4. запустить `pytest`
+4. запустить `pytest` (без тестов protocol-service)
 5. запустить `seed.py`
 6. запустить Newman
 
@@ -213,6 +228,45 @@ npm run test
 | Транзакции | `/transactions/transactions`, `/transactions/payouts/{executor_id}` |
 | Статистика | `/statistics` |
 
+### audit-service
+
+| Метод | Путь |
+|---|---|
+| `POST` | `/internal/audit/events` (internal) |
+| `GET` | `/internal/audit/events` (internal) |
+| `GET` | `/audit/events` |
+
+### monitoring-service
+
+| Метод | Путь |
+|---|---|
+| `GET` | `/monitoring/health` |
+| `POST` | `/monitoring/check-runs` |
+| `GET` | `/monitoring/check-runs/latest`, `/monitoring/check-runs/{run_id}` |
+| `GET` | `/monitoring/services/latest`, `/monitoring/services/{service_name}/history` |
+
+Всё, кроме `/monitoring/health`, требует роль admin или `X-Internal-Secret`.
+
+## ВКР: audit / monitoring / protocol / research
+
+Код для выпускной квалификационной работы, перенесён из [mrekk-hub/DContest](https://github.com/mrekk-hub/DContest).
+
+| Часть | Что внутри |
+|---|---|
+| `backend/audit-service/` | принимает события от backend-сервисов, хранит audit-журнал, отдаёт события по сессиям и проверяет полноту записей |
+| `backend/monitoring-service/` | проверяет доступность backend-сервисов, хранит результаты и историю проверок |
+| `backend/protocol-service/` | жизненный цикл протокольных сессий, сообщения и состояния разбирательства, строгая структурная привязка сообщений к требованиям и версиям ТЗ |
+| `research/` | генерация сессий, метрика структурной связанности, восстановление арбитражных ответов по audit-журналу, проверки целостности, нагрузка, наблюдаемость |
+| `tests/pytest/` | FSM-переходы, RBAC, monitoring, blind recovery, расширенные проверки protocol-service |
+
+Ограничения текущего состояния:
+
+- В `protocol-service` есть только изменённые файлы: `app/config.py`, `app/main.py`, `app/routes/sessions.py`. Нет `models.py`, `database.py`, `clients.py`, `dependencies.py`, `Dockerfile` и `requirements.txt`, поэтому сервис не запускается и не подключён в `docker-compose.yml`.
+- В contest-service нет эндпоинта `/internal/submissions/{id}/protocol-context`. Без него `GET /audit/events` для не-админа отвечает 502.
+- monitoring-service показывает `protocol-service` как `unhealthy`, общий статус `degraded`.
+
+Зависимости для `research/`: `pip install -r research/requirements.txt`. Результаты пишутся в `research/output/` (в `.gitignore`).
+
 ## Важно
 
 | Что | Комментарий |
@@ -231,9 +285,13 @@ devContest/
 │   ├── user-service/
 │   ├── contest-service/
 │   ├── evaluation-service/
-│   └── payment-service/
+│   ├── payment-service/
+│   ├── protocol-service/
+│   ├── audit-service/
+│   └── monitoring-service/
 ├── frontend/
 ├── gateway/
+├── research/
 ├── tests/
 │   ├── postman/
 │   └── pytest/

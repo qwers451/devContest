@@ -59,6 +59,36 @@ services:
       timeout: 5s
       retries: 5
 
+  audit-db:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: audit_db
+      POSTGRES_USER: audit_svc
+      POSTGRES_PASSWORD: ${AUDIT_DB_PASSWORD}
+    volumes:
+      - audit_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audit_svc -d audit_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  monitoring-db:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: monitoring_db
+      POSTGRES_USER: monitoring_svc
+      POSTGRES_PASSWORD: ${MONITORING_DB_PASSWORD}
+    volumes:
+      - monitoring_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monitoring_svc -d monitoring_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   user-service:
     build: ./backend/user-service
     restart: unless-stopped
@@ -184,6 +214,57 @@ services:
       payment-db:
         condition: service_healthy
 
+  audit-service:
+    build: ./backend/audit-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8006:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://audit_svc:${AUDIT_DB_PASSWORD}@audit-db:5432/audit_db
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      CONTEST_SERVICE_URL: http://contest-service:8000
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      audit-db:
+        condition: service_healthy
+
+  monitoring-service:
+    build: ./backend/monitoring-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8007:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://monitoring_svc:${MONITORING_DB_PASSWORD}@monitoring-db:5432/monitoring_db
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      monitoring-db:
+        condition: service_healthy
+
   gateway:
     image: docker.io/library/nginx:alpine
     restart: unless-stopped
@@ -199,6 +280,10 @@ services:
       payment-service:
         condition: service_healthy
       evaluation-service:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy
+      monitoring-service:
         condition: service_healthy
 
   frontend:
@@ -227,6 +312,8 @@ services:
       PYTEST_CONTEST_URL: http://contest-service:8000
       PYTEST_EVAL_URL: http://evaluation-service:8000
       PYTEST_PAYMENT_URL: http://payment-service:8000
+      PYTEST_AUDIT_URL: http://audit-service:8000
+      PYTEST_MONITORING_URL: http://monitoring-service:8000
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       EVALUATION_STUB: "true"
       PYTEST_SERVICE_STARTUP_TIMEOUT: ${PYTEST_SERVICE_STARTUP_TIMEOUT:-45}
@@ -249,4 +336,6 @@ volumes:
   contest_db_data:
   evaluation_db_data:
   payment_db_data:
+  audit_db_data:
+  monitoring_db_data:
   contest_uploads:
