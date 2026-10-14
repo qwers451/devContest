@@ -8,12 +8,27 @@ frontend/.env.local
 # Python
 __pycache__/
 *.py[cod]
+*.pyo
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
 
 # Frontend
 frontend/node_modules/
 frontend/dist/
 
+# Research
+research/output/
+*.log
+
 # Local tooling
 .claude/
 certs/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

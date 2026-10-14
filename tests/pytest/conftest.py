@@ -6,6 +6,7 @@ Run against a live stack: podman-compose up --build
 import asyncio
 import os
 import time
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -15,6 +16,10 @@ USER_URL = os.getenv("PYTEST_USER_URL", "http://localhost:8001")
 CONTEST_URL = os.getenv("PYTEST_CONTEST_URL", "http://localhost:8002")
 EVAL_URL = os.getenv("PYTEST_EVAL_URL", "http://localhost:8003")
 PAYMENT_URL = os.getenv("PYTEST_PAYMENT_URL", "http://localhost:8004")
+PROTOCOL_URL = os.getenv("PYTEST_PROTOCOL_URL", "http://localhost:8005")
+AUDIT_URL = os.getenv("PYTEST_AUDIT_URL", "http://localhost:8006")
+MONITORING_URL = os.getenv("PYTEST_MONITORING_URL", "http://localhost:8007")
+GATEWAY_URL = os.getenv("PYTEST_GATEWAY_URL", "http://localhost:8080")
 INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "cafdgadhffdah")
 SERVICE_STARTUP_TIMEOUT = float(os.getenv("PYTEST_SERVICE_STARTUP_TIMEOUT", "30"))
 SERVICE_POLL_INTERVAL = float(os.getenv("PYTEST_SERVICE_POLL_INTERVAL", "1"))
@@ -25,6 +30,23 @@ TS = int(time.time())
 
 def auth_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
+
+
+async def register_user(role: str) -> str:
+    """Регистрирует пользователя с уникальным логином и возвращает токен."""
+    login = f"{role}_{TS}_{uuid4().hex[:8]}"
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{USER_URL}/auth/register",
+            json={
+                "login": login,
+                "email": f"{login}@test.com",
+                "password": "Test1234!",
+                "role": role,
+            },
+        )
+        assert response.status_code in (200, 201), response.text
+        return response.json()["access_token"]
 
 
 async def delete_if_exists(client: httpx.AsyncClient, url: str, token: str) -> None:
@@ -55,6 +77,7 @@ async def wait_for_service(base_url: str) -> None:
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def wait_for_stack():
+    # Ждём только базовые сервисы: protocol/audit/monitoring нужны лишь части тестов
     await wait_for_service(USER_URL)
     await wait_for_service(CONTEST_URL)
     await wait_for_service(EVAL_URL)
@@ -89,37 +112,19 @@ async def admin_token():
 @pytest_asyncio.fixture(scope="session")
 async def customer_token():
     """Регистрирует нового заказчика для тестовой сессии."""
-    login = f"cust_{TS}"
-    async with httpx.AsyncClient() as c:
-        r = await c.post(
-            f"{USER_URL}/auth/register",
-            json={
-                "login": login,
-                "email": f"{login}@test.com",
-                "password": "Test1234!",
-                "role": "customer",
-            },
-        )
-        assert r.status_code in (200, 201), r.text
-        return r.json()["access_token"]
+    return await register_user("customer")
 
 
 @pytest_asyncio.fixture(scope="session")
 async def executor_token():
     """Регистрирует нового исполнителя для тестовой сессии."""
-    login = f"exec_{TS}"
-    async with httpx.AsyncClient() as c:
-        r = await c.post(
-            f"{USER_URL}/auth/register",
-            json={
-                "login": login,
-                "email": f"{login}@test.com",
-                "password": "Test1234!",
-                "role": "executor",
-            },
-        )
-        assert r.status_code in (200, 201), r.text
-        return r.json()["access_token"]
+    return await register_user("executor")
+
+
+@pytest_asyncio.fixture(scope="session")
+async def outsider_token():
+    """Заказчик, не участвующий в тестовом конкурсе (для проверок доступа)."""
+    return await register_user("customer")
 
 
 # ── Общие данные создаются один раз за сессию ────────────────────────────────
