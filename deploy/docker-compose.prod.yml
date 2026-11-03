@@ -1,0 +1,78 @@
+# Демо-стенд на 1 vCPU / 2 ГБ: лимиты памяти, ужатый Postgres, всё слушает только 127.0.0.1
+# (наружу ходит хостовый nginx с TLS, см. deploy/nginx/).
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml up -d --build
+x-pg: &pg
+  command:
+    - postgres
+    - -c
+    - shared_buffers=24MB
+    - -c
+    - max_connections=40
+    - -c
+    - work_mem=2MB
+    - -c
+    - maintenance_work_mem=16MB
+    - -c
+    - effective_cache_size=192MB
+    - -c
+    - wal_buffers=1MB
+    - -c
+    - max_wal_size=256MB
+    - -c
+    - synchronous_commit=off
+    - -c
+    - max_worker_processes=2
+    - -c
+    - max_parallel_workers=0
+    - -c
+    - max_parallel_workers_per_gather=0
+    - -c
+    - autovacuum_max_workers=1
+  shm_size: 64m
+  mem_limit: 160m
+  healthcheck:
+    interval: 10s
+    timeout: 5s
+    retries: 10
+
+x-svc: &svc
+  mem_limit: 220m
+  healthcheck:
+    interval: 15s
+    timeout: 10s
+    retries: 20
+    start_period: 30s
+
+services:
+  user-db: *pg
+  contest-db: *pg
+  evaluation-db: *pg
+  payment-db: *pg
+  audit-db: *pg
+  monitoring-db: *pg
+
+  user-service: *svc
+  evaluation-service: *svc
+  payment-service: *svc
+  audit-service: *svc
+  monitoring-service: *svc
+  contest-service:
+    <<: *svc
+    mem_limit: 280m
+
+  mailpit:
+    image: docker.io/axllent/mailpit:v1.27
+    mem_limit: 96m
+    environment:
+      MP_WEBROOT: /mail/
+      MP_MAX_MESSAGES: 3000
+
+  gateway:
+    mem_limit: 64m
+    ports: !override
+      - "127.0.0.1:8080:8080"
+
+  frontend:
+    mem_limit: 48m
+    ports: !override
+      - "127.0.0.1:3000:80"
