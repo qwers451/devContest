@@ -26,7 +26,8 @@ from app.clients import get_user, trigger_evaluation
 from app.file_text import extract_file_text, extract_zip_images
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
-from app.models import Contest, Review, Submission, SubmissionStatusLog
+from app.mailer import notify_new_submission, notify_status_changed
+from app.models import Contest, ContestStatus, Review, Submission, SubmissionStatusLog
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
@@ -96,6 +97,17 @@ def _parse_csv_ints(raw: str | None) -> list[int]:
     if not raw:
         return []
     return [int(part) for part in raw.split(",") if part.strip()]
+
+
+def _ensure_accepting(contest: Contest | None) -> None:
+    """409, если конкурс не принимает решения (не active или срок истёк)."""
+    if contest is None or contest.status != ContestStatus.active:
+        raise HTTPException(status_code=409, detail="Конкурс не принимает решения")
+    ends_at = contest.ends_at
+    if ends_at.tzinfo is None:
+        ends_at = ends_at.replace(tzinfo=timezone.utc)
+    if ends_at <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=409, detail="Срок приёма решений истёк")
 
 
 class SubmissionCreate(BaseModel):
@@ -194,6 +206,7 @@ class ReviewOut(BaseModel):
 @router.post("", response_model=SubmissionOut, status_code=201)
 async def create_submission(
     data: SubmissionCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("executor")),
 ):
@@ -203,6 +216,7 @@ async def create_submission(
     contest = contest_result.scalar_one_or_none()
     if not contest:
         raise HTTPException(status_code=404, detail="Contest not found")
+    _ensure_accepting(contest)
 
     result = await db.execute(text("SELECT nextval('submission_number_seq')"))
     next_num = result.scalar()
@@ -219,6 +233,13 @@ async def create_submission(
     await db.commit()
     await db.refresh(submission)
 
+    background_tasks.add_task(
+        notify_new_submission,
+        contest.customer_id,
+        contest.title,
+        submission.executor_id,
+        submission.number,
+    )
     return (await _enrich_submissions([submission], db))[0]
 
 
@@ -345,6 +366,8 @@ async def update_submission(
         raise HTTPException(status_code=404, detail="Submission not found")
     if s.executor_id != current_user["id"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Forbidden")
+    if current_user["role"] != "admin":
+        _ensure_accepting(await db.get(Contest, s.contest_id))
 
     for field, value in data.model_dump(exclude_none=True).items():
         setattr(s, field, value)
@@ -358,6 +381,7 @@ async def update_submission(
 async def update_status(
     submission_id: int,
     status: int,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("customer", "admin")),
 ):
@@ -377,6 +401,10 @@ async def update_status(
     ))
     await db.commit()
     await db.refresh(s)
+    if status != old_status:
+        background_tasks.add_task(
+            notify_status_changed, s.executor_id, s.number, s.title, status
+        )
     return (await _enrich_submissions([s], db))[0]
 
 
@@ -489,6 +517,8 @@ async def upload_files(
         raise HTTPException(status_code=404, detail="Submission not found")
     if s.executor_id != current_user["id"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Forbidden")
+    if current_user["role"] != "admin":
+        _ensure_accepting(await db.get(Contest, s.contest_id))
 
     upload_dir = f"{UPLOAD_DIR}/{submission_id}"
     os.makedirs(upload_dir, exist_ok=True)

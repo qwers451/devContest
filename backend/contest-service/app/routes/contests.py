@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timezone
 from typing import List
 
 import aiofiles
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import String, and_, case, cast, func, select, text
@@ -16,6 +16,7 @@ from app.clients import check_escrow_held, release_escrow, release_stage_escrow
 from app.database import get_db
 from app.dependencies import get_current_user, require_role, verify_internal
 from app.file_text import extract_file_text
+from app.mailer import notify_contest_finished, notify_winner
 from app.models import Contest, ContestStage, ContestStatus, Submission, Winner
 
 logger = logging.getLogger(__name__)
@@ -518,6 +519,7 @@ async def select_winner(
     contest_id: int,
     submission_id: int,
     executor_id: int,
+    background_tasks: BackgroundTasks,
     stage_id: int | None = Query(
         None, description="If set — partial milestone release for this stage only"
     ),
@@ -586,7 +588,18 @@ async def select_winner(
     except Exception:
         logger.exception("Failed to release escrow for contest %s", contest_id)
 
+    others = await db.execute(
+        select(Submission.executor_id)
+        .where(Submission.contest_id == contest_id, Submission.executor_id != executor_id)
+        .distinct()
+    )
+    other_ids = [row[0] for row in others]
+    c_number, c_title, c_prize = contest.number, contest.title, contest.prizepool
+
     await db.commit()
+    background_tasks.add_task(notify_winner, executor_id, c_number, c_title, c_prize)
+    for other_id in other_ids:
+        background_tasks.add_task(notify_contest_finished, other_id, c_number, c_title)
     db.expire_all()
     result = await db.execute(
         select(Contest).options(*_relations()).where(Contest.id == contest_id)

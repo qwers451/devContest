@@ -17,6 +17,7 @@ from websockets.exceptions import ConnectionClosed
 from conftest import (
     CONTEST_URL,
     GATEWAY_URL,
+    INTERNAL_SECRET,
     USER_URL,
     auth_headers,
     register_user,
@@ -311,6 +312,11 @@ async def test_conversations_sorted_by_last_message_desc(
             r = await open_conv(executor_token, other_contest["id"])
             assert r.status_code == 403, r.text
 
+            # решения принимаются только в активном конкурсе
+            await c.patch(
+                f"{CONTEST_URL}/contests/{other_contest['id']}/activate-internal",
+                headers={"x-internal-secret": INTERNAL_SECRET},
+            )
             r = await c.post(
                 f"{CONTEST_URL}/submissions",
                 json={

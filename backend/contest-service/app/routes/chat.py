@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import jwt
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     HTTPException,
     Query,
@@ -20,6 +21,7 @@ from app.clients import get_user
 from app.config import settings
 from app.database import AsyncSessionLocal, get_db
 from app.dependencies import get_current_user
+from app.mailer import notify_chat_message
 from app.models import ChatMessage, Contest, ContestStatus, Conversation, Submission
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -307,6 +309,7 @@ async def list_messages(
 async def send_message(
     conversation_id: int,
     data: MessageCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
@@ -330,6 +333,17 @@ async def send_message(
         manager.send_to_user(conv.customer_id, event),
         manager.send_to_user(conv.executor_id, event),
     )
+    recipient_id = _other_id(conv, user["id"])
+    if not manager.is_online(recipient_id):
+        contest = await db.get(Contest, conv.contest_id)
+        background_tasks.add_task(
+            notify_chat_message,
+            recipient_id,
+            user["id"],
+            conv.id,
+            contest.title if contest else None,
+            out.text,
+        )
     return out
 
 
