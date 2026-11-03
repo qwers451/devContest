@@ -46,8 +46,8 @@ const Auth = () => {
         <div className="flex min-h-screen items-center justify-center bg-gray-950 p-4">
             <div className="animate-fade-in lin-panel w-full max-w-[360px] p-6">
                 <div className="flex items-center justify-center gap-2 mb-6">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-violet-600 text-[13px] font-semibold text-white">C</span>
-                    <span className="text-[15px] font-semibold tracking-tight text-gray-100">devContest</span>
+                    <img src="/logo.svg" alt="" className="h-7 w-7" />
+                    <span className="font-display text-[16px] font-semibold tracking-tight text-gray-100">devContest</span>
                 </div>
 
                 <h2 className="mb-1 text-center text-[17px] font-semibold tracking-tight text-gray-100">

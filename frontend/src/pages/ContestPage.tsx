@@ -312,13 +312,14 @@ const ContestPage = () => {
                         </div>
                     )}
 
-                    <div className="flex gap-1 border-b border-gray-700 overflow-x-auto px-4 pt-2">
+                    <div className="flex gap-1 border-b border-gray-700 overflow-x-auto overflow-y-hidden px-4 pt-2">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`pb-3 px-4 text-[13px] font-semibold border-b-2 transition-colors whitespace-nowrap focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded-t-lg ${activeTab === tab.id
-                                    ? 'border-violet-600 text-violet-700 dark:text-violet-400'
+                                data-active={activeTab === tab.id}
+                                className={`ui-tab pb-3 px-4 text-[13px] font-semibold transition-colors whitespace-nowrap focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none rounded-t-lg ${activeTab === tab.id
+                                    ? 'text-violet-700 dark:text-violet-400'
                                     : 'border-transparent text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                 }`}
                             >

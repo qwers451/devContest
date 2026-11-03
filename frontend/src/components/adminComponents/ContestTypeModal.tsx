@@ -24,7 +24,7 @@ const ContestTypeModal = ({ show, onHide, onSuccess }) => {
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onHide}>
+        <div className="ui-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onHide}>
             <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 animate-fade-in" onClick={e => e.stopPropagation()}>
                 <h3 className="text-[14px] font-medium text-gray-900 mb-4">Добавить тип конкурса</h3>
                 <div className="mb-5">

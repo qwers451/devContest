@@ -10,14 +10,14 @@ const AboutPage = () => (
       <div>
         <h1 className="text-[20px] font-semibold text-gray-100">О проекте</h1>
         <p className="mt-1 text-[13px] text-gray-400">
-          DevContest — платформа конкурсов для разработчиков: заказчики публикуют задачи, исполнители
+          devContest — платформа конкурсов для разработчиков: заказчики публикуют задачи, исполнители
           присылают решения, лучшие получают призы.
         </p>
       </div>
 
       <section className="flex flex-col items-center gap-6 rounded-lg border border-gray-700 bg-gray-900 p-6 sm:flex-row sm:items-center">
         <img
-          src="/fasie-logo-white.png"
+          src="/fasie-logo.png"
           alt="Логотип Фонда содействия инновациям"
           className="h-auto w-48 shrink-0 select-none"
           draggable={false}

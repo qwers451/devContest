@@ -544,3 +544,122 @@ path {
         background: var(--c-rule);
     }
 }
+
+/* ------------------------------------------------------------------
+   Движение. Один язык на всё приложение: сильный ease-out на входе,
+   короткие длительности, только transform и opacity.
+   Фокусный момент — оценка ИИ: полоса заполняется, баллы считаются,
+   критерии выстраиваются по одному (как в hero лендинга).
+------------------------------------------------------------------- */
+:root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Нажатие: кнопка чуть сжимается, подтверждая, что интерфейс услышал.
+   Клавиши (.lin-btn) не сжимаются, а проседают — это их материал. */
+button:not(.lin-btn) {
+    transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+    transition-duration: 160ms;
+    transition-timing-function: var(--ease-out);
+}
+button:not(.lin-btn):not(:disabled):active {
+    transform: scale(0.97);
+}
+
+/* Вход страницы при смене маршрута (запускается из AppRouter через WAAPI). */
+@keyframes page-in {
+    from { opacity: 0; transform: translateY(6px); }
+}
+
+/* Модальные окна: подложка проявляется, окно вырастает из 96% по центру. */
+@keyframes overlay-in { from { opacity: 0; } }
+@keyframes dialog-in { from { opacity: 0; transform: scale(0.96) translateY(4px); } }
+.ui-overlay {
+    animation: overlay-in 200ms var(--ease-out) both;
+}
+.ui-overlay > :first-child {
+    animation: dialog-in 240ms var(--ease-out) both;
+}
+
+/* Всплывающее уведомление въезжает снизу — туда же, где живёт стопка. */
+@keyframes toast-in { from { opacity: 0; transform: translateY(100%); } }
+.ui-toast {
+    animation: toast-in 380ms var(--ease-drawer) both;
+}
+
+/* Поповер раскрывается из своего триггера (колокольчик справа сверху). */
+@keyframes pop-in { from { opacity: 0; transform: scale(0.96) translateY(-4px); } }
+.ui-pop {
+    transform-origin: top right;
+    animation: pop-in 180ms var(--ease-out) both;
+}
+
+/* Вкладки: подчёркивание вырастает под активной вкладкой. */
+.ui-tab {
+    position: relative;
+}
+.ui-tab::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--c-accent);
+    transform: scaleX(0);
+    transition: transform 240ms var(--ease-out);
+}
+.ui-tab[data-active="true"]::after {
+    transform: scaleX(1);
+}
+
+/* Списки, которые появляются списком: каскад 40 мс, не дольше 8 элементов. */
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px); } }
+.ui-stagger > * {
+    animation: rise-in 360ms var(--ease-out) both;
+}
+.ui-stagger > :nth-child(2) { animation-delay: 40ms; }
+.ui-stagger > :nth-child(3) { animation-delay: 80ms; }
+.ui-stagger > :nth-child(4) { animation-delay: 120ms; }
+.ui-stagger > :nth-child(5) { animation-delay: 160ms; }
+.ui-stagger > :nth-child(6) { animation-delay: 200ms; }
+.ui-stagger > :nth-child(7) { animation-delay: 240ms; }
+.ui-stagger > :nth-child(n + 8) { animation-delay: 280ms; }
+
+/* Карточка конкурса чуть приподнимается под курсором (только мышь). */
+@media (hover: hover) and (pointer: fine) {
+    .ui-lift {
+        transition-property: background-color, border-color, box-shadow, transform;
+        transition-duration: 200ms;
+        transition-timing-function: var(--ease-out);
+    }
+    .ui-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px -12px oklch(21% 0.028 262 / 0.25);
+    }
+}
+
+/* Полоса оценки ИИ заполняется слева направо (scaleX, без анимации ширины). */
+@keyframes bar-fill { from { transform: scaleX(0); } }
+.ui-bar {
+    transform-origin: left center;
+    animation: bar-fill 900ms var(--ease-in-out) 120ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* Меньше движения, но смена состояний остаётся видимой: только прозрачность. */
+    button:not(.lin-btn):not(:disabled):active { transform: none; }
+    .ui-overlay > :first-child,
+    .ui-toast,
+    .ui-pop,
+    .ui-stagger > * {
+        animation: overlay-in 160ms ease both;
+    }
+    .ui-stagger > * { animation-delay: 0ms; }
+    .ui-bar { animation: none; }
+    .ui-tab::after { transition: none; }
+    .ui-lift:hover { transform: none; }
+}

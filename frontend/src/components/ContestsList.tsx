@@ -40,7 +40,7 @@ const ContestsList = observer(() => {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-3">
+      <div className="ui-stagger grid grid-cols-1 gap-3">
         {contest.contests.map((contestItem) => (
           <ContestCard
             key={contestItem.id}

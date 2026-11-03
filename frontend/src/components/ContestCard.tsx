@@ -42,7 +42,7 @@ const ContestCard = observer(({ contest: item }) => {
         if (e.key === "Enter") openContest();
       }}
       tabIndex={0}
-      className="group cursor-pointer rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 transition-colors hover:border-gray-600 hover:bg-gray-900 focus:outline-none focus-visible:border-violet-500"
+      className="ui-lift group cursor-pointer rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 transition-colors hover:border-gray-600 hover:bg-gray-900 focus:outline-none focus-visible:border-violet-500"
     >
       <div className="flex items-start gap-4">
         <div className="min-w-0 flex-1">

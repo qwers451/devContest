@@ -368,7 +368,7 @@ const CreateSolution = () => {
 
       {showPreview && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          className="ui-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => setShowPreview(false)}
         >
           <div
@@ -437,7 +437,7 @@ const CreateSolution = () => {
 
       {showHelp && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          className="ui-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => setShowHelp(false)}
         >
           <div

@@ -106,7 +106,7 @@ const AwardModal = ({ show, contest, presetSubmissionId = null, onHide, onDone }
 
   const shell = (children: React.ReactNode) => (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className="ui-overlay fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onHide}
     >
       <div

@@ -15,6 +15,7 @@ import {
 } from "../services/apiService.js";
 import { BsCpu, BsTrophy } from "react-icons/bs";
 import UserLink from "../components/UserLink";
+import { useCountUp } from "../components/useCountUp";
 
 const EvaluationSection = ({
   canShow,
@@ -27,6 +28,9 @@ const EvaluationSection = ({
   evalTriggering,
   onTrigger,
 }) => {
+  // Хук до ранних return: процент «досчитывается» при появлении оценки.
+  const shownScore = useCountUp(evaluation?.compliance_score ?? 0);
+
   if (!canShow) {
     return null;
   }
@@ -142,16 +146,16 @@ const EvaluationSection = ({
               </button>
             </div>
             <div className="mt-2 flex items-center gap-3">
-              <div className={`text-[20px] font-semibold ${scoreColor}`}>
-                {score}%
+              <div className={`text-[20px] font-semibold tabular-nums ${scoreColor}`}>
+                {shownScore}%
               </div>
               <div className="flex-1">
                 <div
                   className={`h-2.5 rounded-full ${trackColor} overflow-hidden`}
                 >
                   <div
-                    className={`h-full rounded-full ${scoreBg} transition-all duration-700`}
-                    style={{ width: `${score}%` }}
+                    className={`ui-bar h-full w-full rounded-full ${scoreBg}`}
+                    style={{ transform: `scaleX(${score / 100})` }}
                   />
                 </div>
                 <div className="flex items-center gap-3 mt-1">
@@ -175,7 +179,7 @@ const EvaluationSection = ({
         </div>
 
         {evaluation.requirements_detail?.length > 0 ? (
-          <div className="border-t border-gray-700 px-5 py-3 space-y-2">
+          <div className="ui-stagger border-t border-gray-700 px-5 py-3 space-y-2">
             {evaluation.requirements_detail.map((req, index) => {
               const isGood = req.score >= 70;
               const isMidReq = req.score === 50;

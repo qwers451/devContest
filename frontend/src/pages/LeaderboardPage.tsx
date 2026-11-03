@@ -100,7 +100,7 @@ const LeaderboardPage = () => {
               : `Никого не нашли по запросу «${query.trim()}».`}
           </div>
         ) : (
-          <ol className="divide-y divide-gray-800 overflow-hidden rounded-lg border border-gray-700 bg-gray-900">
+          <ol className="ui-stagger divide-y divide-gray-800 overflow-hidden rounded-lg border border-gray-700 bg-gray-900">
             {rows.map((e) => {
               const extras = loadExtras(e.userId, e.login);
               const st = e.rating.stats;

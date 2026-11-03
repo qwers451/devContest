@@ -50,7 +50,7 @@ export default function Toaster() {
           <div
             key={t.id}
             role="status"
-            className="animate-fade-in pointer-events-auto flex items-start gap-3 rounded-lg border border-gray-700 bg-gray-900 p-3 shadow-2xl"
+            className="ui-toast pointer-events-auto flex items-start gap-3 rounded-lg border border-gray-700 bg-gray-900 p-3 shadow-2xl"
           >
             <button
               onClick={() => {

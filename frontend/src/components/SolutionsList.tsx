@@ -23,7 +23,7 @@ const SolutionsList = ({ showContestTitle, showFreelancerLogin }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3">
+    <div className="ui-stagger grid grid-cols-1 gap-3">
       {solution.solutions.map((solutionItem) => (
         <SolutionCard
           key={solutionItem.number}

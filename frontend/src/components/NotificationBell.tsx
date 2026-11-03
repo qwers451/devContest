@@ -73,7 +73,7 @@ const NotificationBell = observer(() => {
         <div
           role="dialog"
           aria-label="Уведомления"
-          className="animate-slide-down fixed inset-x-0 top-12 z-50 border-b border-gray-700 bg-gray-900 shadow-2xl md:absolute md:inset-x-auto md:right-0 md:top-full md:mt-2 md:w-[380px] md:rounded-lg md:border"
+          className="ui-pop fixed inset-x-0 top-12 z-50 border-b border-gray-700 bg-gray-900 shadow-2xl md:absolute md:inset-x-auto md:right-0 md:top-full md:mt-2 md:w-[380px] md:rounded-lg md:border"
         >
           <div className="flex items-center justify-between border-b border-gray-700 px-4 py-2.5">
             <h2 className="text-[13px] font-semibold text-gray-100">Уведомления</h2>

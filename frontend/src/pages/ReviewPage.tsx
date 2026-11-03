@@ -212,7 +212,7 @@ const ReviewPage = () => {
             </div>
 
             {showEdit && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowEdit(false)}>
+                <div className="ui-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowEdit(false)}>
                     <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4 animate-fade-in border border-transparent dark:border-gray-700" onClick={e => e.stopPropagation()}>
                         <h3 className="text-[14px] font-medium text-gray-100 mb-4">Редактировать отзыв #{review.number}</h3>
                         {error && (

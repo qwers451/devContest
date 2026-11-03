@@ -746,9 +746,10 @@ const WalletPage = () => {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`pb-2 px-4 text-[13px] font-semibold border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 rounded-t-lg ${
+              data-active={tab === t.key}
+              className={`ui-tab pb-2 px-4 text-[13px] font-semibold transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 rounded-t-lg ${
                 tab === t.key
-                  ? "border-violet-600 text-violet-700 dark:text-violet-400"
+                  ? "text-violet-700 dark:text-violet-400"
                   : "border-transparent text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               }`}
               aria-current={tab === t.key ? "page" : undefined}
