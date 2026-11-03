@@ -66,11 +66,12 @@ export default class SolutionStore {
   };
 
   statusMap: Record<number, StatusInfo> = {
-    1: { label: "Новое",              color: "#87cefa", textColor: "#000" },
-    2: { label: "Просмотрено",        color: "#99ff99", textColor: "#000" },
-    3: { label: "Победитель",         color: "#008000", textColor: "#000" },
-    4: { label: "Необходимы правки",  color: "#f3a505", textColor: "#000" },
-    5: { label: "Правки внесены",     color: "#87cefa", textColor: "#000" },
+    // Подложка и текст статуса — из палитры Cobalt (светлый тон и тёмные чернила того же оттенка).
+    1: { label: "Новое",              color: "oklch(95% 0.028 256)", textColor: "oklch(43% 0.2 262)" },
+    2: { label: "Просмотрено",        color: "oklch(96.2% 0.008 252)", textColor: "oklch(36% 0.022 260)" },
+    3: { label: "Победитель",         color: "oklch(94% 0.04 155)", textColor: "oklch(42% 0.11 152)" },
+    4: { label: "Необходимы правки",  color: "oklch(95% 0.05 85)", textColor: "oklch(46% 0.12 60)" },
+    5: { label: "Правки внесены",     color: "oklch(95% 0.028 256)", textColor: "oklch(43% 0.2 262)" },
   };
 
   private _solutions: Submission[] = [];

@@ -30,7 +30,7 @@ const EndAfterBar = () => {
 
     return (
         <div>
-            <label className="block text-[13px] font-semibold text-gray-700 mb-1">
+            <label className="block text-[13px] font-semibold text-gray-200 mb-1">
                 <BsCalendarEvent className="inline mr-1 text-violet-600" />
                 Дата окончания после
             </label>

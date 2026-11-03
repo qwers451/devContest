@@ -4,48 +4,82 @@
 
 @theme {
     /* ------------------------------------------------------------------
-       Палитра в духе Linear: почти чёрный фон с синим подтоном, тонкие
-       границы вместо теней, индиго-акцент. Переопределяем встроенные
-       шкалы Tailwind — тогда весь интерфейс переезжает разом, а не
-       по одному классу.
+       Палитра Cobalt — та же, что у лендинга: холодная светлая бумага,
+       сине-серые чернила и тонкие линии, один кобальтовый акцент.
+       Страницы писались под тёмную тему, поэтому шкалы Tailwind
+       переопределены по ролям, а не по светлоте: gray-950…800 — это
+       поверхности (теперь светлые), gray-700/600 — линии,
+       gray-500…50 — текст (теперь тёмный). Весь интерфейс переезжает
+       разом, без правки классов на страницах.
     ------------------------------------------------------------------- */
 
-    /* Поверхности и текст (интерфейс тёмный, светлой темы нет). */
-    --color-gray-950: #08090a; /* фон страницы */
-    --color-gray-900: #0f1011; /* приподнятая поверхность */
-    --color-gray-800: #141517; /* карточки и панели */
-    --color-gray-700: #23252a; /* тонкая граница */
-    --color-gray-600: #2c2f36; /* граница активного элемента */
-    --color-gray-500: #62666d; /* третичный текст */
-    --color-gray-400: #8a8f98; /* вторичный текст */
-    --color-gray-300: #b4b8bf;
-    --color-gray-200: #d7d9dd;
-    --color-gray-100: #f7f8f8; /* основной текст */
-    --color-gray-50: #fbfbfb;
+    /* Поверхности */
+    --color-gray-950: oklch(98.6% 0.005 250); /* фон страницы (paper) */
+    --color-gray-900: oklch(99.6% 0.002 250); /* панель */
+    --color-gray-800: oklch(96.2% 0.008 252); /* карточка, поле, hover (paper-2) */
+    /* Линии */
+    --color-gray-700: oklch(90% 0.009 252); /* тонкая граница (rule) */
+    --color-gray-600: oklch(83% 0.012 252); /* граница активного элемента (rule-2) */
+    /* Текст */
+    --color-gray-500: oklch(52% 0.018 258); /* третичный (muted) */
+    --color-gray-400: oklch(45% 0.02 258); /* вторичный */
+    --color-gray-300: oklch(36% 0.022 260); /* ink-2 */
+    --color-gray-200: oklch(28% 0.025 261);
+    --color-gray-100: oklch(21% 0.028 262); /* основной (ink) */
+    --color-gray-50: oklch(17% 0.028 262);
 
-    /* Акцент Linear — индиго. */
-    --color-violet-300: #a5abee;
-    --color-violet-400: #8b93e8;
-    --color-violet-500: #6e79d6;
-    --color-violet-600: #5e6ad2;
-    --color-violet-700: #4f59b8;
-    --color-violet-800: #3d4694;
-    --color-violet-900: #2b3170;
+    /* Кобальт. 50–200 в разметке — светлые подложки и рамки, 300–400 — текст-акцент,
+       500–700 — заливка кнопок, 900 — тонированная подложка. */
+    --color-violet-50: oklch(97% 0.016 256);
+    --color-violet-100: oklch(95% 0.028 256); /* accent-wash */
+    --color-violet-200: oklch(86% 0.06 255);
+    --color-violet-300: oklch(46% 0.2 260);
+    --color-violet-400: oklch(50% 0.19 258);
+    --color-violet-500: oklch(52% 0.19 258); /* accent */
+    --color-violet-600: oklch(52% 0.19 258);
+    --color-violet-700: oklch(43% 0.2 262); /* accent-deep */
+    --color-violet-800: oklch(39% 0.16 260); /* accent-edge */
+    --color-violet-900: oklch(92% 0.04 256);
 
-    /* Статусные цвета — приглушённые, как в Linear. */
-    --color-emerald-400: #4cb782;
-    --color-emerald-500: #3fa873;
-    --color-emerald-600: #35935f;
-    --color-amber-400: #f2c94c;
-    --color-amber-500: #f2994a;
-    --color-amber-600: #e08c3e;
-    --color-red-400: #eb5757;
-    --color-red-500: #d94848;
-    --color-red-600: #c53d3d;
-    --color-blue-400: #4ea7fc;
-    --color-blue-500: #3d96eb;
+    /* Статусы: те же роли — светлые подложки, тёмный текст. */
+    --color-emerald-50: oklch(97% 0.02 155);
+    --color-emerald-100: oklch(94% 0.04 155);
+    --color-emerald-300: oklch(44% 0.11 152);
+    --color-emerald-400: oklch(48% 0.12 152);
+    --color-emerald-500: oklch(52% 0.13 152);
+    --color-emerald-600: oklch(48% 0.12 152);
+    --color-emerald-700: oklch(42% 0.11 152);
+    --color-emerald-800: oklch(86% 0.06 155);
+    --color-emerald-900: oklch(94% 0.04 155);
+    --color-amber-100: oklch(95% 0.05 85);
+    --color-amber-300: oklch(52% 0.12 70);
+    --color-amber-400: oklch(54% 0.13 65);
+    --color-amber-500: oklch(62% 0.15 60);
+    --color-amber-600: oklch(55% 0.14 60);
+    --color-amber-700: oklch(46% 0.12 60);
+    --color-amber-900: oklch(95% 0.05 85);
+    --color-red-50: oklch(97% 0.015 27);
+    --color-red-100: oklch(94% 0.03 27);
+    --color-red-200: oklch(86% 0.06 27);
+    --color-red-300: oklch(46% 0.17 27);
+    --color-red-400: oklch(52% 0.19 27);
+    --color-red-500: oklch(55% 0.2 27);
+    --color-red-600: oklch(50% 0.19 27);
+    --color-red-700: oklch(44% 0.17 27);
+    --color-red-800: oklch(84% 0.07 27);
+    --color-red-900: oklch(94% 0.03 27);
+    --color-red-950: oklch(95% 0.025 27);
+    --color-blue-300: oklch(46% 0.2 260);
+    --color-blue-400: oklch(50% 0.19 258);
+    --color-blue-500: oklch(52% 0.19 258);
+    --color-blue-800: oklch(86% 0.06 255);
+    --color-blue-900: oklch(92% 0.04 256);
+    --color-sky-300: oklch(45% 0.12 235);
+    --color-sky-900: oklch(94% 0.035 235);
+    --color-slate-300: oklch(36% 0.022 260);
+    --color-slate-700: oklch(96.2% 0.008 252);
 
-    /* Скругления: у Linear они мелкие, «блобов» нет. */
+    /* Скругления — как у лендинга: 6 и 8px. */
     --radius-sm: 4px;
     --radius-md: 6px;
     --radius-lg: 8px;
@@ -53,77 +87,118 @@
     --radius-2xl: 10px;
     --radius-3xl: 12px;
 
-    /* Тени почти отсутствуют: глубину даёт граница и оттенок фона. */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
-    --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.5);
-    --shadow-2xl: 0 16px 48px rgba(0, 0, 0, 0.55);
+    /* Тени: короткие и холодные, глубину по-прежнему дают линии. */
+    --shadow-sm: 0 1px 2px oklch(21% 0.028 262 / 0.06);
+    --shadow-md: 0 2px 6px oklch(21% 0.028 262 / 0.08);
+    --shadow-lg: 0 8px 24px -8px oklch(21% 0.028 262 / 0.18);
+    --shadow-xl: 0 12px 32px -12px oklch(21% 0.028 262 / 0.22);
+    --shadow-2xl: 0 16px 48px -16px oklch(21% 0.028 262 / 0.26);
+
+    --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+    --font-display: "Onest", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
     /* Совместимость со старыми токенами проекта. */
-    --color-primary: #5e6ad2;
-    --color-primary-dark: #4f59b8;
-    --color-primary-light: #8b93e8;
-    --color-surface: #141517;
-    --color-bg: #08090a;
-    --color-border: #23252a;
+    --color-primary: oklch(52% 0.19 258);
+    --color-primary-dark: oklch(43% 0.2 262);
+    --color-primary-light: oklch(76% 0.13 254);
+    --color-surface: oklch(99.6% 0.002 250);
+    --color-bg: oklch(98.6% 0.005 250);
+    --color-border: oklch(90% 0.009 252);
 }
 
-html {
-    font-family: Inter, system-ui, sans-serif;
-    /* Альтернативные начертания Inter — та самая «однорогая» a у Linear. */
-    font-feature-settings: "cv01", "cv02", "cv11", "ss03";
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
+/* Токены Cobalt для компонентов ниже (те же значения, что в лендинге). */
 :root {
     --theme-transition-x: 50vw;
     --theme-transition-y: 50vh;
     --theme-transition-radius: 140vmax;
-    color-scheme: dark;
+    color-scheme: light;
+
+    --c-paper: oklch(98.6% 0.005 250);
+    --c-paper-2: oklch(96.2% 0.008 252);
+    --c-panel: oklch(99.6% 0.002 250);
+    --c-ink: oklch(21% 0.028 262);
+    --c-ink-2: oklch(36% 0.022 260);
+    --c-muted: oklch(52% 0.018 258);
+    --c-rule: oklch(90% 0.009 252);
+    --c-rule-2: oklch(83% 0.012 252);
+    --c-accent: oklch(52% 0.19 258);
+    --c-accent-deep: oklch(43% 0.2 262);
+    --c-accent-edge: oklch(39% 0.16 260);
+    --c-accent-wash: oklch(95% 0.028 256);
+    --c-accent-ink: oklch(98.6% 0.005 250);
+    --c-key-face: oklch(99.4% 0.003 250);
+    --c-key-edge: oklch(80% 0.016 254);
+    --shadow-key: 0 2px 0 0 var(--c-key-edge), inset 0 1px 0 oklch(100% 0 0 / 0.9);
+    --shadow-key-accent: 0 2px 0 0 var(--c-accent-edge), inset 0 1px 0 oklch(100% 0 0 / 0.22);
+    --shadow-key-press: inset 0 1px 2px oklch(21% 0.028 262 / 0.14);
 }
 
+/* Интерфейс один — светлый; класс .dark остаётся только ради dark:-вариантов в разметке. */
 .dark {
-    color-scheme: dark;
+    color-scheme: light;
+}
+
+html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+    overflow-x: clip;
 }
 
 body {
-    background: #08090a;
-    color: #f7f8f8;
-    /* Интерфейсный кегль Linear заметно мельче привычного. */
+    background: var(--c-paper);
+    color: var(--c-ink);
     font-size: 14px;
     line-height: 1.5;
-    letter-spacing: -0.008em;
-    -webkit-font-smoothing: antialiased;
+    caret-color: var(--c-accent);
 }
 
 h1,
 h2,
 h3,
 h4 {
+    font-family: var(--font-display);
     letter-spacing: -0.021em;
 }
 
-/* Скроллбар: тонкий и незаметный, как во всех панелях Linear. */
+/* Цифры в интерфейсе — табличные, чтобы суммы и счётчики не прыгали. */
+.tabular-nums,
+table {
+    font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+}
+
 * {
     scrollbar-width: thin;
-    scrollbar-color: #2c2f36 transparent;
+    scrollbar-color: var(--c-rule-2) transparent;
 }
 *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-    background: #2c2f36;
+    background: var(--c-rule-2);
     border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--c-muted);
 }
 *::-webkit-scrollbar-track {
     background: transparent;
 }
 
 ::selection {
-    background: rgba(94, 106, 210, 0.35);
+    background: var(--c-accent-wash);
+    color: var(--c-ink);
 }
 
 button,
@@ -273,12 +348,12 @@ path {
 
 .prose {
     line-height: 1.7;
-    color: #b4b8bf;
+    color: var(--c-ink-2);
 }
 .prose h1,
 .prose h2,
 .prose h3 {
-    color: #f7f8f8;
+    color: var(--c-ink);
     font-weight: 600;
     margin: 1.25em 0 0.5em;
 }
@@ -305,77 +380,59 @@ path {
     margin-bottom: 0.9em;
 }
 .prose code {
-    background: #f3f4f6;
+    font-family: var(--font-mono);
+    background: var(--c-paper-2);
     padding: 2px 5px;
     border-radius: 4px;
     font-size: 0.875em;
 }
 .prose pre {
-    background: #f3f4f6;
+    font-family: var(--font-mono);
+    background: var(--c-paper-2);
+    border: 1px solid var(--c-rule);
     padding: 1rem;
     border-radius: 8px;
     overflow-x: auto;
 }
 .prose blockquote {
-    border-left: 2px solid #2c2f36;
+    border-left: 2px solid var(--c-rule-2);
     padding-left: 1rem;
-    color: #8a8f98;
+    color: var(--c-muted);
 }
 .prose a {
-    color: #8b93e8;
+    color: var(--c-accent);
     text-decoration: underline;
+    text-underline-offset: 0.2em;
 }
-
-::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-}
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-}
-
 
 /* ------------------------------------------------------------------
-   Здесь был патч тёмной темы в палитре GitHub (#0d1117, #161b22,
-   фиолетовый #7c3aed). Он переопределял утилиты Tailwind напрямую
-   и перебивал токены новой палитры. Тема теперь одна и задаётся
-   в @theme выше, поэтому патч удалён.
-------------------------------------------------------------------- */
-
-/* ------------------------------------------------------------------
-   Компоненты интерфейса. Держим их здесь, чтобы разметка страниц
-   не обрастала длинными наборами утилит и выглядела одинаково.
+   Компоненты интерфейса в материале Cobalt: панели с тонкой границей,
+   кнопки-клавиши с нижней кромкой, поля с кобальтовым фокусом.
 ------------------------------------------------------------------- */
 @layer components {
     /* Панель: основа карточек, форм и списков. */
     .lin-panel {
-        background: #141517;
-        border: 1px solid #23252a;
+        background: var(--c-panel);
+        border: 1px solid var(--c-rule);
         border-radius: 8px;
+        box-shadow: 0 1px 2px oklch(21% 0.028 262 / 0.04);
     }
 
     /* Кликабельная панель: подсветка границы вместо тени. */
     .lin-card {
-        background: #141517;
-        border: 1px solid #23252a;
+        background: var(--c-panel);
+        border: 1px solid var(--c-rule);
         border-radius: 8px;
+        box-shadow: 0 1px 2px oklch(21% 0.028 262 / 0.04);
         transition:
             background-color 120ms ease-out,
             border-color 120ms ease-out;
     }
     .lin-card:hover {
-        background: #17181b;
-        border-color: #2c2f36;
+        border-color: var(--c-rule-2);
     }
 
-    /* Кнопки: высота 32px, мелкий кегль, вес 500 — как в Linear. */
+    /* Кнопки-клавиши: 32px, как раньше, но с нижней кромкой и нажатием. */
     .lin-btn {
         display: inline-flex;
         align-items: center;
@@ -384,61 +441,74 @@ path {
         height: 32px;
         padding: 0 12px;
         border-radius: 6px;
+        font-family: var(--font-display);
         font-size: 13px;
         font-weight: 500;
         white-space: nowrap;
         transition:
             background-color 120ms ease-out,
             border-color 120ms ease-out,
+            box-shadow 120ms ease-out,
+            transform 120ms cubic-bezier(0.23, 1, 0.32, 1),
             opacity 120ms ease-out;
     }
+    .lin-btn:active:not(:disabled) {
+        transform: translateY(2px);
+        box-shadow: var(--shadow-key-press);
+    }
+    .lin-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
     .lin-btn-primary {
-        background: #5e6ad2;
-        color: #fff;
-        border: 1px solid #6e79d6;
+        background: var(--c-accent);
+        color: var(--c-accent-ink);
+        border: 1px solid var(--c-accent-edge);
+        box-shadow: var(--shadow-key-accent);
     }
     .lin-btn-primary:hover {
-        background: #6e79d6;
+        background: var(--c-accent-deep);
     }
     .lin-btn-secondary {
-        background: #1c1d21;
-        color: #f7f8f8;
-        border: 1px solid #2c2f36;
+        background: var(--c-key-face);
+        color: var(--c-ink);
+        border: 1px solid var(--c-rule-2);
+        box-shadow: var(--shadow-key);
     }
     .lin-btn-secondary:hover {
-        background: #23252a;
+        background: var(--c-paper-2);
     }
     .lin-btn-ghost {
         background: transparent;
-        color: #8a8f98;
+        color: var(--c-ink-2);
         border: 1px solid transparent;
     }
     .lin-btn-ghost:hover {
-        background: #1c1d21;
-        color: #f7f8f8;
+        background: var(--c-paper-2);
+        color: var(--c-ink);
     }
 
-    /* Поля ввода: тонкая граница, фокус — мягкое кольцо индиго. */
+    /* Поля ввода: граница muted (3:1 к бумаге), фокус — кобальт. */
     .lin-input {
         width: 100%;
         height: 32px;
         padding: 0 10px;
-        background: #0f1011;
-        border: 1px solid #23252a;
+        background: var(--c-panel);
+        border: 1px solid var(--c-rule-2);
         border-radius: 6px;
-        color: #f7f8f8;
+        color: var(--c-ink);
         font-size: 13px;
         transition:
             border-color 120ms ease-out,
             box-shadow 120ms ease-out;
     }
     .lin-input::placeholder {
-        color: #62666d;
+        color: var(--c-muted);
     }
     .lin-input:focus {
         outline: none;
-        border-color: #5e6ad2;
-        box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.2);
+        border-color: var(--c-accent);
+        box-shadow: 0 0 0 3px var(--c-accent-wash);
     }
     textarea.lin-input {
         height: auto;
@@ -456,23 +526,21 @@ path {
         border-radius: 5px;
         font-size: 12px;
         font-weight: 500;
-        background: #1c1d21;
-        border: 1px solid #23252a;
-        color: #8a8f98;
+        background: var(--c-paper-2);
+        border: 1px solid var(--c-rule);
+        color: var(--c-ink-2);
     }
 
-    /* Надпись-рубрика над блоком. */
+    /* Подпись над блоком: шрифт интерфейса, на ступень мельче, без капса. */
     .lin-label {
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 500;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-        color: #62666d;
+        color: var(--c-muted);
     }
 
     /* Разделительная линия. */
     .lin-divider {
         height: 1px;
-        background: #23252a;
+        background: var(--c-rule);
     }
 }

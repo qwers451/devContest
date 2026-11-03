@@ -26,11 +26,11 @@ const ConfirmationModal = ({
                 onClick={e => e.stopPropagation()}
             >
                 <h3 className="text-[14px] font-medium text-gray-900 mb-2">{title}</h3>
-                <p className="text-[13px] text-gray-600 mb-6 leading-relaxed">{message}</p>
+                <p className="text-[13px] text-gray-400 mb-6 leading-relaxed">{message}</p>
                 <div className="flex justify-end gap-3">
                     <button
                         onClick={onHide}
-                        className="px-5 py-2 rounded-md border border-gray-700 text-[13px] text-gray-600 hover:bg-gray-900 font-medium transition-colors"
+                        className="px-5 py-2 rounded-md border border-gray-700 text-[13px] text-gray-400 hover:bg-gray-900 font-medium transition-colors"
                     >
                         {cancelText}
                     </button>

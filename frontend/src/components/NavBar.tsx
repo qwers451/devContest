@@ -124,12 +124,12 @@ const NavBar = observer(() => {
   if (pathname === LANDING_ROUTE) return null;
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-gray-700 bg-gray-950/80 backdrop-blur-xl">
+    <nav className="sticky top-0 z-40 border-b border-gray-700 bg-gray-950">
       <div className="mx-auto flex h-12 max-w-[1400px] items-center justify-between px-5">
         <div className="flex items-center gap-6">
           <button
             onClick={() => navigate(LANDING_ROUTE)}
-            className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-gray-100 transition-opacity hover:opacity-80 focus:outline-none"
+            className="flex items-center gap-2 font-display text-[16px] font-semibold tracking-tight text-gray-100 transition-opacity hover:opacity-80 focus:outline-none"
             aria-label="devContest"
           >
             <img src="/logo.svg" alt="" className="h-5 w-5" />
@@ -175,7 +175,7 @@ const NavBar = observer(() => {
           ) : (
             <button
               onClick={() => navigate(LOGIN_ROUTE)}
-              className="inline-flex h-7 items-center rounded-md bg-violet-600 px-3 text-[13px] font-medium text-white transition-colors hover:bg-violet-500 focus:outline-none"
+              className="lin-btn lin-btn-primary"
             >
               Войти
             </button>
@@ -244,7 +244,7 @@ const NavBar = observer(() => {
                 navigate(LOGIN_ROUTE);
                 setOpen(false);
               }}
-              className="mt-1 inline-flex h-8 items-center justify-center rounded-md bg-violet-600 text-[13px] font-medium text-white"
+              className="lin-btn lin-btn-primary mt-1"
             >
               Войти
             </button>

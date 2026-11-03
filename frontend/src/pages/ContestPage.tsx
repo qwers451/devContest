@@ -228,7 +228,7 @@ const ContestPage = () => {
     const status = statusConfig[currentContest.status] || statusConfig.draft;
     const typeName = contest.getTypeNameById(currentContest.type_id);
 
-    const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-700 focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:outline-none text-gray-200 text-[13px] bg-gray-800 dark:bg-gray-700';
+    const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-600 focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:outline-none text-gray-200 text-[13px] bg-gray-900';
     const btnSecondary = 'inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-700 text-[13px] text-gray-300 hover:bg-gray-700 font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus:outline-none';
 
     const tabs = [
@@ -264,7 +264,7 @@ const ContestPage = () => {
                                         {status.label}
                                     </span>
                                     {typeName && (
-                                        <span className="inline-flex items-center px-3 py-1 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                        <span className="inline-flex items-center px-3 py-1 rounded text-[11px] font-medium border border-gray-700 bg-gray-800 text-gray-300">
                                             {typeName}
                                         </span>
                                     )}

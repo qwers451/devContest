@@ -30,7 +30,7 @@ const StatusBar = () => {
 
     return (
         <div ref={ref}>
-            <label className="block text-[13px] font-semibold text-gray-700 mb-1">
+            <label className="block text-[13px] font-semibold text-gray-200 mb-1">
                 <BsFlag className="inline mr-1 text-violet-600" />
                 Статус решения
             </label>
@@ -40,7 +40,7 @@ const StatusBar = () => {
                     onClick={() => setOpen(o => !o)}
                     className="w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 text-[13px] bg-gray-800 text-left flex justify-between items-center transition-all duration-200"
                 >
-                    <span className="text-gray-600">
+                    <span className="text-gray-400">
                         {selectedStatuses.length === 0 ? 'Все' : `Выбрано статусов: ${selectedStatuses.length}`}
                     </span>
                     <span className="text-gray-400">{open ? '▲' : '▼'}</span>
@@ -50,7 +50,7 @@ const StatusBar = () => {
                         {statusOptions.map((status) => (
                             <label
                                 key={status.value}
-                                className="flex items-center gap-2 px-4 py-2 hover:bg-violet-50 cursor-pointer text-[13px] text-gray-700"
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-violet-50 cursor-pointer text-[13px] text-gray-200"
                             >
                                 <input
                                     type="checkbox"

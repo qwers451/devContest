@@ -89,7 +89,7 @@ const NotificationBell = observer(() => {
           <div className="max-h-[70vh] overflow-y-auto md:max-h-[420px]">
             {notifications.items.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-                <BsBell className="h-6 w-6 text-gray-600" />
+                <BsBell className="h-6 w-6 text-gray-400" />
                 <p className="text-[13px] text-gray-400">Пока нет уведомлений</p>
                 <p className="text-[12px] text-gray-500">Здесь появятся новые решения, статусы и сообщения.</p>
               </div>

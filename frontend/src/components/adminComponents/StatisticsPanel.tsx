@@ -200,7 +200,7 @@ const StatisticsPanel = observer(() => {
     if (!statistics) {
       return null;
     }
-    const colors = ["#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
+    const colors = ["#1d5fd1", "#7f9ed8", "#2f8a57", "#b7791f", "#c2413a"];
     return {
       labels: statistics.chart.labels,
       datasets: statistics.chart.datasets.map((dataset, index) => ({

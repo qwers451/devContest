@@ -84,7 +84,7 @@ const CreateReview = () => {
         }
     };
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700';
+    const inputCls = 'w-full px-4 py-2.5 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-900';
     const labelCls = 'block text-[13px] font-semibold text-gray-300 mb-1';
 
     if (loadingSolution) {
@@ -161,7 +161,7 @@ const CreateReview = () => {
                             {files.length > 0 && (
                                 <ul className="mt-2 space-y-1">
                                     {files.map(f => (
-                                        <li key={f.name} className="flex items-center gap-2 text-[13px] text-gray-600">
+                                        <li key={f.name} className="flex items-center gap-2 text-[13px] text-gray-400">
                                             <span className="truncate max-w-xs">{f.name}</span>
                                             <button
                                                 type="button"

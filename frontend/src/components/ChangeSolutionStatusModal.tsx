@@ -33,7 +33,7 @@ const ChangeSolutionStatusModal = ({
             >
                 <h3 className="text-[14px] font-medium text-gray-900 mb-4">Статус решения</h3>
                 <div className="mb-6">
-                    <label className="block text-[13px] font-semibold text-gray-700 mb-1">
+                    <label className="block text-[13px] font-semibold text-gray-200 mb-1">
                         Выберите новый статус:
                     </label>
                     <select
@@ -51,7 +51,7 @@ const ChangeSolutionStatusModal = ({
                 <div className="flex justify-end gap-3">
                     <button
                         onClick={onHide}
-                        className="px-5 py-2 rounded-md border border-gray-700 text-[13px] text-gray-600 hover:bg-gray-900 font-medium transition-colors"
+                        className="px-5 py-2 rounded-md border border-gray-700 text-[13px] text-gray-400 hover:bg-gray-900 font-medium transition-colors"
                     >
                         Отмена
                     </button>

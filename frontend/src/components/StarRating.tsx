@@ -8,7 +8,7 @@ interface Props {
 
 const Star = ({ fill, size }: { fill: number; size: number }) => (
   <span className="relative inline-block" style={{ width: size, height: size, fontSize: size, lineHeight: 1 }}>
-    <span className="text-gray-700">★</span>
+    <span className="text-gray-200">★</span>
     <span className="absolute left-0 top-0 overflow-hidden text-amber-400" style={{ width: `${fill * 100}%` }}>
       ★
     </span>

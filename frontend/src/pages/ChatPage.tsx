@@ -317,7 +317,7 @@ const Thread = observer(({ conv, myId }: { conv: Conversation; myId: number | nu
             Отправить
           </button>
         </div>
-        <p className="mt-1.5 hidden text-[10px] text-gray-600 sm:block">
+        <p className="mt-1.5 hidden text-[10px] text-gray-400 sm:block">
           Enter — отправить, Shift+Enter — новая строка
         </p>
       </div>

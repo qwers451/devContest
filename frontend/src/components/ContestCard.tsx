@@ -54,11 +54,11 @@ const ContestCard = observer(({ contest: item }) => {
             </span>
             {typeName && (
               <>
-                <span className="text-gray-600">·</span>
+                <span className="text-gray-400">·</span>
                 <span>{typeName}</span>
               </>
             )}
-            <span className="text-gray-600">·</span>
+            <span className="text-gray-400">·</span>
             <span className="tabular-nums">DC-{item.number}</span>
           </div>
 

@@ -103,7 +103,7 @@ const ProfilePage = () => {
         }
     };
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700';
+    const inputCls = 'w-full px-4 py-2.5 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-900';
     const labelCls = 'block text-[13px] font-semibold text-gray-300 mb-1';
 
     if (loading) {

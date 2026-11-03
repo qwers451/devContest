@@ -130,13 +130,13 @@ const PlatformMetrics = observer(() => {
   const monthsData = {
     labels: m.months.map((x) => x.label),
     datasets: [
-      { label: "Создано", data: m.months.map((x) => x.created), backgroundColor: "#8b5cf6" },
-      { label: "Завершено", data: m.months.map((x) => x.finished), backgroundColor: "#10b981" },
+      { label: "Создано", data: m.months.map((x) => x.created), backgroundColor: "#1d5fd1" },
+      { label: "Завершено", data: m.months.map((x) => x.finished), backgroundColor: "#2f8a57" },
     ],
   };
   const distData = {
     labels: m.distribution.map((x) => x.label),
-    datasets: [{ label: "Конкурсов", data: m.distribution.map((x) => x.count), backgroundColor: "#06b6d4" }],
+    datasets: [{ label: "Конкурсов", data: m.distribution.map((x) => x.count), backgroundColor: "#7f9ed8" }],
   };
   const hasMonths = m.months.some((x) => x.created > 0 || x.finished > 0);
   const hasDist = m.distribution.some((x) => x.count > 0);

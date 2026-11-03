@@ -28,7 +28,7 @@ const ContestTypeModal = ({ show, onHide, onSuccess }) => {
             <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 animate-fade-in" onClick={e => e.stopPropagation()}>
                 <h3 className="text-[14px] font-medium text-gray-900 mb-4">Добавить тип конкурса</h3>
                 <div className="mb-5">
-                    <label className="block text-[13px] font-semibold text-gray-700 mb-1">Название типа</label>
+                    <label className="block text-[13px] font-semibold text-gray-200 mb-1">Название типа</label>
                     <input
                         type="text"
                         placeholder="Введите название"
@@ -40,7 +40,7 @@ const ContestTypeModal = ({ show, onHide, onSuccess }) => {
                 <div className="flex justify-end gap-3">
                     <button
                         onClick={onHide}
-                        className="px-5 py-2 rounded-md border border-gray-700 text-[13px] text-gray-600 hover:bg-gray-900 font-medium transition-colors"
+                        className="px-5 py-2 rounded-md border border-gray-700 text-[13px] text-gray-400 hover:bg-gray-900 font-medium transition-colors"
                     >
                         Отменить
                     </button>

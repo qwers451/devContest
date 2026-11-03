@@ -681,7 +681,7 @@ const WalletPage = () => {
   };
 
   const inputCls =
-    "w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 text-gray-100 text-[13px] bg-gray-800 dark:bg-gray-700 transition-all";
+    "w-full px-4 py-2.5 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 text-gray-100 text-[13px] bg-gray-900 transition-all";
 
   const tabs = [
     { key: "balance", label: "Баланс" },

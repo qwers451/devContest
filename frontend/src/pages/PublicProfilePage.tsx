@@ -34,9 +34,9 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const PLACE_STYLE: Record<number, string> = {
-  1: "bg-amber-400 text-amber-950",
-  2: "bg-gray-300 text-gray-900",
-  3: "bg-orange-400 text-orange-950",
+  1: "bg-amber-100 text-amber-700 ring-1 ring-amber-500/40",
+  2: "bg-gray-800 text-gray-300 ring-1 ring-gray-600",
+  3: "bg-orange-100 text-orange-800 ring-1 ring-orange-300",
 };
 
 const IMAGE_RE = /\.(png|jpe?g|gif|webp)$/i;
@@ -89,8 +89,11 @@ const PortfolioPreview = ({ submission, title, color }: { submission?: Submissio
   if (url) return <img src={url} alt={title} className="h-full w-full object-cover" />;
   return (
     <div
-      className="flex h-full w-full items-center justify-center text-[34px] font-bold text-white/80"
-      style={{ background: `linear-gradient(135deg, ${color}, #111827)` }}
+      className="flex h-full w-full items-center justify-center font-display text-[34px] font-semibold"
+      style={{
+        background: `linear-gradient(135deg, color-mix(in oklab, ${color} 18%, var(--c-panel)), var(--c-paper-2))`,
+        color,
+      }}
       aria-hidden="true"
     >
       {title.trim()[0]?.toUpperCase() ?? "?"}
@@ -500,7 +503,7 @@ const PublicProfilePage = () => {
                         </div>
                         <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-1.5 text-[12px]">
                           {s.status === 3 && (
-                            <span className="rounded bg-green-600 px-2 py-0.5 font-semibold text-white">
+                            <span className="rounded bg-emerald-600 px-2 py-0.5 font-semibold text-white">
                               {statusLabel(3)}
                             </span>
                           )}

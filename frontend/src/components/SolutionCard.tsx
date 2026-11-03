@@ -16,8 +16,8 @@ const statusStyles = {
     text: "text-emerald-700 dark:text-emerald-300",
   },
   3: {
-    bg: "bg-green-600 dark:bg-green-700",
-    text: "text-white dark:text-green-50",
+    bg: "bg-emerald-600",
+    text: "text-white",
   },
   4: {
     bg: "bg-gray-700",

@@ -110,7 +110,7 @@ const ReviewPage = () => {
         }
     };
 
-    const inputCls = 'w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700';
+    const inputCls = 'w-full px-4 py-2.5 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-900';
     const labelCls = 'block text-[13px] font-semibold text-gray-300 mb-1';
 
     if (loading) {
@@ -126,7 +126,7 @@ const ReviewPage = () => {
         return (
             <div className="max-w-3xl mx-auto px-4 py-10">
                 <div className="px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-600 text-[13px] mb-4">{error}</div>
-                <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-700 font-semibold text-[13px] transition-colors">
+                <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-200 font-semibold text-[13px] transition-colors">
                     Назад
                 </button>
             </div>
@@ -243,7 +243,7 @@ const ReviewPage = () => {
                             <button
                                 onClick={() => setShowEdit(false)}
                                 disabled={saving}
-                                className="px-5 py-2 rounded-md border border-gray-700 text-[13px] text-gray-600 hover:bg-gray-900 font-medium transition-colors disabled:opacity-60"
+                                className="px-5 py-2 rounded-md border border-gray-700 text-[13px] text-gray-400 hover:bg-gray-900 font-medium transition-colors disabled:opacity-60"
                             >
                                 Отмена
                             </button>

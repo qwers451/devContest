@@ -61,7 +61,7 @@ const ImportExportPanel = () => {
         <button
           onClick={handleImportClick}
           disabled={isImporting}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-700 font-semibold text-[13px] transition-colors disabled:opacity-60"
+          className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-200 font-semibold text-[13px] transition-colors disabled:opacity-60"
         >
           {isImporting ? "Импорт..." : "Импортировать"}
         </button>

@@ -29,7 +29,7 @@ const TypeBar = () => {
 
     return (
         <div ref={ref}>
-            <label className="block text-[13px] font-semibold text-gray-700 mb-1">
+            <label className="block text-[13px] font-semibold text-gray-200 mb-1">
                 <BsTags className="inline mr-1 text-violet-600" />
                 Тип конкурса
             </label>
@@ -39,7 +39,7 @@ const TypeBar = () => {
                     onClick={() => setOpen(o => !o)}
                     className="w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-gray-800 text-[13px] bg-gray-800 text-left flex justify-between items-center transition-all duration-200"
                 >
-                    <span className="text-gray-600">
+                    <span className="text-gray-400">
                         {selectedTypes.length === 0 ? 'Все' : `Выбрано типов: ${selectedTypes.length}`}
                     </span>
                     <span className="text-gray-400">{open ? '▲' : '▼'}</span>
@@ -49,7 +49,7 @@ const TypeBar = () => {
                         {contest?.types?.map((type) => (
                             <label
                                 key={type.id}
-                                className="flex items-center gap-2 px-4 py-2 hover:bg-violet-50 cursor-pointer text-[13px] text-gray-700"
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-violet-50 cursor-pointer text-[13px] text-gray-200"
                             >
                                 <input
                                     type="checkbox"

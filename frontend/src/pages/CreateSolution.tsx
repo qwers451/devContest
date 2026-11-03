@@ -202,9 +202,9 @@ const CreateSolution = () => {
     );
 
   const inputCls =
-    "w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700";
+    "w-full px-4 py-2.5 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-900";
   const inputErrCls =
-    "w-full px-4 py-2.5 rounded-md border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700";
+    "w-full px-4 py-2.5 rounded-md border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-100 text-[13px] transition-all duration-200 bg-gray-900";
   const labelCls =
     "block text-[13px] font-semibold text-gray-300 mb-1";
 
@@ -284,7 +284,7 @@ const CreateSolution = () => {
               <ul className="mb-2 space-y-1">
                 {existingFiles.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-[13px]">
-                    <span className="text-gray-700">{f}</span>
+                    <span className="text-gray-200">{f}</span>
                     <button
                       type="button"
                       onClick={() => handleDeleteExistingFile(f)}
@@ -300,7 +300,7 @@ const CreateSolution = () => {
               type="file"
               multiple
               onChange={(e) => handleFilesChange(e.target.files)}
-              className="w-full text-[13px] text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-[13px] file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+              className="w-full text-[13px] text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-[13px] file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
             />
             {showSelectedFiles && (
               <ul className="mt-1.5 space-y-0.5">

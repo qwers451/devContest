@@ -55,19 +55,19 @@ const ContestStagesSection = ({ stages, onAdd, onUpdate, onRemove }) => (
                 placeholder="Название этапа *"
                 value={stage.name}
                 onChange={(e) => onUpdate(index, "name", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-800 dark:bg-gray-700 text-gray-100"
+                className="w-full px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-900 text-gray-100"
               />
               <input
                 placeholder="Описание этапа (необязательно)"
                 value={stage.description}
                 onChange={(e) => onUpdate(index, "description", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-800 dark:bg-gray-700 text-gray-100"
+                className="w-full px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-900 text-gray-100"
               />
               <input
                 type="date"
                 value={stage.deadline}
                 onChange={(e) => onUpdate(index, "deadline", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-800 dark:bg-gray-700 text-gray-100"
+                className="w-full px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-900 text-gray-100"
               />
               <input
                 type="number"
@@ -77,7 +77,7 @@ const ContestStagesSection = ({ stages, onAdd, onUpdate, onRemove }) => (
                   onUpdate(index, "prize_amount", parseInt(e.target.value) || 0)
                 }
                 min={0}
-                className="w-full px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-800 dark:bg-gray-700 text-gray-100"
+                className="w-full px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 text-[13px] bg-gray-900 text-gray-100"
               />
             </div>
             <button
@@ -161,7 +161,7 @@ const PreviewModal = ({
                 <h4 className="font-medium text-gray-200 mb-2">
                   Техническое задание
                 </h4>
-                <pre className="whitespace-pre-wrap text-[13px] bg-gray-800 dark:bg-gray-700 dark:text-gray-200 p-3 rounded-md border border-gray-700">
+                <pre className="whitespace-pre-wrap text-[13px] bg-gray-900 dark:text-gray-200 p-3 rounded-md border border-gray-700">
                   {tzText}
                 </pre>
               </>
@@ -522,9 +522,9 @@ const CreateContest = () => {
   }, []);
 
   const inputCls =
-    "w-full px-4 py-2.5 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700";
+    "w-full px-4 py-2.5 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 text-gray-100 text-[13px] transition-all duration-200 bg-gray-900";
   const inputErrCls =
-    "w-full px-4 py-2.5 rounded-md border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-100 text-[13px] transition-all duration-200 bg-gray-800 dark:bg-gray-700";
+    "w-full px-4 py-2.5 rounded-md border border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 text-gray-100 text-[13px] transition-all duration-200 bg-gray-900";
   const labelCls =
     "block text-[13px] font-semibold text-gray-300 mb-1";
 
@@ -703,7 +703,7 @@ const CreateContest = () => {
               className={inputCls}
             />
             <div className="mt-2 flex items-center gap-3">
-              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-xs font-medium text-gray-300 transition-colors">
+              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-900 hover:bg-gray-900 dark:hover:bg-gray-600 text-xs font-medium text-gray-300 transition-colors">
                 <span>📎</span>
                 <span>
                   {tzFile ? tzFile.name : "Загрузить ТЗ (PDF / DOCX)"}
@@ -795,7 +795,7 @@ const CreateContest = () => {
               <ul className="mb-2 space-y-1">
                 {existingFiles.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-[13px]">
-                    <span className="text-gray-700">{f}</span>
+                    <span className="text-gray-200">{f}</span>
                     <button
                       type="button"
                       onClick={() => handleDeleteExistingFile(f)}
@@ -811,7 +811,7 @@ const CreateContest = () => {
               type="file"
               multiple
               onChange={(e) => handleFilesChange(e.target.files)}
-              className="w-full text-[13px] text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-[13px] file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+              className="w-full text-[13px] text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-[13px] file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
             />
             {showSelectedFiles && (
               <ul className="mt-1.5 space-y-0.5">

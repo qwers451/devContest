@@ -122,7 +122,7 @@ const PaymentCallbackPage = () => {
           )}
           <button
             onClick={() => navigate(CONTESTS_ROUTE)}
-            className="block w-full text-center px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-600 font-semibold text-[13px] transition-colors"
+            className="block w-full text-center px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-400 font-semibold text-[13px] transition-colors"
           >
             На главную
           </button>
