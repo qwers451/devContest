@@ -1,7 +1,7 @@
 describe("Навигация и доступ", () => {
   beforeEach(() => {
     cy.clearLocalStorage();
-    cy.visit("/");
+    cy.visit("/contests");
   });
 
   it("гость видит только публичную навигацию", () => {

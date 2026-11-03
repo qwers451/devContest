@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { useParams, useNavigate } from "react-router-dom";
+import { CONTESTS_ROUTE } from "../utils/consts.js";
 import { Context } from "../context";
 import SolutionListWithFilters from "../components/SolutionListWithFilters";
 
@@ -22,7 +23,7 @@ const Solutions = () => {
         }
 
         if (!currentContest) {
-          navigate("/");
+          navigate(CONTESTS_ROUTE);
           return;
         }
 

@@ -1,7 +1,7 @@
 describe("Конкурсы", () => {
   describe("Публичный доступ", () => {
     it("отображает список конкурсов на главной", () => {
-      cy.visit("/");
+      cy.visit("/contests");
       cy.contains("Конкурсы").should("be.visible");
       cy.get(
         "[class*=ContestCard], [class*=contest-card], [class*=rounded-xl]",
@@ -9,7 +9,7 @@ describe("Конкурсы", () => {
     });
 
     it("открывает страницу конкурса по клику", () => {
-      cy.visit("/");
+      cy.visit("/contests");
       cy.get("h3").first().click();
       cy.url().should("match", /\/contest\/\d+/);
       cy.get("h1").should("be.visible");
@@ -17,14 +17,14 @@ describe("Конкурсы", () => {
     });
 
     it("отображает статус и призовой фонд конкурса", () => {
-      cy.visit("/");
+      cy.visit("/contests");
       cy.get("h3").first().click();
       cy.contains("₽").should("be.visible");
       cy.get("[class*=rounded-full]").should("exist");
     });
 
     it("позволяет использовать и сбрасывать фильтры списка конкурсов", () => {
-      cy.visit("/");
+      cy.visit("/contests");
 
       cy.get('input[placeholder="По названию..."]').type("zzz-no-match");
       cy.contains("Нет конкурсов по выбранным фильтрам").should("be.visible");
@@ -38,7 +38,7 @@ describe("Конкурсы", () => {
     });
 
     it("показывает детали конкурса и связанные блоки", () => {
-      cy.visit("/");
+      cy.visit("/contests");
       cy.get("h3").first().click();
 
       cy.contains("Описание проекта").should("be.visible");
@@ -123,12 +123,12 @@ describe("Конкурсы", () => {
     });
 
     it("не видит 'Добавить конкурс' в навигации", () => {
-      cy.visit("/");
+      cy.visit("/contests");
       cy.contains("Добавить конкурс").should("not.exist");
     });
 
     it("видит кнопку 'Отправить решение' на активном конкурсе", () => {
-      cy.visit("/");
+      cy.visit("/contests");
       cy.get("main")
         .contains("Активный")
         .closest(".group")

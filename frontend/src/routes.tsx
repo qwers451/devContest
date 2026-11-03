@@ -22,6 +22,7 @@ import {
     PUBLIC_PROFILE_ROUTE,
     LEADERBOARD_ROUTE,
     ABOUT_ROUTE,
+    LANDING_ROUTE,
 } from "./utils/consts.js";
 import Auth from "./pages/Auth";
 import Contests from "./pages/Contests";
@@ -44,6 +45,7 @@ import ChatPage from "./pages/ChatPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import AboutPage from "./pages/AboutPage";
+import LandingPage from "./pages/LandingPage";
 
 export const authRoutes = [
     {
@@ -117,6 +119,10 @@ export const authRoutes = [
 ]
 
 export const publicRoutes = [
+    {
+        path: LANDING_ROUTE,
+        element: <LandingPage />
+    },
     {
         path: CONTESTS_ROUTE,
         element: <Contests />

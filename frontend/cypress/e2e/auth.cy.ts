@@ -1,7 +1,7 @@
 describe("Авторизация и регистрация", () => {
   beforeEach(() => {
     cy.clearLocalStorage();
-    cy.visit("/");
+    cy.visit("/contests");
   });
 
   it("отображает форму входа", () => {
@@ -38,7 +38,7 @@ describe("Авторизация и регистрация", () => {
     cy.get('input[placeholder="Логин"]').type("customer1");
     cy.get('input[placeholder="Пароль"]').type("test1234");
     cy.get("form").contains("button", "Войти").click();
-    cy.url().should("eq", Cypress.config().baseUrl + "/");
+    cy.url().should("eq", Cypress.config().baseUrl + "/contests");
     cy.contains("Конкурсы").should("be.visible");
   });
 
@@ -47,7 +47,7 @@ describe("Авторизация и регистрация", () => {
     cy.get('input[placeholder="Логин"]').type("executor1");
     cy.get('input[placeholder="Пароль"]').type("test1234");
     cy.get("form").contains("button", "Войти").click();
-    cy.url().should("eq", Cypress.config().baseUrl + "/");
+    cy.url().should("eq", Cypress.config().baseUrl + "/contests");
     cy.contains("Мои решения").should("be.visible");
   });
 
@@ -56,7 +56,7 @@ describe("Авторизация и регистрация", () => {
     cy.get('input[placeholder="Логин"]').type("admin");
     cy.get('input[placeholder="Пароль"]').type("admin123");
     cy.get("form").contains("button", "Войти").click();
-    cy.url().should("eq", Cypress.config().baseUrl + "/");
+    cy.url().should("eq", Cypress.config().baseUrl + "/contests");
     cy.contains("Админ панель").should("be.visible");
   });
 

@@ -6,6 +6,7 @@ import { BsWallet2 } from "react-icons/bs";
 import NotificationBell from "./NotificationBell";
 import {
   CONTESTS_ROUTE,
+  LANDING_ROUTE,
   ADMIN_ROUTE,
   LOGIN_ROUTE,
   MY_SOLUTIONS_ROUTE,
@@ -55,7 +56,7 @@ const NavBar = observer(() => {
     user.setUser({});
     user.setIsAuth(false);
     localStorage.removeItem("token");
-    navigate(CONTESTS_ROUTE);
+    navigate(LANDING_ROUTE);
     setOpen(false);
   };
 
@@ -70,16 +71,18 @@ const NavBar = observer(() => {
   const links = () => {
     const role = user.user?.role;
     const top = (
-      <NavLink to={LEADERBOARD_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
-        Рейтинг
-      </NavLink>
-    );
-    if (!user.isAuth) return top;
-    return (
       <>
         <NavLink to={CONTESTS_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
           Конкурсы
         </NavLink>
+        <NavLink to={LEADERBOARD_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
+          Рейтинг
+        </NavLink>
+      </>
+    );
+    if (!user.isAuth) return top;
+    return (
+      <>
         {top}
         <NavLink to={MESSAGES_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
           Сообщения
@@ -121,7 +124,7 @@ const NavBar = observer(() => {
       <div className="mx-auto flex h-12 max-w-[1400px] items-center justify-between px-5">
         <div className="flex items-center gap-6">
           <button
-            onClick={() => navigate(CONTESTS_ROUTE)}
+            onClick={() => navigate(LANDING_ROUTE)}
             className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-gray-100 transition-opacity hover:opacity-80 focus:outline-none"
             aria-label="devContest"
           >

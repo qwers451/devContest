@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LOGIN_ROUTE, REGISTRATION_ROUTE } from '../utils/consts.js';
+import { CONTESTS_ROUTE, LOGIN_ROUTE, REGISTRATION_ROUTE } from '../utils/consts.js';
 import { sendData } from '../services/apiService.js';
 import { Context } from '../context';
 import { observer } from 'mobx-react-lite';
@@ -34,7 +34,7 @@ const Auth = () => {
             localStorage.setItem('token', response.access_token);
             user.setUser(response.user);
             user.setIsAuth(true);
-            navigate('/');
+            navigate(CONTESTS_ROUTE);
         } catch (err) {
             setError(err.response?.data?.detail || 'Что-то пошло не так');
         }

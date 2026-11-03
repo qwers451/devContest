@@ -1,7 +1,7 @@
 import React, {useContext, useEffect, Suspense} from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { authRoutes, publicRoutes } from "../routes";
-import {CONTESTS_ROUTE} from "../utils/consts.js";
+import {LANDING_ROUTE} from "../utils/consts.js";
 import {Context} from "../context";
 import { observer } from "mobx-react-lite";
 
@@ -33,7 +33,7 @@ const AppRouter = () => {
                 {publicRoutes.map(({ path, element }) =>
                     <Route key={path} path={path} element={element} exact />
                 )}
-                <Route path="*" element={<Navigate to={CONTESTS_ROUTE} />} />
+                <Route path="*" element={<Navigate to={LANDING_ROUTE} />} />
             </Routes>
         </Suspense>
     );

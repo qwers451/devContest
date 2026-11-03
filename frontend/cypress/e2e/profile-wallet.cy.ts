@@ -1,7 +1,7 @@
 describe("Профиль и кошелёк", () => {
   it("загружает профиль заказчика и возвращается назад без сохранения", () => {
     cy.loginAsCustomer();
-    cy.visit("/");
+    cy.visit("/contests");
     cy.contains("customer1").click();
 
     cy.contains("Мой профиль").should("be.visible");
@@ -10,7 +10,7 @@ describe("Профиль и кошелёк", () => {
     cy.get('input[name="password"]').should("have.value", "");
 
     cy.contains("button", "Отмена").click();
-    cy.url().should("eq", `${Cypress.config().baseUrl}/`);
+    cy.url().should("eq", `${Cypress.config().baseUrl}/contests`);
   });
 
   it("показывает заказчику вкладки кошелька и клиентскую валидацию пополнения", () => {

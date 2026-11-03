@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { CONTESTS_ROUTE } from "../utils/consts.js";
 import { observer } from "mobx-react-lite";
 import { Context } from "../context";
 
@@ -120,7 +121,7 @@ const PaymentCallbackPage = () => {
             </button>
           )}
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate(CONTESTS_ROUTE)}
             className="block w-full text-center px-5 py-2.5 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-900 text-gray-600 font-semibold text-[13px] transition-colors"
           >
             На главную

@@ -1,5 +1,6 @@
 import React, { useEffect, useContext, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { CONTESTS_ROUTE } from '../utils/consts.js';
 import { Context } from '../context';
 import { observer } from 'mobx-react-lite';
 import Markdown from 'markdown-to-jsx';
@@ -155,7 +156,7 @@ const ContestPage = () => {
         if (!window.confirm('Вы точно хотите удалить этот конкурс?')) return;
         try {
             await deleteData(`/contests/${currentContest.id}`);
-            navigate('/');
+            navigate(CONTESTS_ROUTE);
         } catch (e) {
             console.error(e);
             alert('Не удалось удалить конкурс');

@@ -1,5 +1,6 @@
 import React, { useEffect, useContext, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { CONTESTS_ROUTE } from "../utils/consts.js";
 import { Context } from "../context";
 import { observer } from "mobx-react-lite";
 import Markdown from "markdown-to-jsx";
@@ -760,7 +761,7 @@ const SolutionPage = () => {
 
   const handleDelete = async () => {
     try {
-      navigate("/");
+      navigate(CONTESTS_ROUTE);
       await solution.deleteSolutionById(currentSolution.id);
     } catch (error) {
       console.error("Ошибка удаления:", error);

@@ -5,7 +5,7 @@ const API_GATEWAY = "http://localhost:8080";
 Cypress.Commands.add("login", (login: string, password: string) => {
   cy.request("POST", `${API_GATEWAY}/auth/login`, { login, password }).then(
     (res) => {
-      cy.visit("/", {
+      cy.visit("/contests", {
         onBeforeLoad(win) {
           win.localStorage.setItem("token", res.body.access_token);
           win.localStorage.setItem("isAuth", "true");

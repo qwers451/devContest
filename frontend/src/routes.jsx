@@ -23,6 +23,7 @@ import {
     PUBLIC_PROFILE_ROUTE,
     LEADERBOARD_ROUTE,
     ABOUT_ROUTE,
+    LANDING_ROUTE,
 } from "./utils/consts.js";
 
 const Auth = lazy(() => import('./pages/Auth'));
@@ -46,6 +47,7 @@ const ChatPage = lazy(() => import('./pages/ChatPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 
 export const authRoutes = [
     {
@@ -119,6 +121,10 @@ export const authRoutes = [
 ]
 
 export const publicRoutes = [
+    {
+        path: LANDING_ROUTE,
+        element: <LandingPage />
+    },
     {
         path: CONTESTS_ROUTE,
         element: <Contests />
