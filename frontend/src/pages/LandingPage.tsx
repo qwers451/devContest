@@ -151,7 +151,7 @@ const LandingPage = () => {
                 <img
                   src="/landing/screen-contest-ai-desktop.png"
                   width="1732"
-                  height="1316"
+                  height="1312"
                   alt="Вкладка «Анализ ИИ» конкурса: два решения оценены, средний балл 83%, четыре критерия из ТЗ"
                   fetchPriority="high"
                 />
