@@ -471,12 +471,41 @@ const routes: [RegExp, (match: RegExpMatchArray) => unknown][] = [
         { label: "Операций кошелька", value: 14 },
         { label: "Сумма выплат", value: 697500 },
         { label: "Возвратов", value: 0 },
-        { label: "Комиссия платформы", value: 77500 },
+        { label: "Комиссия платформы", value: 77000 },
+        { label: "Выплачено призовых", value: 770000 },
       ],
       chart: { labels: ["released"], datasets: [{ label: "Сумма", data: [775000] }] },
     }),
   ],
-  [/^\/(payments\/)?statistics(\/contests)?$/, () => statistics],
+  [
+    /^\/statistics\/contests$/,
+    () => ({
+      summary: [
+        { label: "Конкурсов", value: contests.length },
+        { label: "Сумма призовых фондов", value: contests.reduce((sum, c) => sum + Number(c.prizepool), 0) },
+        { label: "Решений", value: submissions.length },
+      ],
+      chart: {
+        labels: statistics.x_labels,
+        datasets: statistics.datasets,
+      },
+    }),
+  ],
+  [
+    /^\/evaluation\/statistics$/,
+    () => ({
+      summary: [
+        { label: "Оценок", value: 96 },
+        { label: "Средний балл", value: 78.4 },
+        { label: "Критичных замечаний", value: 7 },
+      ],
+      chart: {
+        labels: ["Дизайн", "Код", "Полнота", "Оригинальность"],
+        datasets: [{ label: "Средний балл", data: [82, 76, 79, 74] }],
+      },
+    }),
+  ],
+  [/^\/(payments\/)?statistics$/, () => statistics],
   [/^\/auth\/(login|register)$/, () => ({ access_token: "demo-token", user: users[0] })],
 ];
 

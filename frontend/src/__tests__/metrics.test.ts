@@ -269,3 +269,19 @@ describe("форматирование", () => {
     expect(fmtMoney(1234567)).toContain("₽");
   });
 });
+
+describe("prizePaidTotal из платёжного сервиса", () => {
+  it("имеет приоритет над расчётом по наградам и согласуется с комиссией", () => {
+    const m = computeMetrics({
+      users: [],
+      contests: [],
+      submissions: [],
+      commissionTotal: 1000,
+      prizePaidTotal: 10000,
+      period: "all",
+      now: Date.now(),
+    });
+    expect(m.prizePaidOut).toBe(10000);
+    expect(m.commissionTotal).toBe(1000);
+  });
+});

@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "../context";
@@ -9,6 +9,7 @@ const SolutionListWithFilters = observer(
   ({ title, showContestTitle, showFreelancerLogin, isMySolutions }) => {
     const { contest, solution } = useContext(Context);
     const navigate = useNavigate();
+    const [showFilters, setShowFilters] = useState(false);
 
     const handlePageChange = (newPage) => {
       solution.setPage(newPage);
@@ -43,12 +44,20 @@ const SolutionListWithFilters = observer(
         </div>
 
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex gap-6 items-start">
-            <aside className="w-60 flex-shrink-0 sticky top-16">
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            <div className="w-full md:hidden flex justify-between items-center">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="lin-btn lin-btn-secondary"
+              >
+                Фильтры
+              </button>
+            </div>
+            <aside className={`w-full md:w-60 flex-shrink-0 md:sticky md:top-16 ${showFilters ? "block" : "hidden md:block"}`}>
               <SolutionsFiltersBar isMySolutions={isMySolutions} />
             </aside>
 
-            <main className="flex-1 min-w-0">
+            <main className="flex-1 min-w-0 w-full">
               <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                 <span className="text-[13px] text-gray-400">
                   {solution.solutions.length > 0 && totalPages > 1

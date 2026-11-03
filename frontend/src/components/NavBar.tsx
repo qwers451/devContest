@@ -129,10 +129,10 @@ const NavBar = observer(() => {
             devContest
           </button>
 
-          <div className="hidden items-center gap-1 md:flex">{links()}</div>
+          <div className="hidden items-center gap-1 lg:flex">{links()}</div>
         </div>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           {user.isAuth ? (
             <>
               <NotificationBell />
@@ -175,7 +175,7 @@ const NavBar = observer(() => {
           )}
         </div>
 
-        <div className="flex items-center gap-1 md:hidden">
+        <div className="flex items-center gap-1 lg:hidden">
         {user.isAuth && <NotificationBell />}
         <button
           className="flex h-9 w-9 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 focus:outline-none"
@@ -197,7 +197,7 @@ const NavBar = observer(() => {
       </div>
 
       {open && (
-        <div className="animate-slide-down flex flex-col gap-1 border-t border-gray-700 bg-gray-950 px-4 py-3 md:hidden">
+        <div className="animate-slide-down flex flex-col gap-1 border-t border-gray-700 bg-gray-950 px-4 py-3 lg:hidden">
           {links()}
 
           {user.isAuth ? (

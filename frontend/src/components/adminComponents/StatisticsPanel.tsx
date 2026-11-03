@@ -107,7 +107,7 @@ const inputCls =
   "px-3 py-2 rounded-lg border border-gray-700 bg-gray-800 text-[13px] text-gray-200";
 
 const formatSummaryValue = (label: string, value: number) => {
-  if (label.includes("Сумма")) {
+  if (label.includes("Сумма") || label === "Комиссия платформы" || label === "Выплачено призовых") {
     return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
   }
   if (label.includes("балл")) {

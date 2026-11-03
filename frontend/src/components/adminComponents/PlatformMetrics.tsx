@@ -56,6 +56,7 @@ const PlatformMetrics = observer(() => {
   const [period, setPeriod] = useState<MetricsPeriod>("30d");
   const [users, setUsers] = useState<Pick<User, "id" | "role" | "created_at">[]>([]);
   const [commission, setCommission] = useState<number | null>(null);
+  const [prizePaid, setPrizePaid] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -100,10 +101,17 @@ const PlatformMetrics = observer(() => {
     )
       .then((res) => {
         const item = res?.summary?.find((s) => s.label === "Комиссия платформы");
-        if (!cancelled) setCommission(item && Number.isFinite(item.value) ? item.value : null);
+        const prizes = res?.summary?.find((s) => s.label === "Выплачено призовых");
+        if (!cancelled) {
+          setCommission(item && Number.isFinite(item.value) ? item.value : null);
+          setPrizePaid(prizes && Number.isFinite(prizes.value) ? prizes.value : null);
+        }
       })
       .catch(() => {
-        if (!cancelled) setCommission(null);
+        if (!cancelled) {
+          setCommission(null);
+          setPrizePaid(null);
+        }
       });
     return () => {
       cancelled = true;
@@ -114,9 +122,9 @@ const PlatformMetrics = observer(() => {
   const submissions = Object.values(rating.submissionsByExecutor).flat();
 
   const m = useMemo(
-    () => computeMetrics({ users, contests, submissions, commissionTotal: commission, period }),
+    () => computeMetrics({ users, contests, submissions, commissionTotal: commission, prizePaidTotal: prizePaid, period }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [users, contests, rating.submissionsByExecutor, commission, period],
+    [users, contests, rating.submissionsByExecutor, commission, prizePaid, period],
   );
 
   const monthsData = {

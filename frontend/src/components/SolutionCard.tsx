@@ -90,7 +90,7 @@ const SolutionCard = observer(
         }}
         className="group bg-gray-800 rounded-md border border-gray-700 hover:border-violet-300 dark:hover:border-violet-500 hover: transition-all duration-200 cursor-pointer overflow-hidden animate-fade-in"
       >
-        <div className="flex items-stretch">
+        <div className="flex flex-col sm:flex-row items-stretch">
           <div className="flex-1 px-5 py-4 min-w-0">
             <div className="flex items-center gap-2 mb-2.5 flex-wrap">
               <span
@@ -172,7 +172,7 @@ const SolutionCard = observer(
             )}
           </div>
 
-          <div className="flex-shrink-0 w-40 border-l border-gray-700 px-4 py-4 flex flex-col items-end justify-between">
+          <div className="flex-shrink-0 sm:w-40 border-t sm:border-t-0 sm:border-l border-gray-700 px-4 py-3 sm:py-4 flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2">
             {showFreelancerLogin && freelancerLogin && (
               <div className="text-xs text-violet-600 dark:text-violet-400 font-medium truncate max-w-[140px]">
                 <UserLink id={solution.executor_id} login={freelancerLogin} />

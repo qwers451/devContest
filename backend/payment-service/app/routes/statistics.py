@@ -177,6 +177,15 @@ async def get_payment_statistics(
         commission_stmt = commission_stmt.where(Transaction.created_at <= date_to)
     commission_total = (await db.execute(commission_stmt)).scalar()
 
+    prizes_stmt = select(func.sum(cast(Transaction.amount, Numeric))).where(
+        Transaction.type.in_(["release", "release_award", "release_stage"])
+    )
+    if date_from:
+        prizes_stmt = prizes_stmt.where(Transaction.created_at >= date_from)
+    if date_to:
+        prizes_stmt = prizes_stmt.where(Transaction.created_at <= date_to)
+    prizes_total = (await db.execute(prizes_stmt)).scalar()
+
     payments_count, payments_amount, refunds_count = (
         await db.execute(payments_summary_stmt)
     ).one()
@@ -191,6 +200,7 @@ async def get_payment_statistics(
             SummaryItem(label="Сумма выплат", value=_to_float(payout_amount)),
             SummaryItem(label="Возвратов", value=_to_float(refunds_count)),
             SummaryItem(label="Комиссия платформы", value=_to_float(commission_total)),
+            SummaryItem(label="Выплачено призовых", value=_to_float(prizes_total)),
         ],
         chart=ChartData(
             labels=[

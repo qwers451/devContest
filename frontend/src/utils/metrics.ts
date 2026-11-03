@@ -56,6 +56,8 @@ export interface MetricsInput {
   submissions: SubLite[];
   /** Сумма комиссии платформы из платёжного сервиса; если null — считается по наградам. */
   commissionTotal?: number | null;
+  /** Сумма выплаченных призов (брутто) из платёжного сервиса; если null — считается по наградам. */
+  prizePaidTotal?: number | null;
   period: MetricsPeriod;
   now?: number;
 }
@@ -273,7 +275,12 @@ export function computeMetrics(input: MetricsInput): PlatformMetrics {
     successCount: success.length,
     failedCount: failed,
     commissionTotal: commission,
-    prizePaidOut: paidFacts.length > 0 ? Math.round(paid * 100) / 100 : null,
+    prizePaidOut:
+      finite(input.prizePaidTotal) !== null
+        ? finite(input.prizePaidTotal)
+        : paidFacts.length > 0
+          ? Math.round(paid * 100) / 100
+          : null,
     months,
     distribution,
   };
