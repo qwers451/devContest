@@ -52,6 +52,7 @@ export interface ContestAward {
   executor_id: number;
   amount: number;
   net_amount?: number | null;
+  created_at?: string | null;
 }
 
 export interface ContestAwardRow extends ContestAward {

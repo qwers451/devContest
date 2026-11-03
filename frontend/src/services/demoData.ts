@@ -461,6 +461,20 @@ const routes: [RegExp, (match: RegExpMatchArray) => unknown][] = [
   [/^\/wallet\/balance$/, () => ({ balance: 285000, currency: "RUB" })],
   [/^\/wallet\/transactions$/, () => transactions],
   [/^\/wallet$/, () => ({ balance: 285000, currency: "RUB" })],
+  [
+    /^\/payments\/statistics$/,
+    () => ({
+      summary: [
+        { label: "Платежей", value: 6 },
+        { label: "Сумма платежей", value: 775000 },
+        { label: "Операций кошелька", value: 14 },
+        { label: "Сумма выплат", value: 697500 },
+        { label: "Возвратов", value: 0 },
+        { label: "Комиссия платформы", value: 77500 },
+      ],
+      chart: { labels: ["released"], datasets: [{ label: "Сумма", data: [775000] }] },
+    }),
+  ],
   [/^\/(payments\/)?statistics(\/contests)?$/, () => statistics],
   [/^\/auth\/(login|register)$/, () => ({ access_token: "demo-token", user: users[0] })],
 ];
