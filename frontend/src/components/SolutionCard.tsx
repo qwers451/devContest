@@ -4,6 +4,7 @@ import { observer } from "mobx-react-lite";
 import { Context } from "../context";
 import { SOLUTION_ROUTE } from "../utils/consts.js";
 import { BsCpu } from "react-icons/bs";
+import UserLink from "./UserLink";
 
 const statusStyles = {
   1: {
@@ -174,7 +175,7 @@ const SolutionCard = observer(
           <div className="flex-shrink-0 w-40 border-l border-gray-700 px-4 py-4 flex flex-col items-end justify-between">
             {showFreelancerLogin && freelancerLogin && (
               <div className="text-xs text-violet-600 dark:text-violet-400 font-medium truncate max-w-[140px]">
-                @{freelancerLogin}
+                <UserLink id={solution.executor_id} login={freelancerLogin} />
               </div>
             )}
             {!showFreelancerLogin && <div />}

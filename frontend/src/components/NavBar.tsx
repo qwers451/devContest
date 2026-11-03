@@ -14,6 +14,7 @@ import {
   PROFILE_ROUTE,
   WALLET_ROUTE,
   MESSAGES_ROUTE,
+  LEADERBOARD_ROUTE,
 } from "../utils/consts.js";
 
 const NavBar = observer(() => {
@@ -67,13 +68,19 @@ const NavBar = observer(() => {
     }`;
 
   const links = () => {
-    if (!user.isAuth) return null;
     const role = user.user?.role;
+    const top = (
+      <NavLink to={LEADERBOARD_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
+        Рейтинг
+      </NavLink>
+    );
+    if (!user.isAuth) return top;
     return (
       <>
         <NavLink to={CONTESTS_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
           Конкурсы
         </NavLink>
+        {top}
         <NavLink to={MESSAGES_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
           Сообщения
           {chat.unreadTotal > 0 && (

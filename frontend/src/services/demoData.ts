@@ -113,6 +113,13 @@ const contests: Contest[] = [
     stages: [],
     created_at: iso(-60),
     updated_at: iso(-4),
+    winner: { submission_id: 21, executor_id: 2, selected_at: iso(-4) },
+    prize_distribution: [60, 25, 15],
+    awards: [
+      { place: 1, submission_id: 21, executor_id: 2, amount: 186000, net_amount: 167400 },
+      { place: 2, submission_id: 22, executor_id: 3, amount: 77500, net_amount: 69750 },
+      { place: 3, submission_id: 23, executor_id: 5, amount: 46500, net_amount: 41850 },
+    ],
   },
   {
     id: 5,
@@ -128,6 +135,45 @@ const contests: Contest[] = [
     stages: [],
     created_at: iso(-80),
     updated_at: iso(-12),
+    winner: { submission_id: 24, executor_id: 2, selected_at: iso(-12) },
+    prize_distribution: [100],
+    awards: [{ place: 1, submission_id: 24, executor_id: 2, amount: 140000, net_amount: 126000 }],
+  },
+  {
+    id: 7,
+    number: 1036,
+    title: "Прототип личного кабинета застройщика",
+    annotation: "Кликабельный прототип с планировками, графиком платежей и чатом с менеджером.",
+    prizepool: 120000,
+    ends_at: iso(-40),
+    status: "finished",
+    type_id: 3,
+    customer_id: 4,
+    current_stage_id: null,
+    stages: [],
+    created_at: iso(-95),
+    updated_at: iso(-40),
+    winner: { submission_id: 26, executor_id: 3, selected_at: iso(-40) },
+    prize_distribution: [100],
+    awards: [{ place: 1, submission_id: 26, executor_id: 3, amount: 120000, net_amount: 108000 }],
+  },
+  {
+    id: 8,
+    number: 1035,
+    title: "Мобильный клиент для службы доставки",
+    annotation: "Трекинг курьера на карте, пуш-уведомления, оплата картой.",
+    prizepool: 200000,
+    ends_at: iso(-75),
+    status: "finished",
+    type_id: 2,
+    customer_id: 1,
+    current_stage_id: null,
+    stages: [],
+    created_at: iso(-130),
+    updated_at: iso(-75),
+    winner: { submission_id: 28, executor_id: 5, selected_at: iso(-75) },
+    prize_distribution: [100],
+    awards: [{ place: 1, submission_id: 28, executor_id: 5, amount: 200000, net_amount: 180000 }],
   },
   {
     id: 6,
@@ -159,7 +205,7 @@ const submissions: Submission[] = [
     files: ["solution.zip", "readme.md"],
     ai_score: 92,
     critical_issues: false,
-    avg_score: 4.6,
+    avg_score: 9.2,
     created_at: iso(-5),
     updated_at: iso(-1),
     executor_login: "kate_dev",
@@ -176,7 +222,7 @@ const submissions: Submission[] = [
     files: ["app.zip"],
     ai_score: 74,
     critical_issues: true,
-    avg_score: 3.8,
+    avg_score: 7.6,
     created_at: iso(-4),
     updated_at: iso(-2),
     executor_login: "n_frolov",
@@ -193,12 +239,42 @@ const submissions: Submission[] = [
     files: ["build.zip"],
     ai_score: 81,
     critical_issues: false,
-    avg_score: 4.1,
+    avg_score: 8.2,
     created_at: iso(-3),
     updated_at: iso(-1),
     executor_login: "m_zaytsev",
     contest_title: "Мобильное приложение для сети пекарен",
   },
+  // Решения по завершённым конкурсам: питают рейтинг и портфолио исполнителей.
+  ...(
+    [
+      [21, 4, 2, 3, 94, 9.4, -30, "Витрина на Next.js с фасетным поиском", ["preview.png", "src.zip"]],
+      [22, 4, 3, 1, 88, 8.6, -29, "Каталог на 40 тысяч позиций с кешем", ["src.zip"]],
+      [23, 4, 5, 1, 79, 8.0, -28, "Витрина с офлайн-режимом", ["src.zip"]],
+      [24, 5, 2, 3, 90, 9.0, -40, "Дашборд звонков на React и ECharts", ["preview.png", "src.zip"]],
+      [25, 5, 3, 1, 72, 7.0, -39, "Аналитика колл-центра: отчёты и выгрузки", ["src.zip"]],
+      [26, 7, 3, 3, 91, 9.2, -70, "Кликабельный прототип кабинета застройщика", ["preview.png"]],
+      [27, 7, 5, 1, 68, 6.5, -69, "Прототип с планировками и графиком платежей", ["prototype.pdf"]],
+      [28, 8, 5, 3, 85, 8.4, -100, "Клиент службы доставки на React Native", ["preview.png", "app.zip"]],
+      [29, 8, 2, 1, 80, 7.8, -99, "Приложение курьерской службы с трекингом", ["app.zip"]],
+    ] as [number, number, number, number, number, number, number, string, string[]][]
+  ).map(([id, contestId, executorId, status, ai, avg, days, title, files]): Submission => ({
+    id,
+    number: 300 + id,
+    contest_id: contestId,
+    executor_id: executorId,
+    title,
+    annotation: "Решение по ТЗ конкурса, все обязательные пункты выполнены.",
+    status,
+    files,
+    ai_score: ai,
+    critical_issues: false,
+    avg_score: avg,
+    created_at: iso(days),
+    updated_at: iso(days + 2),
+    executor_login: users.find((u) => u.id === executorId)?.login,
+    contest_title: contests.find((c) => c.id === contestId)?.title,
+  })),
 ];
 
 const evaluation: EvaluationResult = {
@@ -339,6 +415,22 @@ function chatRoute(path: string, method: string, body: unknown): unknown {
 const routes: [RegExp, (match: RegExpMatchArray) => unknown][] = [
   [/^\/contests$/, () => ({ items: contests, total: contests.length, page: 1, pages: 1 })],
   [/^\/contests\/number\/(\d+)$/, (m) => contests.find((c) => c.number === Number(m[1])) ?? contests[0]],
+  [
+    /^\/contests\/(\d+)\/awards$/,
+    (m) => {
+      const c = contests.find((x) => x.id === Number(m[1]));
+      return (c?.awards ?? []).map((a) => {
+        const sub = submissions.find((x) => x.id === a.submission_id);
+        return {
+          ...a,
+          submission_number: sub?.number ?? null,
+          submission_title: sub?.title ?? null,
+          executor_login: users.find((u) => u.id === a.executor_id)?.login ?? null,
+          commission: a.net_amount != null ? Math.round((a.amount - a.net_amount) * 100) / 100 : null,
+        };
+      });
+    },
+  ],
   [/^\/contests\/(\d+)\/stages$/, () => stages],
   [/^\/contests\/(\d+)\/files$/, () => ["tz.pdf", "brandbook.zip"]],
   [/^\/contests\/(\d+)$/, (m) => contests.find((c) => c.id === Number(m[1])) ?? contests[0]],
@@ -365,12 +457,29 @@ const routes: [RegExp, (match: RegExpMatchArray) => unknown][] = [
     (m) => ({ contest_id: Number(m[1]), evaluated_count: 2, avg_score: 83, critical_issues_count: 1 }),
   ],
   [/^\/evaluation\/(\d+)$/, () => evaluation],
+  [/^\/payments\/commission$/, () => ({ percent: 10 })],
   [/^\/wallet\/balance$/, () => ({ balance: 285000, currency: "RUB" })],
   [/^\/wallet\/transactions$/, () => transactions],
   [/^\/wallet$/, () => ({ balance: 285000, currency: "RUB" })],
   [/^\/(payments\/)?statistics(\/contests)?$/, () => statistics],
   [/^\/auth\/(login|register)$/, () => ({ access_token: "demo-token", user: users[0] })],
 ];
+
+/** Списки с серверными фильтрами, которые нужны рейтингу и профилям. */
+function filteredList(path: string, params: Record<string, unknown> | undefined): unknown {
+  if (path === "/submissions") {
+    const executorId = params?.executor_id != null ? Number(params.executor_id) : null;
+    const contestId = params?.contest_id != null ? Number(params.contest_id) : null;
+    return submissions.filter(
+      (s) => (executorId === null || s.executor_id === executorId) && (contestId === null || s.contest_id === contestId),
+    );
+  }
+  if (path === "/contests" && params?.customer_id != null) {
+    const items = contests.filter((c) => c.customer_id === Number(params.customer_id));
+    return { items, total: items.length, page: 1, pages: 1 };
+  }
+  return undefined;
+}
 
 function resolve(url: string): unknown {
   const path = url.split("?")[0].replace(/\/+$/, "") || "/";
@@ -392,7 +501,11 @@ export const demoAdapter: AxiosAdapter = async (config: AxiosRequestConfig) => {
       /* не JSON */
     }
   }
-  const data = chatRoute(path, (config.method ?? "get").toLowerCase(), body) ?? resolve(config.url ?? "/");
+  const method = (config.method ?? "get").toLowerCase();
+  const data =
+    chatRoute(path, method, body) ??
+    (method === "get" ? filteredList(path, config.params as Record<string, unknown> | undefined) : undefined) ??
+    resolve(config.url ?? "/");
   // Небольшая задержка, чтобы состояния загрузки выглядели естественно.
   await new Promise((resolveDelay) => setTimeout(resolveDelay, 60));
   return {

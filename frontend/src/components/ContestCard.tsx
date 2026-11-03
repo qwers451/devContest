@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "../context";
 import { CONTEST_ROUTE } from "../utils/consts.js";
+import UserLink from "./UserLink";
 
 const statusConfig = {
   draft: { label: "Черновик", dot: "bg-gray-500" },
@@ -77,7 +78,9 @@ const ContestCard = observer(({ contest: item }) => {
           </div>
 
           <div className="flex items-center gap-2 text-[12px] text-gray-500">
-            {creator && <span className="truncate max-w-[120px]">@{creator.login}</span>}
+            {creator && (
+              <UserLink id={creator.id} login={creator.login} className="truncate max-w-[120px] hover:text-violet-400" />
+            )}
             {remaining ? (
               <span className="rounded border border-gray-700 px-1.5 py-0.5 text-amber-400">
                 {remaining}

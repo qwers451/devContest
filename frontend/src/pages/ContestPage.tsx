@@ -6,6 +6,8 @@ import Markdown from 'markdown-to-jsx';
 import { deleteData, fetchData, sendData, downloadFileOrZip } from '../services/apiService.js';
 import type { ContestRequirementsOut, ContestStatsOut } from '../types';
 import { BsTrophy } from 'react-icons/bs';
+import UserLink from '../components/UserLink';
+import WinnerLine from '../components/WinnerLine';
 
 const statusConfig = {
     active:    { label: 'Активный',    cls: 'border border-gray-700 bg-gray-800 text-emerald-400' },
@@ -262,7 +264,7 @@ const ContestPage = () => {
                         </div>
                         <div className="text-[13px] text-gray-400 mt-2">
                             Создатель: <span className="font-medium text-violet-600 dark:text-violet-400">
-                                @{user.getById(currentContest.customer_id)?.login || '...'}
+                                <UserLink id={currentContest.customer_id} login={user.getById(currentContest.customer_id)?.login} fallback="..." />
                             </span>
                         </div>
                     </div>
@@ -272,6 +274,7 @@ const ContestPage = () => {
                             <span className="text-emerald-600 dark:text-emerald-400"><BsTrophy className="w-5 h-5" /></span>
                             <div>
                                 <p className="font-semibold text-emerald-800 dark:text-emerald-300 text-[13px]">Конкурс завершён — победитель выбран!</p>
+                                <WinnerLine executorId={currentContest.winner.executor_id} />
                                 <button
                                     onClick={() => navigate(`/solution/${currentContest.winner.submission_id}`)}
                                     className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 font-medium text-[13px] underline mt-0.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-emerald-900 focus:outline-none rounded"

@@ -12,6 +12,7 @@ import {
   fetchData,
 } from "../services/apiService.js";
 import { BsCpu, BsTrophy } from "react-icons/bs";
+import UserLink from "../components/UserLink";
 
 const EvaluationSection = ({
   canShow,
@@ -900,7 +901,7 @@ const SolutionPage = () => {
                 <p className="text-[13px] text-gray-400 mb-2">
                   Конкурс «{currentContest.title}» от{" "}
                   <span className="font-medium text-violet-600 dark:text-violet-400">
-                    @{currentCustomer?.login || "Неизвестно"}
+                    <UserLink id={currentContest.customer_id} login={currentCustomer?.login} fallback="@Неизвестно" />
                   </span>
                 </p>
                 <span
@@ -915,7 +916,7 @@ const SolutionPage = () => {
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="font-semibold text-gray-300">
-                  {freelancer?.login || "Неизвестный фрилансер"}
+                  <UserLink id={currentSolution.executor_id} login={freelancer?.login} at={false} fallback="Неизвестный фрилансер" />
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Создано: {formatDate(currentSolution.created_at)}

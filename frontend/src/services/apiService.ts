@@ -213,3 +213,14 @@ export const downloadFileOrZip = async (
     throw error;
   }
 };
+
+/** Загружает файл с авторизацией и отдаёт blob-URL (для превью картинок). */
+export const fetchFileObjectUrl = async (endpoint: string): Promise<string> => {
+  const baseURL = getBaseUrl(endpoint);
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${baseURL}${endpoint}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return window.URL.createObjectURL(await response.blob());
+};

@@ -9,6 +9,7 @@ import { observer } from "mobx-react-lite";
 import { useNavigate, useParams } from "react-router-dom";
 import { Context } from "../context";
 import { MESSAGES_ROUTE } from "../utils/consts.js";
+import UserLink from "../components/UserLink";
 import {
   dayKey,
   formatDateSeparator,
@@ -252,7 +253,7 @@ const Thread = observer(({ conv, myId }: { conv: Conversation; myId: number | nu
         <Avatar login={conv.other_user_login} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[14px] font-semibold text-gray-100">
-            {conv.other_user_login}
+            <UserLink id={conv.other_user_id} login={conv.other_user_login} at={false} />
           </div>
           <button
             onClick={() => conv.contest_number && navigate(`/contest/${conv.contest_number}`)}
