@@ -6,6 +6,14 @@ import Markdown from 'markdown-to-jsx';
 import { deleteData, fetchData, sendData, downloadFileOrZip } from '../services/apiService.js';
 import type { ContestRequirementsOut, ContestStatsOut } from '../types';
 import { BsTrophy } from 'react-icons/bs';
+import UserLink from '../components/UserLink';
+import WinnerLine from '../components/WinnerLine';
+import AwardModal from '../components/AwardModal';
+import ContestResults from '../components/ContestResults';
+import ContestDiscussion from '../components/ContestDiscussion';
+import { useNow, useCommission } from '../components/useNow';
+import { getCountdown, formatCountdown, submissionBlockReason } from '../utils/deadline';
+import { MEDALS, formatRub, buildPrizeRows, placesCountLabel } from '../utils/prizes';
 
 const statusConfig = {
     active:    { label: 'Активный',    cls: 'border border-gray-700 bg-gray-800 text-emerald-400' },
@@ -15,10 +23,11 @@ const statusConfig = {
 };
 
 const ContestPage = () => {
-    const { contest, user } = useContext(Context);
+    const { contest, user, chat } = useContext(Context);
     const { number } = useParams();
     const [currentContest, setCurrentContest] = useState(null);
     const [error, setError] = useState(null);
+    const [chatError, setChatError] = useState('');
     const [editingStages, setEditingStages] = useState(false);
     const [draftStages, setDraftStages] = useState([]);
     const [savingStages, setSavingStages] = useState(false);
@@ -28,6 +37,9 @@ const ContestPage = () => {
     const [stats, setStats] = useState<ContestStatsOut | null>(null);
     const [extractingReqs, setExtractingReqs] = useState(false);
     const [activeTab, setActiveTab] = useState('description');
+    const [showAward, setShowAward] = useState(false);
+    const now = useNow(1000);
+    const commission = useCommission();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -73,6 +85,12 @@ const ContestPage = () => {
     const isOwner = user.getCurrentUserId() === currentContest.customer_id;
     const isFreelancer = user.user && user.user.role === 'executor';
     const isFinished = currentContest.status === 'finished';
+    const countdown = getCountdown(currentContest.ends_at, now);
+    const blockReason = submissionBlockReason(currentContest.status, currentContest.ends_at, now);
+    const distribution: number[] = currentContest.prize_distribution?.length ? currentContest.prize_distribution : [100];
+    const hasAwards = (currentContest.awards?.length ?? 0) > 0;
+    const prizeRows = buildPrizeRows(Number(currentContest.prizepool), distribution, commission, isFinished, currentContest.awards);
+    const skippedPlaces = prizeRows.filter((r) => !r.awarded);
 
     const handleTzFileUpload = async (e) => {
         const file = e.target.files?.[0];
@@ -215,6 +233,7 @@ const ContestPage = () => {
     const tabs = [
         { id: 'description', label: 'Описание' },
         { id: 'stages', label: 'Этапы' },
+        { id: 'discussion', label: 'Обсуждение' },
         ...((stats || requirements || isAdmin || isOwner) ? [{ id: 'ai', label: 'Анализ ИИ' }] : [])
     ];
 
@@ -257,20 +276,31 @@ const ContestPage = () => {
                                 <div className="text-xs text-gray-500 mt-0.5">
                                     До {new Date(currentContest.ends_at).toLocaleDateString('ru-RU')}
                                 </div>
+                                {currentContest.status === 'active' && (
+                                    <div
+                                        data-testid="countdown"
+                                        className={`text-xs font-medium mt-1 tabular-nums ${countdown.expired || countdown.urgent ? 'text-red-400' : 'text-amber-400'}`}
+                                    >
+                                        {formatCountdown(countdown)}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="text-[13px] text-gray-400 mt-2">
                             Создатель: <span className="font-medium text-violet-600 dark:text-violet-400">
-                                @{user.getById(currentContest.customer_id)?.login || '...'}
+                                <UserLink id={currentContest.customer_id} login={user.getById(currentContest.customer_id)?.login} fallback="..." />
                             </span>
                         </div>
                     </div>
 
-                    {isFinished && currentContest.winner && (
+                    {isFinished && hasAwards && <ContestResults contest={currentContest} />}
+
+                    {isFinished && currentContest.winner && !hasAwards && (
                         <div className="px-6 py-4 border-b border-gray-700 bg-gray-900 flex items-center gap-3">
                             <span className="text-emerald-600 dark:text-emerald-400"><BsTrophy className="w-5 h-5" /></span>
                             <div>
                                 <p className="font-semibold text-emerald-800 dark:text-emerald-300 text-[13px]">Конкурс завершён — победитель выбран!</p>
+                                <WinnerLine executorId={currentContest.winner.executor_id} />
                                 <button
                                     onClick={() => navigate(`/solution/${currentContest.winner.submission_id}`)}
                                     className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 font-medium text-[13px] underline mt-0.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-emerald-900 focus:outline-none rounded"
@@ -299,6 +329,30 @@ const ContestPage = () => {
                     <div className="flex-1 px-6 py-5">
                         {activeTab === 'description' && (
                             <div className="space-y-6 animate-fade-in">
+                                <div data-testid="prize-block" className="rounded-lg border border-gray-700 bg-gray-800 p-4">
+                                    <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+                                        <h2 className="text-[14px] font-medium text-gray-200">Призовой фонд</h2>
+                                        <span className="text-[12px] text-gray-500">{placesCountLabel(distribution.length)}</span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {prizeRows.map((r) => (
+                                            <div key={r.place} className={`flex flex-wrap items-center gap-x-3 text-[13px] ${r.awarded ? '' : 'opacity-60'}`}>
+                                                <span className="w-24 text-gray-200"><span className="mr-1.5">{MEDALS[r.place - 1]}</span>{r.place} место</span>
+                                                <span className="text-gray-500 tabular-nums w-10">{r.percent}%</span>
+                                                {r.awarded ? (
+                                                    <>
+                                                        <span className="ml-auto tabular-nums text-gray-200">{formatRub(r.gross ?? 0)}</span>
+                                                        <span className="tabular-nums text-emerald-400 text-right">на руки {formatRub(r.net ?? 0)}</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="ml-auto text-gray-500">не присуждено</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="mt-3 text-[12px] text-gray-500">Комиссия платформы {commission}% удерживается из выплаты.{isFinished && skippedPlaces.length > 0 && ' Доля не присуждённых мест передана последнему присуждённому месту.'}</p>
+                                </div>
+
                                 <div>
                                     <h2 className="text-[14px] font-medium text-gray-200 mb-3">Описание проекта</h2>
                                     <div className="prose prose-sm dark:prose-invert max-w-none text-gray-300">
@@ -375,6 +429,12 @@ const ContestPage = () => {
                                         )}
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {activeTab === 'discussion' && (
+                            <div className="animate-fade-in">
+                                <ContestDiscussion contest={currentContest} customerLogin={user.getById(currentContest.customer_id)?.login} />
                             </div>
                         )}
 
@@ -557,13 +617,33 @@ const ContestPage = () => {
 
                     <div className="px-6 py-4 border-t border-gray-700 bg-gray-800/50 flex flex-wrap gap-3 mt-auto">
                         {(isFreelancer && !isFinished) && (
+                            <div className="flex flex-col gap-1 flex-1 sm:flex-none">
+                                <button
+                                    onClick={() => navigate(`/contest/${currentContest.number}/create-solution`)}
+                                    disabled={!!blockReason}
+                                    className="min-h-[44px] inline-flex justify-center items-center gap-2 px-6 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-all duration-200 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-violet-600"
+                                >
+                                    Отправить решение
+                                </button>
+                                {blockReason && <span className="text-[12px] text-red-400" role="status">{blockReason}</span>}
+                            </div>
+                        )}
+                        {(isFreelancer && currentContest.status === 'active') && (
                             <button
-                                onClick={() => navigate(`/contest/${currentContest.number}/create-solution`)}
-                                className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-6 py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold text-[13px] transition-all duration-200 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 focus:outline-none"
+                                onClick={async () => {
+                                    try {
+                                        const conv = await chat.openWith(currentContest.id);
+                                        navigate(`/messages/${conv.id}`);
+                                    } catch {
+                                        setChatError('Не удалось открыть диалог с заказчиком');
+                                    }
+                                }}
+                                className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 text-gray-200 hover:bg-gray-700 font-semibold text-[13px] transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus:outline-none"
                             >
-                                Отправить решение
+                                Задать вопрос заказчику
                             </button>
                         )}
+                        {chatError && <span className="self-center text-[12px] text-red-400">{chatError}</span>}
                         {(isAdmin || isOwner) && (
                             <>
                                 {isOwner && currentContest.status === 'draft' && (
@@ -580,6 +660,15 @@ const ContestPage = () => {
                                 >
                                     Решения
                                 </button>
+                                {(isOwner || isAdmin) && currentContest.status === 'active' && (
+                                    <button
+                                        onClick={() => setShowAward(true)}
+                                        className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[13px] transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus:outline-none"
+                                    >
+                                        <BsTrophy className="w-4 h-4" />
+                                        Подвести итоги
+                                    </button>
+                                )}
                                 {isOwner && !isFinished && (
                                     <button
                                         onClick={() => navigate(`/contest/edit/${currentContest.number}`, { state: JSON.parse(JSON.stringify(currentContest)) })}
@@ -601,6 +690,12 @@ const ContestPage = () => {
                     </div>
                 </div>
             </div>
+            <AwardModal
+                show={showAward}
+                contest={currentContest}
+                onHide={() => setShowAward(false)}
+                onDone={(updated) => setCurrentContest(updated)}
+            />
         </div>
     );
 };

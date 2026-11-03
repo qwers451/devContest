@@ -1,7 +1,15 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
 
@@ -84,6 +92,24 @@ class MilestoneRelease(Base):
     )
 
     escrow = relationship("EscrowAccount", back_populates="milestones")
+
+
+class AwardRelease(Base):
+    """Выплата за призовое место (идемпотентна по (escrow_id, place))."""
+
+    __tablename__ = "award_releases"
+    __table_args__ = (UniqueConstraint("escrow_id", "place", name="uq_award_escrow_place"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    escrow_id = Column(Integer, ForeignKey("escrow_accounts.id"), nullable=False)
+    place = Column(Integer, nullable=False)
+    executor_id = Column(Integer, nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
+    commission = Column(Numeric(12, 2), nullable=False, default=0)
+    net_amount = Column(Numeric(12, 2), nullable=False)
+    released_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
 
 class Transaction(Base):

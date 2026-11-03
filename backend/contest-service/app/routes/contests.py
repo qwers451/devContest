@@ -4,19 +4,37 @@ from datetime import date, datetime, time, timezone
 from typing import List
 
 import aiofiles
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from decimal import ROUND_HALF_UP, Decimal
+
+from pydantic import BaseModel, field_validator
 from sqlalchemy import String, and_, case, cast, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.clients import check_escrow_held, release_escrow, release_stage_escrow
+from app.clients import (
+    check_escrow_held,
+    get_escrow_info,
+    get_user,
+    release_award_escrow,
+    release_escrow,
+    release_stage_escrow,
+)
+from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user, require_role, verify_internal
 from app.file_text import extract_file_text
-from app.models import Contest, ContestStage, ContestStatus, Submission, Winner
+from app.mailer import notify_contest_finished, notify_winner
+from app.models import (
+    Contest,
+    ContestAward,
+    ContestStage,
+    ContestStatus,
+    Submission,
+    Winner,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +68,28 @@ class WinnerOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+def validate_prize_distribution(value: list[int] | None) -> list[int] | None:
+    if value is None:
+        return value
+    if not 1 <= len(value) <= 5:
+        raise ValueError("Призовых мест должно быть от 1 до 5")
+    if any(p < 1 for p in value):
+        raise ValueError("Доля каждого призового места должна быть не меньше 1%")
+    if sum(value) != 100:
+        raise ValueError("Сумма долей призовых мест должна быть равна 100%")
+    return value
+
+
+class AwardShortOut(BaseModel):
+    place: int
+    submission_id: int
+    executor_id: int
+    amount: float
+    net_amount: float | None = None
+
+    model_config = {"from_attributes": True}
+
+
 class ContestCreate(BaseModel):
     title: str
     annotation: str | None = None
@@ -60,6 +100,11 @@ class ContestCreate(BaseModel):
     type_id: int | None = None
     template_id: int | None = None
     stages: list[StageIn] = []
+    prize_distribution: list[int] = [100]
+
+    _check_distribution = field_validator("prize_distribution")(
+        validate_prize_distribution
+    )
 
 
 class ContestOut(BaseModel):
@@ -81,6 +126,13 @@ class ContestOut(BaseModel):
     current_stage_id: int | None = None
     stages: list[StageOut] = []
     winner: WinnerOut | None = None
+    prize_distribution: list[int] = [100]
+    awards: list[AwardShortOut] = []
+
+    @field_validator("prize_distribution", mode="before")
+    @classmethod
+    def _default_distribution(cls, value):
+        return value or [100]
 
     model_config = {"from_attributes": True}
 
@@ -93,7 +145,11 @@ class ContestListOut(BaseModel):
 
 
 def _relations():
-    return [selectinload(Contest.stages), selectinload(Contest.winner)]
+    return [
+        selectinload(Contest.stages),
+        selectinload(Contest.winner),
+        selectinload(Contest.awards),
+    ]
 
 
 def _parse_csv_ints(raw: str | None) -> list[int]:
@@ -201,6 +257,7 @@ async def create_contest(
         ends_at=data.ends_at,
         type_id=data.type_id,
         template_id=data.template_id,
+        prize_distribution=data.prize_distribution,
         status=ContestStatus.draft,
     )
     db.add(contest)
@@ -233,6 +290,11 @@ class ContestUpdate(BaseModel):
     prizepool: int | None = None
     ends_at: datetime | None = None
     type_id: int | None = None
+    prize_distribution: list[int] | None = None
+
+    _check_distribution = field_validator("prize_distribution")(
+        validate_prize_distribution
+    )
 
 
 @router.put("/{contest_id}", response_model=ContestOut)
@@ -253,6 +315,11 @@ async def update_contest(
         and current_user.get("role") != "admin"
     ):
         raise HTTPException(status_code=403, detail="Not your contest")
+
+    if data.prize_distribution is not None and contest.status == ContestStatus.finished:
+        raise HTTPException(
+            status_code=409, detail="Нельзя менять призовые места завершённого конкурса"
+        )
 
     for field, value in data.model_dump(exclude_none=True).items():
         setattr(contest, field, value)
@@ -513,11 +580,231 @@ async def delete_contest(
     await db.commit()
 
 
+def _net_of(gross: float | int | Decimal) -> float:
+    """Сумма на руки исполнителю после комиссии платформы (копейки округляются)."""
+    gross_d = Decimal(str(gross)).quantize(Decimal("0.01"), ROUND_HALF_UP)
+    commission = (
+        gross_d * Decimal(str(settings.platform_commission_percent)) / Decimal(100)
+    ).quantize(Decimal("0.01"), ROUND_HALF_UP)
+    return float(gross_d - commission)
+
+
+class AwardIn(BaseModel):
+    submission_id: int
+    place: int
+
+
+class AwardsIn(BaseModel):
+    awards: list[AwardIn]
+
+
+class AwardOut(BaseModel):
+    place: int
+    submission_id: int
+    submission_number: int | None = None
+    submission_title: str | None = None
+    executor_id: int
+    executor_login: str | None = None
+    amount: float
+    net_amount: float | None = None
+    commission: float | None = None
+
+
+def _split_prize(
+    total: Decimal, distribution: list[int], places: list[int]
+) -> dict[int, Decimal]:
+    """Суммы по местам. Последнее присуждённое место получает остаток, чтобы сумма сошлась."""
+    ordered = sorted(places)
+    amounts: dict[int, Decimal] = {}
+    spent = Decimal("0")
+    for place in ordered[:-1]:
+        part = (total * distribution[place - 1] / Decimal(100)).quantize(
+            Decimal("0.01"), ROUND_HALF_UP
+        )
+        amounts[place] = part
+        spent += part
+    amounts[ordered[-1]] = total - spent
+    return amounts
+
+
+@router.post("/{contest_id}/awards", response_model=ContestOut)
+async def award_places(
+    contest_id: int,
+    data: AwardsIn,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_role("customer", "admin")),
+):
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    contest = result.scalar_one_or_none()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    if contest.customer_id != current_user["id"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not your contest")
+    if contest.status != ContestStatus.active:
+        raise HTTPException(status_code=409, detail="Contest is not active")
+
+    distribution = contest.prize_distribution or [100]
+    places = [a.place for a in data.awards]
+    if not data.awards or 1 not in places:
+        raise HTTPException(status_code=422, detail="Необходимо указать победителя (1 место)")
+    if any(p < 1 or p > len(distribution) for p in places):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Номер места должен быть от 1 до {len(distribution)}",
+        )
+    if len(set(places)) != len(places):
+        raise HTTPException(status_code=422, detail="Одно место нельзя присудить дважды")
+    sub_ids = [a.submission_id for a in data.awards]
+    if len(set(sub_ids)) != len(sub_ids):
+        raise HTTPException(
+            status_code=422, detail="Одно решение не может занять несколько мест"
+        )
+
+    subs = (
+        await db.execute(
+            select(Submission).where(
+                Submission.id.in_(sub_ids), Submission.contest_id == contest_id
+            )
+        )
+    ).scalars().all()
+    subs_by_id = {s.id: s for s in subs}
+    if len(subs_by_id) != len(sub_ids):
+        raise HTTPException(
+            status_code=400, detail="Решение не относится к этому конкурсу"
+        )
+
+    # Сумма к выплате: остаток эскроу, а если конкурс не оплачен — призовой фонд
+    escrow = await get_escrow_info(contest_id)
+    paid = bool(escrow and escrow.get("held") and escrow.get("amount") is not None)
+    if paid:
+        total = Decimal(str(escrow["amount"])) - Decimal(
+            str(escrow.get("released_amount") or 0)
+        )
+    else:
+        total = Decimal(contest.prizepool)
+        logger.warning(
+            "Contest %s awarded without held escrow; payouts skipped", contest_id
+        )
+    amounts = _split_prize(total, distribution, places)
+
+    awards_by_place = {a.place: subs_by_id[a.submission_id] for a in data.awards}
+    nets: dict[int, float] = {}
+    for place in sorted(awards_by_place):
+        sub = awards_by_place[place]
+        gross = amounts[place]
+        nets[place] = _net_of(gross)
+        if paid and gross > 0:
+            try:
+                released = await release_award_escrow(
+                    contest_id,
+                    place,
+                    sub.executor_id,
+                    float(gross),
+                    contest_title=contest.title,
+                )
+                nets[place] = float(released.get("net_amount", nets[place]))
+            except Exception:
+                logger.exception(
+                    "Failed to release award for contest %s place %s", contest_id, place
+                )
+                raise HTTPException(
+                    status_code=502,
+                    detail="Не удалось выплатить приз. Повторите попытку позже.",
+                )
+
+    winner_sub = awards_by_place[1]
+    db.add(
+        Winner(
+            contest_id=contest_id,
+            submission_id=winner_sub.id,
+            executor_id=winner_sub.executor_id,
+        )
+    )
+    winner_sub.status = 3
+    for place, sub in awards_by_place.items():
+        db.add(
+            ContestAward(
+                contest_id=contest_id,
+                place=place,
+                submission_id=sub.id,
+                executor_id=sub.executor_id,
+                amount=amounts[place],
+                net_amount=nets[place],
+            )
+        )
+    contest.status = ContestStatus.finished
+
+    awarded_executors = {sub.executor_id for sub in awards_by_place.values()}
+    others = await db.execute(
+        select(Submission.executor_id)
+        .where(Submission.contest_id == contest_id)
+        .distinct()
+    )
+    other_ids = [row[0] for row in others if row[0] not in awarded_executors]
+    c_number, c_title = contest.number, contest.title
+    mails = [
+        (sub.executor_id, float(amounts[place]), place, nets[place])
+        for place, sub in sorted(awards_by_place.items())
+    ]
+
+    await db.commit()
+    for executor_id, gross, place, net in mails:
+        background_tasks.add_task(
+            notify_winner, executor_id, c_number, c_title, gross, place, net
+        )
+    for other_id in other_ids:
+        background_tasks.add_task(notify_contest_finished, other_id, c_number, c_title)
+    db.expire_all()
+    result = await db.execute(
+        select(Contest).options(*_relations()).where(Contest.id == contest_id)
+    )
+    return result.scalar_one()
+
+
+@router.get("/{contest_id}/awards", response_model=list[AwardOut])
+async def list_awards(contest_id: int, db: AsyncSession = Depends(get_db)):
+    if not (
+        await db.execute(select(Contest.id).where(Contest.id == contest_id))
+    ).scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Contest not found")
+    rows = (
+        await db.execute(
+            select(ContestAward, Submission.number, Submission.title)
+            .join(Submission, Submission.id == ContestAward.submission_id)
+            .where(ContestAward.contest_id == contest_id)
+            .order_by(ContestAward.place)
+        )
+    ).all()
+    out: list[AwardOut] = []
+    for award, number, title in rows:
+        user = await get_user(award.executor_id)
+        gross = float(award.amount)
+        net = float(award.net_amount) if award.net_amount is not None else None
+        out.append(
+            AwardOut(
+                place=award.place,
+                submission_id=award.submission_id,
+                submission_number=number,
+                submission_title=title,
+                executor_id=award.executor_id,
+                executor_login=(user or {}).get("login"),
+                amount=gross,
+                net_amount=net,
+                commission=round(gross - net, 2) if net is not None else None,
+            )
+        )
+    return out
+
+
 @router.post("/{contest_id}/winner", response_model=ContestOut)
 async def select_winner(
     contest_id: int,
     submission_id: int,
     executor_id: int,
+    background_tasks: BackgroundTasks,
     stage_id: int | None = Query(
         None, description="If set — partial milestone release for this stage only"
     ),
@@ -581,12 +868,42 @@ async def select_winner(
     if submission:
         submission.status = 3
 
+    gross, net = float(contest.prizepool), _net_of(contest.prizepool)
     try:
-        await release_escrow(contest_id, executor_id, contest_title=contest.title)
+        released = await release_escrow(
+            contest_id, executor_id, contest_title=contest.title
+        )
+        gross = float(released.get("amount", gross))
+        net = float(released.get("net_amount", net))
     except Exception:
         logger.exception("Failed to release escrow for contest %s", contest_id)
 
+    if submission:
+        db.add(
+            ContestAward(
+                contest_id=contest_id,
+                place=1,
+                submission_id=submission_id,
+                executor_id=executor_id,
+                amount=gross,
+                net_amount=net,
+            )
+        )
+
+    others = await db.execute(
+        select(Submission.executor_id)
+        .where(Submission.contest_id == contest_id, Submission.executor_id != executor_id)
+        .distinct()
+    )
+    other_ids = [row[0] for row in others]
+    c_number, c_title = contest.number, contest.title
+
     await db.commit()
+    background_tasks.add_task(
+        notify_winner, executor_id, c_number, c_title, gross, 1, net
+    )
+    for other_id in other_ids:
+        background_tasks.add_task(notify_contest_finished, other_id, c_number, c_title)
     db.expire_all()
     result = await db.execute(
         select(Contest).options(*_relations()).where(Contest.id == contest_id)

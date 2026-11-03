@@ -45,6 +45,44 @@ async def release_stage_escrow(
         return resp.json()
 
 
+async def release_award_escrow(
+    contest_id: int,
+    place: int,
+    executor_id: int,
+    amount: float,
+    contest_title: str | None = None,
+) -> dict:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.post(
+            f"{settings.payment_service_url}/escrow/release-award",
+            json={
+                "contest_id": contest_id,
+                "place": place,
+                "executor_id": executor_id,
+                "amount": amount,
+                "contest_title": contest_title,
+            },
+            headers={"x-internal-secret": settings.internal_secret},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def get_escrow_info(contest_id: int) -> dict | None:
+    """Статус эскроу ({held, amount, released_amount, ...}) или None, если недоступно."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(
+                f"{settings.payment_service_url}/escrow/status/{contest_id}",
+                headers={"x-internal-secret": settings.internal_secret},
+            )
+            if resp.status_code == 200:
+                return resp.json()
+    except Exception:
+        pass
+    return None
+
+
 async def check_escrow_held(contest_id: int) -> bool:
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:

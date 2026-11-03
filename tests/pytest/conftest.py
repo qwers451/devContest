@@ -27,6 +27,10 @@ SERVICE_POLL_INTERVAL = float(os.getenv("PYTEST_SERVICE_POLL_INTERVAL", "1"))
 # Уникальный суффикс чтобы повторные запуски не конфликтовали
 TS = int(time.time())
 
+# id пользователей, созданных за тестовую сессию: их конкурсы удаляются в конце
+# (чтобы в демо-базе не оставалось тестового мусора)
+_CREATED_USER_IDS: set[int] = set()
+
 
 def auth_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
@@ -46,7 +50,9 @@ async def register_user(role: str) -> str:
             },
         )
         assert response.status_code in (200, 201), response.text
-        return response.json()["access_token"]
+        body = response.json()
+        _CREATED_USER_IDS.add(body["user"]["id"])
+        return body["access_token"]
 
 
 async def delete_if_exists(client: httpx.AsyncClient, url: str, token: str) -> None:
@@ -212,3 +218,31 @@ async def submission(admin_token, executor_token, contest):
         assert r.status_code == 201, r.text
         submission_data = r.json()
         yield submission_data
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def cleanup_test_data(wait_for_stack, admin_token):
+    """После сессии удаляет конкурсы тестовых пользователей и тестовые типы конкурсов."""
+    yield
+    headers = auth_headers(admin_token)
+    async with httpx.AsyncClient(timeout=15.0) as c:
+        for uid in _CREATED_USER_IDS:
+            page = 1
+            while True:
+                r = await c.get(
+                    f"{CONTEST_URL}/contests",
+                    params={"customer_id": uid, "limit": 100, "page": page},
+                )
+                if r.status_code != 200:
+                    break
+                data = r.json()
+                for item in data["items"]:
+                    await c.delete(f"{CONTEST_URL}/contests/{item['id']}", headers=headers)
+                if page >= data["pages"]:
+                    break
+                page += 1
+        r = await c.get(f"{CONTEST_URL}/contest-types")
+        if r.status_code == 200:
+            for t in r.json():
+                if t["name"].endswith(f"_{TS}"):
+                    await c.delete(f"{CONTEST_URL}/contest-types/{t['id']}", headers=headers)

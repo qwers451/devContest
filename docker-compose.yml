@@ -126,7 +126,15 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       USER_SERVICE_URL: http://user-service:8000
       PAYMENT_SERVICE_URL: http://payment-service:8000
+      PLATFORM_COMMISSION_PERCENT: ${PLATFORM_COMMISSION_PERCENT:-10}
       EVALUATION_SERVICE_URL: http://evaluation-service:8000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM: ${SMTP_FROM:-devContest <noreply@devcontest.local>}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_TLS: ${SMTP_TLS:-false}
     volumes:
       - contest_uploads:/app/uploads
     healthcheck:
@@ -149,6 +157,13 @@ services:
         condition: service_healthy
       evaluation-service:
         condition: service_healthy
+
+  mailpit:
+    image: docker.io/axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
 
   evaluation-service:
     build: ./backend/evaluation-service
@@ -199,6 +214,7 @@ services:
       YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL:-http://localhost:3000/payment/callback}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CONTEST_SERVICE_URL: http://contest-service:8000
+      PLATFORM_COMMISSION_PERCENT: ${PLATFORM_COMMISSION_PERCENT:-10}
     healthcheck:
       test:
         [

@@ -4,6 +4,7 @@ import { Context } from "../context";
 import { observer } from "mobx-react-lite";
 import Markdown from "markdown-to-jsx";
 import ConfirmationModal from "../components/ConfirmationModal";
+import AwardModal from "../components/AwardModal";
 import ChangeSolutionStatusModal from "../components/ChangeSolutionStatusModal";
 import {
   downloadFileOrZip,
@@ -12,6 +13,7 @@ import {
   fetchData,
 } from "../services/apiService.js";
 import { BsCpu, BsTrophy } from "react-icons/bs";
+import UserLink from "../components/UserLink";
 
 const EvaluationSection = ({
   canShow,
@@ -549,12 +551,13 @@ const StatusHistorySection = ({ statusLog, getStatus }) => {
 };
 
 const SolutionPage = () => {
-  const { solution, contest, user, payment } = useContext(Context);
+  const { solution, contest, user, payment, chat } = useContext(Context);
   const { number } = useParams();
   const [currentSolution, setCurrentSolution] = useState(null);
   const [currentContest, setCurrentContest] = useState(null);
   const [freelancer, setFreelancer] = useState(null);
   const [error, setError] = useState(null);
+  const [chatError, setChatError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
@@ -738,12 +741,22 @@ const SolutionPage = () => {
     selectedFiles.forEach((file) => formData.append("files", file));
     return sendData(`/submissions/${currentSolution.id}/files`, formData, true);
   };
+  const multiPlace = (currentContest?.prize_distribution?.length ?? 1) > 1;
   const winnerConfirmText = hasMilestones
     ? "Завершить конкурс"
-    : "Выбрать победителем";
-  const winnerConfirmMessage = hasMilestones
-    ? `Конкурс завершится. ${allMilestonesPaid ? "Все поэтапные выплаты уже произведены." : `Оставшиеся средства (${currentContest.prizepool} руб.) будут выплачены исполнителю.`} Действие необратимо.`
-    : `Вы уверены, что хотите выбрать это решение победителем? Конкурс завершится, а приз (${currentContest.prizepool} руб.) будет начислен исполнителю. Действие необратимо.`;
+    : multiPlace
+      ? "Назначить место"
+      : "Выбрать победителем";
+
+  const handleWriteToExecutor = async () => {
+    try {
+      const conv = await chat.openWith(currentContest.id, currentSolution.executor_id);
+      navigate(`/messages/${conv.id}`);
+    } catch (e) {
+      console.error("Не удалось открыть диалог:", e);
+      setChatError("Не удалось открыть диалог с исполнителем");
+    }
+  };
 
   const handleDelete = async () => {
     try {
@@ -788,27 +801,10 @@ const SolutionPage = () => {
     }
   };
 
-  const handleSelectWinner = async () => {
-    try {
-      const updatedContest = await solution.selectWinner(
-        currentContest.id,
-        currentSolution.id,
-        currentSolution.executor_id,
-      );
-
-      contest.setCurrentContest(updatedContest);
-
-      const updatedSol = { ...currentSolution, status: 3 };
-      solution.setCurrentSolution(updatedSol);
-
-      navigate(`/contest/${updatedContest.number}`);
-    } catch (error) {
-      console.error("Ошибка выбора победителя:", error);
-      alert(
-        "Не удалось выбрать победителя: " +
-          (error?.response?.data?.detail || error.message),
-      );
-    }
+  const handleAwarded = (updatedContest) => {
+    setCurrentContest(updatedContest);
+    contest.setCurrentContest(updatedContest);
+    solution.setCurrentSolution({ ...currentSolution, status: 3 });
   };
 
   const handleDownloadAll = async () => {
@@ -889,7 +885,7 @@ const SolutionPage = () => {
                 <p className="text-[13px] text-gray-400 mb-2">
                   Конкурс «{currentContest.title}» от{" "}
                   <span className="font-medium text-violet-600 dark:text-violet-400">
-                    @{currentCustomer?.login || "Неизвестно"}
+                    <UserLink id={currentContest.customer_id} login={currentCustomer?.login} fallback="@Неизвестно" />
                   </span>
                 </p>
                 <span
@@ -904,7 +900,7 @@ const SolutionPage = () => {
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="font-semibold text-gray-300">
-                  {freelancer?.login || "Неизвестный фрилансер"}
+                  <UserLink id={currentSolution.executor_id} login={freelancer?.login} at={false} fallback="Неизвестный фрилансер" />
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Создано: {formatDate(currentSolution.created_at)}
@@ -1031,6 +1027,14 @@ const SolutionPage = () => {
                     </button>
                   </>
                 )}
+                {isEmployer && isContestOwner && (
+                  <button onClick={handleWriteToExecutor} className={btnSecondary}>
+                    Написать исполнителю
+                  </button>
+                )}
+                {chatError && (
+                  <span className="self-center text-[12px] text-red-400">{chatError}</span>
+                )}
                 {isEmployer && (
                   <>
                     <button
@@ -1084,15 +1088,15 @@ const SolutionPage = () => {
         onSave={handleStatusChange}
       />
 
-      <ConfirmationModal
+      <AwardModal
         show={showWinnerModal}
-        onHide={() => setShowWinnerModal(false)}
-        onConfirm={handleSelectWinner}
-        title="Выбор победителя"
-        message={winnerConfirmMessage}
-        confirmText={winnerConfirmText}
-        cancelText="Отмена"
-        confirmVariant="primary"
+        contest={currentContest}
+        presetSubmissionId={currentSolution.id}
+        onHide={() => {
+          setShowWinnerModal(false);
+          if (currentContest?.status === "finished") navigate(contestRoute);
+        }}
+        onDone={handleAwarded}
       />
     </div>
   );

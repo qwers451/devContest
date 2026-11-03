@@ -19,6 +19,9 @@ import {
     PAYMENT_CHECKOUT_ROUTE,
     PAYMENT_CALLBACK_ROUTE,
     WALLET_ROUTE,
+    MESSAGES_ROUTE,
+    PUBLIC_PROFILE_ROUTE,
+    LEADERBOARD_ROUTE,
 } from "./utils/consts.js";
 
 const Auth = lazy(() => import('./pages/Auth'));
@@ -38,6 +41,9 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const PaymentCheckoutPage = lazy(() => import('./pages/PaymentCheckoutPage'));
 const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'));
 const WalletPage = lazy(() => import('./pages/WalletPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
 
 export const authRoutes = [
     {
@@ -100,6 +106,14 @@ export const authRoutes = [
         path: WALLET_ROUTE,
         element: <WalletPage />
     },
+    {
+        path: MESSAGES_ROUTE,
+        element: <ChatPage />
+    },
+    {
+        path: MESSAGES_ROUTE + '/:conversationId',
+        element: <ChatPage />
+    },
 ]
 
 export const publicRoutes = [
@@ -122,5 +136,13 @@ export const publicRoutes = [
     {
         path: PAYMENT_CALLBACK_ROUTE,
         element: <PaymentCallbackPage />
+    },
+    {
+        path: PUBLIC_PROFILE_ROUTE + '/:id',
+        element: <PublicProfilePage />
+    },
+    {
+        path: LEADERBOARD_ROUTE,
+        element: <LeaderboardPage />
     },
 ]

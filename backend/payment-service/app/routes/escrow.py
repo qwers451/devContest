@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.dependencies import get_current_user, verify_internal
 from app.models import (
+    AwardRelease,
     EscrowAccount,
     MilestoneRelease,
     Payment,
@@ -17,7 +18,7 @@ from app.models import (
     Transaction,
     WalletTxType,
 )
-from app.wallet_helpers import credit_wallet
+from app.wallet_helpers import credit_wallet, payout_description, split_commission
 
 router = APIRouter(prefix="/escrow", tags=["escrow"])
 
@@ -40,6 +41,14 @@ class ReleaseStageRequest(BaseModel):
     executor_id: int
     amount: float
     stage_name: str | None = None
+    contest_title: str | None = None
+
+
+class ReleaseAwardRequest(BaseModel):
+    contest_id: int
+    place: int
+    executor_id: int
+    amount: float
     contest_title: str | None = None
 
 
@@ -100,6 +109,25 @@ async def reserve_escrow(data: ReserveRequest, db: AsyncSession = Depends(get_db
     }
 
 
+def _add_commission_tx(
+    db: AsyncSession,
+    payment_id: int,
+    commission: float,
+    contest_label: str,
+    executor_id: int,
+) -> None:
+    if commission <= 0:
+        return
+    db.add(
+        Transaction(
+            payment_id=payment_id,
+            type="commission",
+            amount=commission,
+            description=f"Комиссия платформы с выплаты по конкурсу «{contest_label}» (исполнитель {executor_id})",
+        )
+    )
+
+
 @router.post("/release", dependencies=[Depends(verify_internal)])
 async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -129,11 +157,12 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
 
     contest_label = data.contest_title or f"#{data.contest_id}"
 
+    net, commission = split_commission(remaining)
     await credit_wallet(
         data.executor_id,
-        remaining,
+        net,
         WalletTxType.income,
-        f"Выигрыш в конкурсе «{contest_label}»",
+        payout_description(f"Выигрыш в конкурсе «{contest_label}»", net, commission),
         data.contest_id,
         db,
     )
@@ -141,7 +170,7 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
     payout = Payout(
         executor_id=data.executor_id,
         contest_id=data.contest_id,
-        amount=remaining,
+        amount=net,
         yookassa_payout_id=f"wallet_credit_{data.contest_id}",
         status=PaymentStatus.released,
         paid_at=datetime.now(timezone.utc),
@@ -155,6 +184,7 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
         description=f"Выигрыш в конкурсе «{contest_label}» исполнителю {data.executor_id} (на кошелёк)",
     )
     db.add(tx)
+    _add_commission_tx(db, escrow.payment_id, commission, contest_label, data.executor_id)
 
     await db.commit()
     return {
@@ -162,6 +192,8 @@ async def release_escrow(data: ReleaseRequest, db: AsyncSession = Depends(get_db
         "contest_id": data.contest_id,
         "executor_id": data.executor_id,
         "amount": remaining,
+        "net_amount": net,
+        "commission": commission,
     }
 
 
@@ -221,11 +253,16 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
     stage_label = data.stage_name or f"#{data.stage_id}"
     contest_label = data.contest_title or f"#{data.contest_id}"
 
+    net, commission = split_commission(data.amount)
     await credit_wallet(
         data.executor_id,
-        data.amount,
+        net,
         WalletTxType.income,
-        f"Выплата за этап «{stage_label}» конкурса «{contest_label}»",
+        payout_description(
+            f"Выплата за этап «{stage_label}» конкурса «{contest_label}»",
+            net,
+            commission,
+        ),
         data.contest_id,
         db,
     )
@@ -233,7 +270,7 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
     payout = Payout(
         executor_id=data.executor_id,
         contest_id=data.contest_id,
-        amount=data.amount,
+        amount=net,
         yookassa_payout_id=f"wallet_stage_{data.contest_id}_{data.stage_id}_{data.executor_id}",
         status=PaymentStatus.released,
         paid_at=datetime.now(timezone.utc),
@@ -247,6 +284,7 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
         description=f"Выплата за этап «{stage_label}» исполнителю {data.executor_id} (на кошелёк)",
     )
     db.add(tx)
+    _add_commission_tx(db, escrow.payment_id, commission, contest_label, data.executor_id)
 
     await db.commit()
     await db.refresh(milestone)
@@ -256,7 +294,116 @@ async def release_stage(data: ReleaseStageRequest, db: AsyncSession = Depends(ge
         "stage_id": data.stage_id,
         "executor_id": data.executor_id,
         "amount": data.amount,
+        "net_amount": net,
+        "commission": commission,
         "total_released": float(escrow.released_amount),
+    }
+
+
+@router.post("/release-award", dependencies=[Depends(verify_internal)])
+async def release_award(data: ReleaseAwardRequest, db: AsyncSession = Depends(get_db)):
+    """Выплата за призовое место. Идемпотентна по (contest_id, place)."""
+    result = await db.execute(
+        select(EscrowAccount)
+        .where(EscrowAccount.contest_id == data.contest_id)
+        .with_for_update()
+    )
+    escrow = result.scalar_one_or_none()
+    if not escrow:
+        raise HTTPException(status_code=404, detail="Escrow not found")
+
+    existing = await db.execute(
+        select(AwardRelease).where(
+            AwardRelease.escrow_id == escrow.id, AwardRelease.place == data.place
+        )
+    )
+    if award := existing.scalar_one_or_none():
+        return {
+            "status": "already_released",
+            "contest_id": data.contest_id,
+            "place": data.place,
+            "executor_id": award.executor_id,
+            "amount": float(award.amount),
+            "net_amount": float(award.net_amount),
+            "commission": float(award.commission),
+        }
+
+    if escrow.status == PaymentStatus.released:
+        raise HTTPException(status_code=409, detail="Escrow already fully released")
+    remaining = float(escrow.amount) - float(escrow.released_amount)
+    if data.amount <= 0 or data.amount > remaining + 0.005:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Award amount {data.amount} exceeds remaining {remaining}",
+        )
+
+    net, commission = split_commission(data.amount)
+    now = datetime.now(timezone.utc)
+    db.add(
+        AwardRelease(
+            escrow_id=escrow.id,
+            place=data.place,
+            executor_id=data.executor_id,
+            amount=data.amount,
+            commission=commission,
+            net_amount=net,
+            released_at=now,
+        )
+    )
+
+    escrow.released_amount = round(float(escrow.released_amount) + data.amount, 2)
+    if data.place == 1:
+        escrow.released_to = data.executor_id
+    if float(escrow.released_amount) >= float(escrow.amount) - 0.005:
+        escrow.status = PaymentStatus.released
+        escrow.released_at = now
+        payment_result = await db.execute(
+            select(Payment).where(Payment.id == escrow.payment_id)
+        )
+        if payment_obj := payment_result.scalar_one_or_none():
+            payment_obj.status = PaymentStatus.released
+            payment_obj.updated_at = now
+
+    contest_label = data.contest_title or f"#{data.contest_id}"
+    await credit_wallet(
+        data.executor_id,
+        net,
+        WalletTxType.income,
+        payout_description(
+            f"Приз за {data.place} место в конкурсе «{contest_label}»", net, commission
+        ),
+        data.contest_id,
+        db,
+    )
+    db.add(
+        Payout(
+            executor_id=data.executor_id,
+            contest_id=data.contest_id,
+            amount=net,
+            yookassa_payout_id=f"wallet_award_{data.contest_id}_{data.place}",
+            status=PaymentStatus.released,
+            paid_at=now,
+        )
+    )
+    db.add(
+        Transaction(
+            payment_id=escrow.payment_id,
+            type="release_award",
+            amount=data.amount,
+            description=f"Приз за {data.place} место в конкурсе «{contest_label}» исполнителю {data.executor_id} (на кошелёк)",
+        )
+    )
+    _add_commission_tx(db, escrow.payment_id, commission, contest_label, data.executor_id)
+
+    await db.commit()
+    return {
+        "status": "released",
+        "contest_id": data.contest_id,
+        "place": data.place,
+        "executor_id": data.executor_id,
+        "amount": data.amount,
+        "net_amount": net,
+        "commission": commission,
     }
 
 

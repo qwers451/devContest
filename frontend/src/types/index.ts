@@ -41,6 +41,25 @@ export interface Contest {
   stages: ContestStage[];
   created_at: string;
   updated_at: string;
+  winner?: { submission_id: number; executor_id: number; selected_at: string } | null;
+  prize_distribution?: number[];
+  awards?: ContestAward[];
+}
+
+export interface ContestAward {
+  place: number;
+  submission_id: number;
+  executor_id: number;
+  amount: number;
+  net_amount?: number | null;
+  created_at?: string | null;
+}
+
+export interface ContestAwardRow extends ContestAward {
+  submission_number?: number | null;
+  submission_title?: string | null;
+  executor_login?: string | null;
+  commission?: number | null;
 }
 
 export interface ContestListResponse {
@@ -175,10 +194,49 @@ import type UserStore from "../store/UserStore";
 import type ContestStore from "../store/ContestStore";
 import type SolutionStore from "../store/SolutionStore";
 import type PaymentStore from "../store/PaymentStore";
+import type ChatStore from "../store/ChatStore";
+import type NotificationStore from "../store/NotificationStore";
+import type RatingStore from "../store/RatingStore";
+
+export interface ChatMessage {
+  id: number;
+  conversation_id: number;
+  sender_id: number;
+  text: string;
+  created_at: string;
+  read_at: string | null;
+  /** Только на клиенте: сообщение ещё отправляется или отправка не удалась. */
+  status?: "sending" | "error";
+}
+
+export interface ChatLastMessage {
+  id: number;
+  sender_id: number;
+  text: string;
+  created_at: string;
+}
+
+export interface Conversation {
+  id: number;
+  contest_id: number;
+  customer_id: number;
+  executor_id: number;
+  created_at: string;
+  last_message_at: string | null;
+  contest_title: string | null;
+  contest_number: number | null;
+  other_user_id: number | null;
+  other_user_login: string | null;
+  last_message: ChatLastMessage | null;
+  unread_count: number;
+}
 
 export interface StoreContext {
   user: UserStore;
   contest: ContestStore;
   solution: SolutionStore;
   payment: PaymentStore;
+  chat: ChatStore;
+  notifications: NotificationStore;
+  rating: RatingStore;
 }

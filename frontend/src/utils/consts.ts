@@ -17,3 +17,6 @@ export const EDIT_ROUTE = '/edit';
 export const PAYMENT_CHECKOUT_ROUTE = '/payment/checkout';
 export const PAYMENT_CALLBACK_ROUTE = '/payment/callback';
 export const WALLET_ROUTE = '/wallet';
+export const MESSAGES_ROUTE = '/messages';
+export const PUBLIC_PROFILE_ROUTE = '/user';
+export const LEADERBOARD_ROUTE = '/top';

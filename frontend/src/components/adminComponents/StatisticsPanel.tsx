@@ -4,6 +4,7 @@ import { observer } from "mobx-react-lite";
 import { Context } from "../../context";
 import { fetchData } from "../../services/apiService";
 import { Chart } from "chart.js";
+import PlatformMetrics from "./PlatformMetrics";
 import {
   BarController,
   BarElement,
@@ -106,7 +107,7 @@ const inputCls =
   "px-3 py-2 rounded-lg border border-gray-700 bg-gray-800 text-[13px] text-gray-200";
 
 const formatSummaryValue = (label: string, value: number) => {
-  if (label.includes("Сумма")) {
+  if (label.includes("Сумма") || label === "Комиссия платформы" || label === "Выплачено призовых") {
     return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
   }
   if (label.includes("балл")) {
@@ -488,6 +489,7 @@ const StatisticsPanel = observer(() => {
 
   return (
     <div>
+      <PlatformMetrics />
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
         <h2 className="text-[15px] font-medium text-violet-700 dark:text-violet-400">
           Статистика

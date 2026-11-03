@@ -1,10 +1,12 @@
 
 from datetime import datetime, timezone
+from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models import Wallet, WalletTransaction, WalletTxType
 
 
@@ -67,3 +69,27 @@ async def debit_wallet(
     )
     db.add(tx)
     return wallet
+
+
+def _fmt_rub(value: float) -> str:
+    text = f"{value:,.2f}".replace(",", " ")
+    if text.endswith(".00"):
+        text = text[:-3]
+    return f"{text} ₽"
+
+
+def split_commission(gross: float) -> tuple[float, float]:
+    """Делит сумму выплаты на (чистая сумма исполнителю, комиссия платформы), в копейках."""
+    gross_d = Decimal(str(gross)).quantize(Decimal("0.01"), ROUND_HALF_UP)
+    percent = Decimal(str(settings.platform_commission_percent))
+    commission = (gross_d * percent / Decimal(100)).quantize(
+        Decimal("0.01"), ROUND_HALF_UP
+    )
+    return float(gross_d - commission), float(commission)
+
+
+def payout_description(base: str, net: float, commission: float) -> str:
+    """Описание зачисления с указанием чистой суммы и комиссии платформы."""
+    percent = settings.platform_commission_percent
+    percent_label = f"{percent:g}"
+    return f"{base}: {_fmt_rub(net)} (комиссия платформы {percent_label}% — {_fmt_rub(commission)})"
