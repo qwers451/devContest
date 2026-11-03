@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
     Text,
 )
 from sqlalchemy import Enum as SAEnum
@@ -175,3 +176,43 @@ class Winner(Base):
 
     contest = relationship("Contest", back_populates="winner")
     submission = relationship("Submission")
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+    __table_args__ = (
+        UniqueConstraint("contest_id", "executor_id", name="uq_conversation_contest_executor"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    contest_id = Column(Integer, ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True)
+    customer_id = Column(Integer, nullable=False, index=True)
+    executor_id = Column(Integer, nullable=False, index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    last_message_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    contest = relationship("Contest")
+    messages = relationship(
+        "ChatMessage", back_populates="conversation", cascade="all, delete-orphan"
+    )
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(
+        Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    sender_id = Column(Integer, nullable=False)
+    text = Column(Text, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    read_at = Column(DateTime(timezone=True), nullable=True)
+
+    conversation = relationship("Conversation", back_populates="messages")

@@ -4,7 +4,14 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react({ include: /\.(jsx?|tsx?)$/ }), tailwindcss()],
-  server: { host: true, port: 5173 },
+  server: {
+    host: true,
+    port: 5173,
+    // chat WebSocket (contest-service via gateway) when the frontend uses same-origin /ws
+    proxy: {
+      '/ws': { target: process.env.VITE_WS_PROXY_TARGET ?? 'http://localhost:8080', ws: true, changeOrigin: true },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
