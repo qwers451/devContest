@@ -1,0 +1,113 @@
+{
+  "landing": {
+    "w": 1920,
+    "h": 1080,
+    "scale": 2,
+    "rects": {}
+  },
+  "contests": {
+    "w": 1920,
+    "h": 1080,
+    "scale": 2,
+    "rects": {
+      "list": {
+        "x": 560,
+        "y": 206,
+        "w": 1080,
+        "h": 855
+      }
+    }
+  },
+  "contest-ai": {
+    "w": 1920,
+    "h": 1080,
+    "scale": 2,
+    "rects": {}
+  },
+  "create": {
+    "w": 1920,
+    "h": 1758,
+    "scale": 2,
+    "rects": {
+      "prize": {
+        "x": 592,
+        "y": 894,
+        "w": 736,
+        "h": 42
+      }
+    }
+  },
+  "solution": {
+    "w": 1920,
+    "h": 1180,
+    "scale": 2,
+    "rects": {
+      "bar": {
+        "x": 701,
+        "y": 396,
+        "w": 593,
+        "h": 10
+      }
+    }
+  },
+  "chat": {
+    "w": 1920,
+    "h": 1080,
+    "scale": 2,
+    "rects": {}
+  },
+  "bell": {
+    "w": 1920,
+    "h": 1080,
+    "scale": 2,
+    "rects": {}
+  },
+  "results": {
+    "w": 1920,
+    "h": 1180,
+    "scale": 2,
+    "rects": {}
+  },
+  "profile": {
+    "w": 1920,
+    "h": 1295,
+    "scale": 2,
+    "rects": {}
+  },
+  "top": {
+    "w": 1920,
+    "h": 1080,
+    "scale": 2,
+    "rects": {}
+  },
+  "admin": {
+    "w": 1920,
+    "h": 1975,
+    "scale": 2,
+    "rects": {}
+  },
+  "wallet": {
+    "w": 1920,
+    "h": 1080,
+    "scale": 2,
+    "rects": {}
+  },
+  "m-landing": {
+    "w": 390,
+    "h": 844,
+    "scale": 3,
+    "rects": {}
+  },
+  "m-contests": {
+    "w": 390,
+    "h": 844,
+    "scale": 3,
+    "rects": {}
+  },
+  "m-solution": {
+    "w": 390,
+    "h": 844,
+    "scale": 3,
+    "rects": {}
+  }
+}
