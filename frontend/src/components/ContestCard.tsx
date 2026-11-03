@@ -4,6 +4,9 @@ import { observer } from "mobx-react-lite";
 import { Context } from "../context";
 import { CONTEST_ROUTE } from "../utils/consts.js";
 import UserLink from "./UserLink";
+import { useNow } from "./useNow";
+import { getCountdown, formatCountdownShort } from "../utils/deadline";
+import { placesCountLabel } from "../utils/prizes";
 
 const statusConfig = {
   draft: { label: "Черновик", dot: "bg-gray-500" },
@@ -12,13 +15,6 @@ const statusConfig = {
   cancelled: { label: "Отменён", dot: "bg-red-400" },
 };
 
-function daysLeft(endsAt) {
-  const diff = Math.ceil((new Date(endsAt) - Date.now()) / 86400000);
-  if (diff < 0) return null;
-  if (diff === 0) return "последний день";
-  return `${diff} ${diff === 1 ? "день" : diff < 5 ? "дня" : "дней"}`;
-}
-
 const ContestCard = observer(({ contest: item }) => {
   const { contest, user } = useContext(Context);
   const navigate = useNavigate();
@@ -26,7 +22,10 @@ const ContestCard = observer(({ contest: item }) => {
   const creator = user.getById(item.customer_id);
   const status = statusConfig[item.status] || statusConfig.draft;
   const typeName = contest.getTypeNameById(item.type_id);
-  const remaining = item.status === "active" ? daysLeft(item.ends_at) : null;
+  const now = useNow(60000);
+  const countdown = getCountdown(item.ends_at, now);
+  const remaining = item.status === "active" ? formatCountdownShort(countdown) : null;
+  const places = item.prize_distribution?.length || 1;
 
   const openContest = () => {
     contest.setCurrentContest(item);
@@ -76,13 +75,14 @@ const ContestCard = observer(({ contest: item }) => {
           <div className="text-[14px] font-medium tabular-nums text-gray-100">
             {Number(item.prizepool).toLocaleString("ru")} ₽
           </div>
+          <div className="text-[11px] text-gray-500">{placesCountLabel(places)}</div>
 
           <div className="flex items-center gap-2 text-[12px] text-gray-500">
             {creator && (
               <UserLink id={creator.id} login={creator.login} className="truncate max-w-[120px] hover:text-violet-400" />
             )}
             {remaining ? (
-              <span className="rounded border border-gray-700 px-1.5 py-0.5 text-amber-400">
+              <span className={`rounded border border-gray-700 px-1.5 py-0.5 ${countdown.urgent ? "text-red-400" : "text-amber-400"}`}>
                 {remaining}
               </span>
             ) : (

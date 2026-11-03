@@ -67,6 +67,7 @@ const contests: Contest[] = [
     stages,
     created_at: iso(-14),
     updated_at: iso(-2),
+    prize_distribution: [60, 30, 10],
   },
   {
     id: 2,
@@ -516,6 +517,34 @@ export const demoAdapter: AxiosAdapter = async (config: AxiosRequestConfig) => {
     }
   }
   const method = (config.method ?? "get").toLowerCase();
+  const awardsMatch = path.match(/^\/contests\/(\d+)\/awards$/);
+  if (awardsMatch && method === "post") {
+    // Подведение итогов в демо: контест завершается, места записываются в память.
+    const c = contests.find((x) => x.id === Number(awardsMatch[1])) ?? contests[0];
+    const list = ((body as { awards?: { submission_id: number; place: number }[] })?.awards ?? []).slice();
+    const dist = c.prize_distribution?.length ? c.prize_distribution : [100];
+    const places = list.map((a) => a.place).sort((a, b) => a - b);
+    const total = Number(c.prizepool);
+    const awards = list.map((a) => {
+      const sub = submissions.find((x) => x.id === a.submission_id);
+      const isLast = a.place === places[places.length - 1];
+      const spent = places
+        .slice(0, -1)
+        .reduce((acc, p) => acc + Math.round((total * dist[p - 1]) / 100), 0);
+      const amount = isLast ? total - spent : Math.round((total * dist[a.place - 1]) / 100);
+      return {
+        place: a.place,
+        submission_id: a.submission_id,
+        executor_id: sub?.executor_id ?? 2,
+        amount,
+        net_amount: Math.round(amount * 90) / 100,
+      };
+    });
+    c.awards = awards;
+    c.status = "finished";
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 300));
+    return { data: c, status: 200, statusText: "OK", headers: {}, config } as AxiosResponse;
+  }
   const data =
     chatRoute(path, method, body) ??
     (method === "get" ? filteredList(path, config.params as Record<string, unknown> | undefined) : undefined) ??

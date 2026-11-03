@@ -107,7 +107,12 @@ const CreateSolution = () => {
       alert(submitSuccessText);
     } catch (error) {
       console.error("Ошибка при отправке решения:", error);
-      alert(submitErrorText);
+      const detail = error?.response?.data?.detail;
+      alert(
+        error?.response?.status === 409 && typeof detail === "string"
+          ? detail
+          : submitErrorText,
+      );
     }
   };
 

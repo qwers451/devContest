@@ -4,6 +4,7 @@ import { Context } from "../context";
 import { observer } from "mobx-react-lite";
 import Markdown from "markdown-to-jsx";
 import ConfirmationModal from "../components/ConfirmationModal";
+import AwardModal from "../components/AwardModal";
 import ChangeSolutionStatusModal from "../components/ChangeSolutionStatusModal";
 import {
   downloadFileOrZip,
@@ -740,12 +741,12 @@ const SolutionPage = () => {
     selectedFiles.forEach((file) => formData.append("files", file));
     return sendData(`/submissions/${currentSolution.id}/files`, formData, true);
   };
+  const multiPlace = (currentContest?.prize_distribution?.length ?? 1) > 1;
   const winnerConfirmText = hasMilestones
     ? "Завершить конкурс"
-    : "Выбрать победителем";
-  const winnerConfirmMessage = hasMilestones
-    ? `Конкурс завершится. ${allMilestonesPaid ? "Все поэтапные выплаты уже произведены." : `Оставшиеся средства (${currentContest.prizepool} руб.) будут выплачены исполнителю.`} Действие необратимо.`
-    : `Вы уверены, что хотите выбрать это решение победителем? Конкурс завершится, а приз (${currentContest.prizepool} руб.) будет начислен исполнителю. Действие необратимо.`;
+    : multiPlace
+      ? "Назначить место"
+      : "Выбрать победителем";
 
   const handleWriteToExecutor = async () => {
     try {
@@ -800,27 +801,10 @@ const SolutionPage = () => {
     }
   };
 
-  const handleSelectWinner = async () => {
-    try {
-      const updatedContest = await solution.selectWinner(
-        currentContest.id,
-        currentSolution.id,
-        currentSolution.executor_id,
-      );
-
-      contest.setCurrentContest(updatedContest);
-
-      const updatedSol = { ...currentSolution, status: 3 };
-      solution.setCurrentSolution(updatedSol);
-
-      navigate(`/contest/${updatedContest.number}`);
-    } catch (error) {
-      console.error("Ошибка выбора победителя:", error);
-      alert(
-        "Не удалось выбрать победителя: " +
-          (error?.response?.data?.detail || error.message),
-      );
-    }
+  const handleAwarded = (updatedContest) => {
+    setCurrentContest(updatedContest);
+    contest.setCurrentContest(updatedContest);
+    solution.setCurrentSolution({ ...currentSolution, status: 3 });
   };
 
   const handleDownloadAll = async () => {
@@ -1104,15 +1088,15 @@ const SolutionPage = () => {
         onSave={handleStatusChange}
       />
 
-      <ConfirmationModal
+      <AwardModal
         show={showWinnerModal}
-        onHide={() => setShowWinnerModal(false)}
-        onConfirm={handleSelectWinner}
-        title="Выбор победителя"
-        message={winnerConfirmMessage}
-        confirmText={winnerConfirmText}
-        cancelText="Отмена"
-        confirmVariant="primary"
+        contest={currentContest}
+        presetSubmissionId={currentSolution.id}
+        onHide={() => {
+          setShowWinnerModal(false);
+          if (currentContest?.status === "finished") navigate(contestRoute);
+        }}
+        onDone={handleAwarded}
       />
     </div>
   );

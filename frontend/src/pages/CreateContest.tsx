@@ -10,6 +10,9 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import Markdown from "markdown-to-jsx";
 import { PAYMENT_CHECKOUT_ROUTE } from "../utils/consts.js";
+import PrizeDistributionEditor from "../components/PrizeDistributionEditor";
+import { useCommission } from "../components/useNow";
+import { validateDistribution } from "../utils/prizes";
 
 interface ContestTemplate {
   id: number;
@@ -301,6 +304,8 @@ const CreateContest = () => {
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
   const [templates, setTemplates] = useState<ContestTemplate[]>([]);
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
+  const [prizeDistribution, setPrizeDistribution] = useState<number[]>([100]);
+  const commission = useCommission();
 
   const regex = /(!\[[^\]]*\])\(([^)]+)\)/g;
   const isEditing = state;
@@ -342,6 +347,7 @@ const CreateContest = () => {
       type_id: Number(contest.form.type.value),
       tz_text: currentTzText || undefined,
       stages: buildStagesPayload(),
+      prize_distribution: prizeDistribution,
     };
   };
 
@@ -383,6 +389,9 @@ const CreateContest = () => {
       new Date(data.ends_at).toISOString().split("T")[0],
     );
     setExistingFiles(data.files || []);
+    if (Array.isArray(data.prize_distribution) && data.prize_distribution.length) {
+      setPrizeDistribution(data.prize_distribution);
+    }
   };
 
   const removeSelectedFile = (index) => {
@@ -401,6 +410,7 @@ const CreateContest = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!contest.validateForm()) return;
+    if (validateDistribution(prizeDistribution)) return;
     if (!user.isAuth || !user.user?.id) {
       alert("Для создания конкурса необходимо войти в систему");
       navigate("/login");
@@ -429,7 +439,8 @@ const CreateContest = () => {
       }
     } catch (error) {
       console.error("Ошибка при отправке:", error);
-      alert(errorMessage);
+      const detail = error?.response?.data?.detail;
+      alert(typeof detail === "string" ? `${errorMessage}: ${detail}` : errorMessage);
     }
   };
 
@@ -744,6 +755,13 @@ const CreateContest = () => {
               </p>
             )}
           </div>
+
+          <PrizeDistributionEditor
+            value={prizeDistribution}
+            onChange={setPrizeDistribution}
+            prizepool={parseInt(currentPrizepool)}
+            commission={commission}
+          />
 
           <div>
             <label className={labelCls}>Дата окончания</label>
