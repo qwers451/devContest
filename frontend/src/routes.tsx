@@ -21,6 +21,7 @@ import {
     MESSAGES_ROUTE,
     PUBLIC_PROFILE_ROUTE,
     LEADERBOARD_ROUTE,
+    ABOUT_ROUTE,
 } from "./utils/consts.js";
 import Auth from "./pages/Auth";
 import Contests from "./pages/Contests";
@@ -42,6 +43,7 @@ import WalletPage from "./pages/WalletPage";
 import ChatPage from "./pages/ChatPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import AboutPage from "./pages/AboutPage";
 
 export const authRoutes = [
     {
@@ -142,5 +144,9 @@ export const publicRoutes = [
     {
         path: LEADERBOARD_ROUTE,
         element: <LeaderboardPage />
+    },
+    {
+        path: ABOUT_ROUTE,
+        element: <AboutPage />
     },
 ]

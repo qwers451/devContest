@@ -22,6 +22,7 @@ import {
     MESSAGES_ROUTE,
     PUBLIC_PROFILE_ROUTE,
     LEADERBOARD_ROUTE,
+    ABOUT_ROUTE,
 } from "./utils/consts.js";
 
 const Auth = lazy(() => import('./pages/Auth'));
@@ -44,6 +45,7 @@ const WalletPage = lazy(() => import('./pages/WalletPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
 
 export const authRoutes = [
     {
@@ -144,5 +146,9 @@ export const publicRoutes = [
     {
         path: LEADERBOARD_ROUTE,
         element: <LeaderboardPage />
+    },
+    {
+        path: ABOUT_ROUTE,
+        element: <AboutPage />
     },
 ]

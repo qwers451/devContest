@@ -20,3 +20,4 @@ export const WALLET_ROUTE = '/wallet';
 export const MESSAGES_ROUTE = '/messages';
 export const PUBLIC_PROFILE_ROUTE = '/user';
 export const LEADERBOARD_ROUTE = '/top';
+export const ABOUT_ROUTE = '/about';
