@@ -9,6 +9,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     UniqueConstraint,
     Text,
@@ -64,6 +65,7 @@ class Contest(Base):
     ends_at = Column(DateTime(timezone=True), nullable=False)
 
     current_stage_id = Column(Integer, nullable=True)
+    prize_distribution = Column(JSON, default=lambda: [100])
 
     type = relationship("ContestType")
     template = relationship("ContestTemplate")
@@ -79,6 +81,12 @@ class Contest(Base):
         uselist=False,
         cascade="all, delete-orphan",
         single_parent=True,
+    )
+    awards = relationship(
+        "ContestAward",
+        back_populates="contest",
+        cascade="all, delete-orphan",
+        order_by="ContestAward.place",
     )
 
 
@@ -175,6 +183,36 @@ class Winner(Base):
     )
 
     contest = relationship("Contest", back_populates="winner")
+    submission = relationship("Submission")
+
+
+class ContestAward(Base):
+    """Призовое место конкурса (1..N) и сумма, выплаченная за него."""
+
+    __tablename__ = "contest_awards"
+    __table_args__ = (
+        UniqueConstraint("contest_id", "place", name="uq_award_contest_place"),
+        UniqueConstraint(
+            "contest_id", "submission_id", name="uq_award_contest_submission"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    contest_id = Column(
+        Integer, ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    place = Column(Integer, nullable=False)
+    submission_id = Column(
+        Integer, ForeignKey("submissions.id", ondelete="CASCADE"), nullable=False
+    )
+    executor_id = Column(Integer, nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
+    net_amount = Column(Numeric(12, 2), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    contest = relationship("Contest", back_populates="awards")
     submission = relationship("Submission")
 
 

@@ -105,17 +105,39 @@ async def notify_new_submission(
     )
 
 
+def _rub(value: int | float) -> str:
+    return f"{value:,.0f} ₽".replace(",", " ")
+
+
 async def notify_winner(
-    winner_id: int, contest_number: int, contest_title: str, amount: int | float
+    winner_id: int,
+    contest_number: int,
+    contest_title: str,
+    amount: int | float,
+    place: int = 1,
+    net_amount: int | float | None = None,
 ) -> None:
+    """Письмо призёру. place=1 — победа; иначе — «заняло N место». amount — приз до комиссии."""
+    if place == 1:
+        subject = f"Ваше решение победило в конкурсе «{contest_title}»"
+        title = "Поздравляем с победой!"
+        first = f"Ваше решение победило в конкурсе «{contest_title}»."
+    else:
+        subject = f"Ваше решение заняло {place} место в конкурсе «{contest_title}»"
+        title = f"Поздравляем с {place} местом!"
+        first = f"Ваше решение заняло {place} место в конкурсе «{contest_title}»."
+    if net_amount is not None and abs(net_amount - amount) > 0.004:
+        money = (
+            f"Приз: {_rub(amount)}. На ваш кошелёк зачислено {_rub(net_amount)} "
+            "после вычета комиссии платформы."
+        )
+    else:
+        money = f"На ваш кошелёк зачислено {_rub(amount)}."
     await _notify(
         winner_id,
-        f"Ваше решение победило в конкурсе «{contest_title}»",
-        "Поздравляем с победой!",
-        [
-            f"Ваше решение победило в конкурсе «{contest_title}».",
-            f"На ваш кошелёк зачислено {amount:,.0f} ₽.".replace(",", " "),
-        ],
+        subject,
+        title,
+        [first, money],
         "Открыть конкурс",
         f"/contest/{contest_number}",
     )

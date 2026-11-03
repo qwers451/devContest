@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
     allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
     contest_service_url: str = "http://contest-service:8000"
+    platform_commission_percent: float = 10
 
     class Config:
         env_file = ".env"

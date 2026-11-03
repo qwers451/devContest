@@ -30,6 +30,9 @@ async def create_tables():
                     text("ALTER TABLE contests ADD COLUMN IF NOT EXISTS tz_filename VARCHAR(300)")
                 )
                 await conn.execute(
+                    text("ALTER TABLE contests ADD COLUMN IF NOT EXISTS prize_distribution JSON DEFAULT '[100]'::json")
+                )
+                await conn.execute(
                     text("ALTER TABLE submissions ADD COLUMN IF NOT EXISTS ai_score DOUBLE PRECISION")
                 )
                 await conn.execute(

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import Payment, Payout, WalletTransaction
+from app.models import Payment, Payout, Transaction, WalletTransaction
 
 router = APIRouter(prefix="/payments/statistics", tags=["payment-statistics"])
 
@@ -168,6 +168,15 @@ async def get_payment_statistics(
         )
         payout_summary_stmt = payout_summary_stmt.where(Payout.created_at <= date_to)
 
+    commission_stmt = select(func.sum(cast(Transaction.amount, Numeric))).where(
+        Transaction.type == "commission"
+    )
+    if date_from:
+        commission_stmt = commission_stmt.where(Transaction.created_at >= date_from)
+    if date_to:
+        commission_stmt = commission_stmt.where(Transaction.created_at <= date_to)
+    commission_total = (await db.execute(commission_stmt)).scalar()
+
     payments_count, payments_amount, refunds_count = (
         await db.execute(payments_summary_stmt)
     ).one()
@@ -181,6 +190,7 @@ async def get_payment_statistics(
             SummaryItem(label="Операций кошелька", value=_to_float(wallet_count)),
             SummaryItem(label="Сумма выплат", value=_to_float(payout_amount)),
             SummaryItem(label="Возвратов", value=_to_float(refunds_count)),
+            SummaryItem(label="Комиссия платформы", value=_to_float(commission_total)),
         ],
         chart=ChartData(
             labels=[

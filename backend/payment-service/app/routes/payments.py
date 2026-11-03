@@ -302,6 +302,13 @@ async def topup(
     return payment
 
 
+@router.get("/commission")
+async def get_commission():
+    """Процент комиссии платформы с призовых выплат (публичный)."""
+    percent = settings.platform_commission_percent
+    return {"percent": int(percent) if float(percent).is_integer() else percent}
+
+
 @router.get("/history", response_model=list[PaymentOut])
 async def payment_history(
     db: AsyncSession = Depends(get_db),

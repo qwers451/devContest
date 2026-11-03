@@ -393,9 +393,12 @@ async def test_escrow_release_credits_wallet(contest, executor_token, submission
         data = r.json()
         assert data["status"] == "released"
         assert data["amount"] == pytest.approx(contest["prizepool"], abs=0.01)
+        # Платформа удерживает комиссию 10%
+        assert data["commission"] == pytest.approx(contest["prizepool"] * 0.1, abs=0.01)
+        assert data["net_amount"] == pytest.approx(contest["prizepool"] * 0.9, abs=0.01)
 
         after = (await c.get(f"{PAYMENT_URL}/wallet/balance", headers=auth_headers(executor_token))).json()["balance"]
-        assert after == pytest.approx(before + contest["prizepool"], abs=0.01)
+        assert after == pytest.approx(before + contest["prizepool"] * 0.9, abs=0.01)
 
 
 # ── P15. Эскроу: повторная выплата → 409 ─────────────────────────────────────

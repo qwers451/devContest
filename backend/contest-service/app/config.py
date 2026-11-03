@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     user_service_url: str = "http://user-service:8000"
     payment_service_url: str = "http://payment-service:8000"
     evaluation_service_url: str = "http://evaluation-service:8000"
+    platform_commission_percent: float = 10
     uploads_dir: str = "/app/uploads"
     frontend_url: str = "http://localhost:3000"
     # Почта: пустой smtp_host отключает рассылку

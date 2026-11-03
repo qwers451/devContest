@@ -126,6 +126,7 @@ services:
       INTERNAL_SECRET: ${INTERNAL_SECRET}
       USER_SERVICE_URL: http://user-service:8000
       PAYMENT_SERVICE_URL: http://payment-service:8000
+      PLATFORM_COMMISSION_PERCENT: ${PLATFORM_COMMISSION_PERCENT:-10}
       EVALUATION_SERVICE_URL: http://evaluation-service:8000
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       SMTP_HOST: ${SMTP_HOST-mailpit}
@@ -213,6 +214,7 @@ services:
       YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL:-http://localhost:3000/payment/callback}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CONTEST_SERVICE_URL: http://contest-service:8000
+      PLATFORM_COMMISSION_PERCENT: ${PLATFORM_COMMISSION_PERCENT:-10}
     healthcheck:
       test:
         [
