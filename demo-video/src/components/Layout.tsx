@@ -1,7 +1,9 @@
 import React from "react";
-import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Img, interpolate, staticFile } from "remotion";
+import { useT } from "../time";
 import { C, EASE, F, clamp } from "../theme";
 import { Field } from "./Field";
+import { Kinetic, Mono } from "./Kinetic";
 
 /** Светлая сцена: бумага Cobalt и едва заметная сетка точек. */
 export const Paper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -34,7 +36,7 @@ export const TextCol: React.FC<{ children: React.ReactNode; top?: number; width?
 
 /** Сопроводительный абзац под заголовком. */
 export const Lead: React.FC<{ children: React.ReactNode; delay?: number; color?: string; size?: number }> = ({ children, delay = 14, color = C.ink2, size = 40 }) => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const t = interpolate(frame, [delay, delay + 20], [0, 1], { ...clamp, easing: EASE.out });
   return (
     <div style={{ fontFamily: F.body, fontSize: size, lineHeight: 1.4, color, opacity: t, transform: `translateY(${(1 - t) * 16}px)`, maxWidth: 680 }}>
@@ -53,7 +55,7 @@ export const Wordmark: React.FC<{ size?: number; color?: string }> = ({ size = 9
 
 /** Метка-«чип» в материале Cobalt. */
 export const Chip: React.FC<{ children: React.ReactNode; delay?: number; dark?: boolean }> = ({ children, delay = 0, dark }) => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const t = interpolate(frame, [delay, delay + 16], [0, 1], { ...clamp, easing: EASE.out });
   return (
     <span
@@ -76,5 +78,49 @@ export const Chip: React.FC<{ children: React.ReactNode; delay?: number; dark?: 
     >
       {children}
     </span>
+  );
+};
+
+/** Размер окна интерфейса в сценах с продуктом: почти весь кадр. */
+export const UI = { x: 80, y: 196, w: 1760, h: 844 } as const;
+
+/**
+ * Сцена с интерфейсом: одна строка заголовка сверху, под ней — большое окно продукта.
+ * Заголовок не спорит с интерфейсом за место: всё остальное пространство отдано экрану.
+ */
+export const UiScene: React.FC<{ title: string; accent?: string[]; note?: string; children: React.ReactNode }> = ({ title, accent, note, children }) => (
+  <Paper>
+    <div style={{ position: "absolute", left: UI.x, right: UI.x, top: 56, height: 110, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 40 }}>
+      <Kinetic text={title} size={68} accent={accent} stagger={3} style={{ whiteSpace: "nowrap" }} />
+      {note && (
+        <Mono delay={14} color={C.ink2} size={28} style={{ textAlign: "right", maxWidth: 640 }}>
+          {note}
+        </Mono>
+      )}
+    </div>
+    {children}
+  </Paper>
+);
+
+/** Плашка поверх окна: короткий факт крупно (сумма, список метрик). */
+export const Callout: React.FC<{ children: React.ReactNode; delay?: number; style?: React.CSSProperties }> = ({ children, delay = 30, style }) => {
+  const frame = useT();
+  const t = interpolate(frame, [delay, delay + 20], [0, 1], { ...clamp, easing: EASE.out });
+  return (
+    <div
+      style={{
+        position: "absolute",
+        padding: "28px 36px",
+        borderRadius: 14,
+        background: C.panel,
+        border: `1px solid ${C.rule2}`,
+        boxShadow: "0 30px 60px -30px oklch(21% 0.028 262 / 0.45)",
+        opacity: t,
+        transform: `translateY(${(1 - t) * 24}px)`,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
   );
 };

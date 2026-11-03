@@ -1,68 +1,46 @@
 import React from "react";
-import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
-import { Counter } from "../components/Counter";
+import { AbsoluteFill, Img, interpolate, staticFile } from "remotion";
+import { useT } from "../time";
 import { Kinetic, Mono } from "../components/Kinetic";
-import { Chip, Graphite, Lead, Paper, TextCol, Wordmark } from "../components/Layout";
+import { Callout, Chip, Graphite, Lead, Paper, UI, UiScene, Wordmark } from "../components/Layout";
 import { Shot } from "../components/Shot";
 import { C, EASE, F, clamp } from "../theme";
 
 /** 10. Выбор победителей и автоматическое распределение вознаграждений. */
 export const Payout: React.FC = () => (
-  <Paper>
-    <TextCol width={700}>
-      <Kinetic text="Победители получают призы автоматически" size={80} />
-      <Lead delay={18}>Заказчик распределяет места, платформа переводит призы на кошельки за вычетом комиссии.</Lead>
-      <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 76, color: C.success, letterSpacing: "-0.03em" }}>
-        <Counter to={167400} delay={40} dur={46} suffix=" ₽" />
-        <div style={{ fontFamily: F.body, fontWeight: 400, fontSize: 30, color: C.muted, letterSpacing: 0 }}>на руки за первое место</div>
-      </div>
-    </TextCol>
+  <UiScene title="Победители получают призы автоматически" note="за вычетом комиссии 10%">
     <Shot
       src="shots/results.png"
       pageH={1180}
-      w={980}
-      h={760}
-      style={{ position: "absolute", right: 90, top: 160 }}
+      w={UI.w}
+      h={UI.h}
+      style={{ position: "absolute", left: UI.x, top: UI.y }}
       cam={[
-        { f: 0, cx: 960, cy: 420, zoom: 0.8 },
-        { f: 130, cx: 960, cy: 330, zoom: 1.12 },
+        // карточка конкурса 864 px целиком → пьедестал крупно
+        { f: 0, cx: 960, cy: 470, zoom: 1.0 },
+        { f: 70, cx: 960, cy: 355, zoom: 1.78 },
+        { f: 140, cx: 960, cy: 362, zoom: 1.8 },
       ]}
-      tilt={[{ f: 0, ry: -10, rx: 6 }, { f: 130, ry: -3, rx: 2 }]}
     />
-  </Paper>
+  </UiScene>
 );
 
 /** 11. Модуль рейтингов и цифровое портфолио. */
 export const Rating: React.FC = () => (
-  <Paper>
-    <TextCol width={700}>
-      <Kinetic text="Подтверждённый рейтинг и портфолио" size={80} />
-      <Lead delay={18}>Победы, отзывы заказчиков и оценки ИИ складываются в публичный рейтинг исполнителя.</Lead>
-    </TextCol>
+  <UiScene title="Подтверждённый рейтинг и портфолио" note="победы, отзывы и оценки ИИ">
     <Shot
       src="shots/profile.png"
       pageH={1295}
-      w={980}
-      h={700}
-      style={{ position: "absolute", right: 150, top: 90 }}
+      w={UI.w}
+      h={UI.h}
+      style={{ position: "absolute", left: UI.x, top: UI.y }}
       cam={[
-        { f: 0, cx: 960, cy: 300, zoom: 0.74 },
-        { f: 130, cx: 960, cy: 640, zoom: 0.8 },
+        // профиль 864 px по ширине целиком, камера спускается от шапки к портфолио
+        { f: 0, cx: 960, cy: 300, zoom: 1.8 },
+        { f: 120, cx: 960, cy: 640, zoom: 1.8 },
       ]}
-      tilt={[{ f: 0, ry: -10 }, { f: 130, ry: -4 }]}
     />
-    <Shot
-      src="shots/top.png"
-      pageH={1080}
-      w={620}
-      h={330}
-      enter={40}
-      radius={14}
-      style={{ position: "absolute", right: 70, top: 690 }}
-      cam={[{ f: 0, cx: 960, cy: 330, zoom: 0.62 }, { f: 130, cx: 960, cy: 350, zoom: 0.66 }]}
-      tilt={[{ f: 0, ry: 8, rz: -2 }, { f: 130, ry: 4 }]}
-    />
-  </Paper>
+  </UiScene>
 );
 
 /** 12. Измеряемые параметры продукта — в админ-панели. */
@@ -74,30 +52,28 @@ export const Metrics: React.FC = () => {
     "Доля успешно завершённых конкурсов",
   ];
   return (
-    <Paper>
-      <TextCol width={700}>
-        <Kinetic text="Метрики платформы в одном окне" size={80} />
-        <div style={{ display: "grid", gap: 18 }}>
-          {items.map((t, i) => (
-            <Mono key={t} delay={18 + i * 8} color={C.ink2} size={32}>
-              {String(i + 1).padStart(2, "0")} {t}
-            </Mono>
-          ))}
-        </div>
-      </TextCol>
+    <UiScene title="Метрики платформы в одном окне">
       <Shot
         src="shots/admin.png"
         pageH={1975}
-        w={960}
-        h={760}
-        style={{ position: "absolute", right: 90, top: 160 }}
+        w={UI.w}
+        h={UI.h}
+        style={{ position: "absolute", left: UI.x, top: UI.y }}
         cam={[
-          { f: 0, cx: 960, cy: 520, zoom: 0.62 },
-          { f: 130, cx: 960, cy: 600, zoom: 1.0 },
+          // блок «Ключевые метрики» 992 px по ширине целиком
+          { f: 0, cx: 960, cy: 560, zoom: 1.0 },
+          { f: 60, cx: 960, cy: 600, zoom: 1.62 },
+          { f: 130, cx: 960, cy: 640, zoom: 1.62 },
         ]}
-        tilt={[{ f: 0, ry: -10, rx: 6 }, { f: 130, ry: -3, rx: 2 }]}
       />
-    </Paper>
+      <Callout delay={56} style={{ right: UI.x + 40, bottom: 70, display: "grid", gap: 12 }}>
+        {items.map((t, i) => (
+          <Mono key={t} delay={60 + i * 6} color={C.ink2} size={28}>
+            {String(i + 1).padStart(2, "0")} {t}
+          </Mono>
+        ))}
+      </Callout>
+    </UiScene>
   );
 };
 
@@ -124,7 +100,7 @@ export const Mobile: React.FC = () => {
 };
 
 const Phone: React.FC<{ src: string; delay: number; lift: number }> = ({ src, delay, lift }) => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const t = interpolate(frame, [delay, delay + 26], [0, 1], { ...clamp, easing: EASE.out });
   return (
     <div
@@ -184,7 +160,7 @@ export const Advantages: React.FC = () => {
 };
 
 const Row: React.FC<{ a: string; b: string; delay: number }> = ({ a, b, delay }) => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const t = interpolate(frame, [delay, delay + 20], [0, 1], { ...clamp, easing: EASE.out });
   const line = interpolate(frame, [delay, delay + 30], [0, 1], { ...clamp, easing: EASE.inOut });
   return (
@@ -198,7 +174,7 @@ const Row: React.FC<{ a: string; b: string; delay: number }> = ({ a, b, delay })
 
 /** 16. Поддержка Фонда и финальный знак. */
 export const Outro: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const fund = interpolate(frame, [0, 22], [0, 1], { ...clamp, easing: EASE.out });
   const fundOut = interpolate(frame, [96, 112], [1, 0], { ...clamp, easing: EASE.out });
   const mark = interpolate(frame, [112, 136], [0, 1], { ...clamp, easing: EASE.out });

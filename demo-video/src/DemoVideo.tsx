@@ -4,13 +4,16 @@ import { Audio } from "@remotion/media";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
+import { EASE } from "./theme";
+import { f30 } from "./time";
 import { Cabinets, Hook, Landing, Turn } from "./scenes/Intro";
 import { AiCheck, AiScore, Communication, ContestFeed, CreateContest, Payment } from "./scenes/Product";
 import { Advantages, Metrics, Mobile, Outro, Payout, Rating, Stack } from "./scenes/Outcome";
 
 // Единственный источник правды по таймингу: порядок сцен, длительности и переходы.
+// Длительности — в кадрах 30 fps (см. time.ts); в настоящие кадры их переводит f30().
 // Звуки и переходы ниже вычисляются из этой таблицы.
-export const T = 14; // длительность перехода между сценами, кадров
+export const T = 18; // длительность перехода между сценами
 type Cut = "fade" | "slide";
 export const SHOTS: { id: string; dur: number; C: React.FC; cut: Cut }[] = [
   { id: "hook", dur: 96, C: Hook, cut: "fade" },
@@ -32,27 +35,27 @@ export const SHOTS: { id: string; dur: number; C: React.FC; cut: Cut }[] = [
   { id: "outro", dur: 190, C: Outro, cut: "fade" },
 ];
 
-/** Начало каждой сцены на общей шкале (с учётом наложения переходов). */
+/** Начало каждой сцены на общей шкале, в настоящих кадрах (с учётом наложения переходов). */
 export const START: Record<string, number> = {};
 {
   let at = 0;
   SHOTS.forEach((s, i) => {
     START[s.id] = at;
-    at += s.dur - (i < SHOTS.length - 1 ? T : 0);
+    at += f30(s.dur) - (i < SHOTS.length - 1 ? f30(T) : 0);
   });
 }
-export const TOTAL = SHOTS.reduce((sum, s) => sum + s.dur, 0) - T * (SHOTS.length - 1);
+export const TOTAL = SHOTS.reduce((sum, s) => sum + f30(s.dur), 0) - f30(T) * (SHOTS.length - 1);
 
 // Звуковые акценты, привязанные к сценам относительными кадрами.
 const SFX: { at: number; src: string; volume: number; dur?: number }[] = [
-  { at: START.turn + 44, src: "impact-transition.mp3", volume: 0.5, dur: 60 }, // появление знака devContest
-  ...SHOTS.slice(2).map((s) => ({ at: START[s.id] - 6, src: s.cut === "slide" ? "swoosh-quick.mp3" : "transition-soft.mp3", volume: 0.22, dur: 30 })),
-  { at: START.payment + 20, src: "bass-hit-short.mp3", volume: 0.4, dur: 30 }, // счётчик 10%
-  { at: START.score + 10, src: "whoosh-fast.mp3", volume: 0.3, dur: 30 }, // полоса оценки ИИ
-  { at: START.score + 58, src: "bass-hit-short.mp3", volume: 0.45, dur: 30 }, // 92% встаёт
-  { at: START.mobile + 10, src: "switch-click-quick.mp3", volume: 0.35, dur: 15 }, // телефоны
-  { at: START.outro + 110, src: "impact-transition.mp3", volume: 0.55, dur: 70 }, // финальный знак
-  { at: START.outro + 128, src: "shimmer-sparkle-sweep.mp3", volume: 0.3, dur: 60 }, // послезвучие
+  { at: START.turn + f30(44), src: "impact-transition.mp3", volume: 0.5, dur: f30(60) }, // появление знака devContest
+  ...SHOTS.slice(2).map((s) => ({ at: START[s.id] - f30(6), src: s.cut === "slide" ? "swoosh-quick.mp3" : "transition-soft.mp3", volume: 0.22, dur: f30(30) })),
+  { at: START.payment + f30(20), src: "bass-hit-short.mp3", volume: 0.4, dur: f30(30) }, // счётчик 10%
+  { at: START.score + f30(20), src: "whoosh-fast.mp3", volume: 0.3, dur: f30(30) }, // полоса оценки ИИ
+  { at: START.score + f30(68), src: "bass-hit-short.mp3", volume: 0.45, dur: f30(30) }, // 92% встаёт
+  { at: START.mobile + f30(10), src: "switch-click-quick.mp3", volume: 0.35, dur: f30(15) }, // телефоны
+  { at: START.outro + f30(110), src: "impact-transition.mp3", volume: 0.55, dur: f30(70) }, // финальный знак
+  { at: START.outro + f30(128), src: "shimmer-sparkle-sweep.mp3", volume: 0.3, dur: f30(60) }, // послезвучие
 ];
 
 export type DemoProps = { bgm: boolean };
@@ -64,13 +67,13 @@ export const DemoVideo: React.FC<DemoProps> = ({ bgm }) => {
       <TransitionSeries>
         {SHOTS.map((s, i) => (
           <React.Fragment key={s.id}>
-            <TransitionSeries.Sequence name={s.id} durationInFrames={s.dur}>
+            <TransitionSeries.Sequence name={s.id} durationInFrames={f30(s.dur)}>
               <s.C />
             </TransitionSeries.Sequence>
             {i < SHOTS.length - 1 && (
               <TransitionSeries.Transition
                 presentation={SHOTS[i + 1].cut === "slide" ? slide({ direction: "from-right" }) : fade()}
-                timing={linearTiming({ durationInFrames: T })}
+                timing={linearTiming({ durationInFrames: f30(T), easing: EASE.inOut })}
               />
             )}
           </React.Fragment>
@@ -84,7 +87,7 @@ export const DemoVideo: React.FC<DemoProps> = ({ bgm }) => {
         />
       )}
       {SFX.map((s, i) => (
-        <Sequence key={i} from={s.at} durationInFrames={s.dur ?? 45} name={`sfx ${s.src}`}>
+        <Sequence key={i} from={s.at} durationInFrames={s.dur ?? f30(45)} name={`sfx ${s.src}`}>
           <Audio src={staticFile(`audio/${s.src}`)} volume={s.volume} />
         </Sequence>
       ))}

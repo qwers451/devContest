@@ -1,5 +1,6 @@
 import { Composition } from "remotion";
 import { DemoVideo, TOTAL } from "./DemoVideo";
+import { FPS } from "./time";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -7,7 +8,7 @@ export const RemotionRoot: React.FC = () => {
       id="DevContestDemo"
       component={DemoVideo}
       durationInFrames={TOTAL}
-      fps={30}
+      fps={FPS}
       width={1920}
       height={1080}
       defaultProps={{ bgm: true }}

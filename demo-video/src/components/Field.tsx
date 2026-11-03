@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef } from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
+import { useVideoConfig } from "remotion";
+import { useT } from "../time";
 import { C, F } from "../theme";
 
 // Поле символов на сетке, как фон hero лендинга: слева «сырые» решения (шум),
@@ -26,7 +27,7 @@ const noise = (x: number, y: number) => {
 };
 
 export const Field: React.FC<{ intensity?: number; dark?: boolean }> = ({ intensity = 1, dark = true }) => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const { width, height } = useVideoConfig();
   const ref = useRef<HTMLCanvasElement>(null);
 

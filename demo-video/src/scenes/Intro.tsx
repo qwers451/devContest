@@ -1,7 +1,8 @@
 import React from "react";
-import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, interpolate } from "remotion";
+import { useT } from "../time";
 import { Kinetic, Mono } from "../components/Kinetic";
-import { Graphite, Lead, Paper, TextCol, Wordmark } from "../components/Layout";
+import { Graphite, UI, UiScene, Wordmark } from "../components/Layout";
 import { Shot } from "../components/Shot";
 import { C, EASE, clamp } from "../theme";
 
@@ -17,7 +18,7 @@ export const Hook: React.FC = () => (
 
 /** 2. Поворот: конкурс вместо подрядчика, появление знака. */
 export const Turn: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const mark = interpolate(frame, [46, 70], [0, 1], { ...clamp, easing: EASE.out });
   return (
     <Graphite field={1}>
@@ -36,71 +37,59 @@ export const Turn: React.FC = () => {
   );
 };
 
-/** 3. Лендинг: камера наезжает на hero. */
+/** 3. Лендинг: камера проходит по hero почти на весь кадр. */
 export const Landing: React.FC = () => (
-  <Paper>
-    <TextCol width={700}>
-      <Kinetic text="Для компаний, стартапов и специалистов" size={84} />
-      <Lead delay={18}>Творческие и технические конкурсы в цифровом формате: заказчик получает несколько готовых решений и платит за лучшие.</Lead>
-    </TextCol>
+  <UiScene title="Для компаний, стартапов и специалистов" note="творческие и технические конкурсы">
     <Shot
       src="shots/landing.png"
       pageH={1080}
-      w={980}
-      h={720}
-      style={{ position: "absolute", right: 90, top: 180 }}
+      w={UI.w}
+      h={UI.h}
+      style={{ position: "absolute", left: UI.x, top: UI.y }}
       cam={[
-        { f: 0, cx: 960, cy: 540, zoom: 0.54 },
-        { f: 120, cx: 760, cy: 520, zoom: 0.78 },
+        { f: 0, cx: 960, cy: 540, zoom: 0.92 },
+        { f: 140, cx: 960, cy: 555, zoom: 1.16 },
       ]}
-      tilt={[
-        { f: 0, ry: -14, rx: 6 },
-        { f: 120, ry: -4, rx: 2 },
-      ]}
+      tilt={[{ f: 0, rx: 8 }, { f: 22, rx: 0 }]}
     />
-  </Paper>
+  </UiScene>
 );
 
-/** 4. Личные кабинеты заказчика и исполнителя. */
+/** 4. Личные кабинеты заказчика и исполнителя: два больших окна рядом. */
 export const Cabinets: React.FC = () => (
-  <Paper>
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 96 }}>
-      <Kinetic text="Личные кабинеты заказчиков и исполнителей" size={84} align="center" />
-    </AbsoluteFill>
+  <UiScene title="Личные кабинеты заказчиков и исполнителей">
     <Shot
       src="shots/wallet.png"
       pageH={1080}
-      w={780}
-      h={560}
-      enter={10}
-      style={{ position: "absolute", left: 150, top: 330 }}
+      w={862}
+      h={UI.h - 70}
+      enter={4}
+      style={{ position: "absolute", left: UI.x, top: UI.y }}
       cam={[
-        { f: 0, cx: 960, cy: 300, zoom: 0.7 },
-        { f: 110, cx: 960, cy: 330, zoom: 0.78 },
+        { f: 0, cx: 960, cy: 380, zoom: 1.04 },
+        { f: 120, cx: 960, cy: 360, zoom: 1.08 },
       ]}
-      tilt={[{ f: 0, ry: 12 }, { f: 110, ry: 6 }]}
     />
     <Shot
       src="shots/solution.png"
       pageH={1180}
-      w={780}
-      h={560}
-      enter={22}
-      style={{ position: "absolute", right: 150, top: 330 }}
+      w={862}
+      h={UI.h - 70}
+      enter={14}
+      style={{ position: "absolute", left: UI.x + 898, top: UI.y }}
       cam={[
-        { f: 0, cx: 960, cy: 330, zoom: 0.62 },
-        { f: 110, cx: 960, cy: 380, zoom: 0.7 },
+        { f: 0, cx: 960, cy: 380, zoom: 0.92 },
+        { f: 120, cx: 960, cy: 470, zoom: 0.92 },
       ]}
-      tilt={[{ f: 0, ry: -12 }, { f: 110, ry: -6 }]}
     />
-    <Label x={150} text="Заказчик: кошелёк, конкурсы, выплаты" delay={30} />
-    <Label x={990} text="Исполнитель: решения, оценки, отзывы" delay={40} />
-  </Paper>
+    <Label x={UI.x} text="Заказчик: кошелёк, конкурсы, выплаты" delay={26} />
+    <Label x={UI.x + 898} text="Исполнитель: решения, оценки, отзывы" delay={34} />
+  </UiScene>
 );
 
 const Label: React.FC<{ x: number; text: string; delay: number }> = ({ x, text, delay }) => (
-  <div style={{ position: "absolute", left: x, top: 920, width: 780 }}>
-    <Mono delay={delay} color={C.ink2} size={30}>
+  <div style={{ position: "absolute", left: x, top: UI.y + UI.h - 44, width: 862 }}>
+    <Mono delay={delay} color={C.ink2} size={28}>
       {text}
     </Mono>
   </div>

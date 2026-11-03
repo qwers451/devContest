@@ -1,5 +1,6 @@
 import React from "react";
-import { interpolate, useCurrentFrame } from "remotion";
+import { interpolate } from "remotion";
+import { useT } from "../time";
 import { C, EASE, F, clamp } from "../theme";
 
 /**
@@ -19,7 +20,7 @@ export const Kinetic: React.FC<{
   exitAt?: number;
   style?: React.CSSProperties;
 }> = ({ text, delay = 0, stagger = 4, size = 120, color = C.ink, accent = [], accentColor = C.accent, weight = 600, align = "left", exitAt, style }) => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const words = text.split(" ");
   const exit = exitAt === undefined ? 1 : interpolate(frame, [exitAt, exitAt + 10], [1, 0], { ...clamp, easing: EASE.out });
   return (
@@ -68,7 +69,7 @@ export const Mono: React.FC<{ children: React.ReactNode; delay?: number; color?:
   size = 30,
   style,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const t = interpolate(frame, [delay, delay + 16], [0, 1], { ...clamp, easing: EASE.out });
   return (
     <div style={{ fontFamily: F.mono, fontSize: size, color, opacity: t, transform: `translateY(${(1 - t) * 10}px)`, ...style }}>

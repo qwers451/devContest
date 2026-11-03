@@ -1,5 +1,6 @@
 import React from "react";
-import { interpolate, useCurrentFrame } from "remotion";
+import { interpolate } from "remotion";
+import { useT } from "../time";
 import { EASE, clamp } from "../theme";
 
 const fmt = (n: number) => Math.round(n).toLocaleString("ru-RU").replace(/ /g, " ");
@@ -13,7 +14,7 @@ export const Counter: React.FC<{ to: number; from?: number; delay?: number; dur?
   suffix = "",
   style,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const t = interpolate(frame, [delay, delay + dur], [0, 1], { ...clamp, easing: EASE.out });
   return (
     <span style={{ fontVariantNumeric: "tabular-nums", ...style }}>

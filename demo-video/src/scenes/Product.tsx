@@ -1,44 +1,35 @@
 import React from "react";
-import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, interpolate } from "remotion";
+import { useT } from "../time";
 import { Counter } from "../components/Counter";
 import { Kinetic, Mono } from "../components/Kinetic";
-import { Chip, Graphite, Lead, Paper, TextCol } from "../components/Layout";
+import { Graphite, Lead, UI, UiScene } from "../components/Layout";
 import { Shot } from "../components/Shot";
 import { C, EASE, F, clamp } from "../theme";
 
-/** 5. Модуль управления конкурсами: задание, сроки, критерии, призовой фонд. */
+/** 5. Модуль управления конкурсами: камера идёт по форме от ТЗ к призовому фонду. */
 export const CreateContest: React.FC = () => (
-  <Paper>
-    <TextCol width={700}>
-      <Kinetic text="Конкурс за пару минут" size={80} />
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-        <Chip delay={16}>Задание и ТЗ</Chip>
-        <Chip delay={22}>Сроки и этапы</Chip>
-        <Chip delay={28}>Критерии</Chip>
-        <Chip delay={34}>Призовой фонд</Chip>
-      </div>
-      <Lead delay={40}>Заказчик сам делит фонд по местам и сразу видит, сколько получит каждый победитель.</Lead>
-    </TextCol>
+  <UiScene title="Конкурс за пару минут" note="задание · сроки · критерии · призовой фонд">
     <Shot
       src="shots/create.png"
       pageH={1758}
-      w={960}
-      h={820}
-      style={{ position: "absolute", right: 100, top: 130 }}
+      w={UI.w}
+      h={UI.h}
+      style={{ position: "absolute", left: UI.x, top: UI.y }}
       cam={[
-        { f: 0, cx: 960, cy: 380, zoom: 0.92 },
-        { f: 40, cx: 960, cy: 420, zoom: 0.92 },
-        { f: 110, cx: 960, cy: 1060, zoom: 1.02 },
-        { f: 150, cx: 960, cy: 1080, zoom: 1.08 },
+        { f: 0, cx: 960, cy: 330, zoom: 1.75 },
+        { f: 30, cx: 960, cy: 330, zoom: 1.75 },
+        { f: 95, cx: 960, cy: 760, zoom: 1.75 },
+        { f: 160, cx: 960, cy: 1080, zoom: 1.75 },
       ]}
-      tilt={[{ f: 0, ry: -8 }, { f: 150, ry: -3 }]}
+      tilt={[{ f: 0, rx: 8 }, { f: 22, rx: 0 }]}
     />
-  </Paper>
+  </UiScene>
 );
 
 /** 6. Платёжный модуль: резерв фонда и комиссия 10%. */
 export const Payment: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useT();
   const ring = interpolate(frame, [20, 70], [0, 0.1], { ...clamp, easing: EASE.inOut });
   const R = 170;
   const L = 2 * Math.PI * R;
@@ -79,60 +70,46 @@ export const Payment: React.FC = () => {
   );
 };
 
-/** 7. Лента конкурсов: наклонённая страница проезжает в кадре. */
+/** 7. Лента конкурсов: наклонённая лента въезжает и выпрямляется. */
 export const ContestFeed: React.FC = () => (
-  <Paper>
+  <UiScene title="Исполнители выбирают задачу" note="решения и макеты хранятся в конкурсе">
     <Shot
       src="shots/contests.png"
       pageH={1080}
-      w={1500}
-      h={860}
-      style={{ position: "absolute", left: 360, top: 150 }}
+      w={UI.w}
+      h={UI.h}
+      style={{ position: "absolute", left: UI.x, top: UI.y }}
       cam={[
-        { f: 0, cx: 1100, cy: 360, zoom: 1.05 },
-        { f: 130, cx: 1100, cy: 760, zoom: 1.05 },
+        { f: 0, cx: 960, cy: 470, zoom: 1.22 },
+        { f: 130, cx: 960, cy: 660, zoom: 1.22 },
       ]}
-      tilt={[{ f: 0, rx: 24, rz: -6, ry: -10 }, { f: 130, rx: 18, rz: -4, ry: -6 }]}
+      tilt={[{ f: 0, rx: 16, rz: -3 }, { f: 40, rx: 0, rz: 0 }]}
     />
-    <AbsoluteFill
-      style={{
-        background: `linear-gradient(90deg, ${C.paper} 0%, ${C.paper} 30%, oklch(98.6% 0.005 250 / 0) 52%)`,
-      }}
-    />
-    <TextCol width={700}>
-      <Kinetic text="Исполнители выбирают задачу" size={80} />
-      <Lead delay={18}>Решения, макеты и прототипы загружаются прямо в конкурс и хранятся на платформе.</Lead>
-    </TextCol>
-  </Paper>
+  </UiScene>
 );
 
 /** 8a. Оценка ИИ: наезд на блок с баллом и критериями. */
 export const AiCheck: React.FC = () => (
-  <Paper>
-    <TextCol width={700}>
-      <Kinetic text="ИИ сверяет каждое решение с ТЗ" size={80} accent={["ИИ"]} />
-      <Lead delay={18}>Критерии извлекаются из текста задания. Заказчик видит балл, выполненные пункты и критические нарушения.</Lead>
-    </TextCol>
+  <UiScene title="ИИ сверяет каждое решение с ТЗ" accent={["ИИ"]} note="критерии извлекаются из задания">
     <Shot
       src="shots/solution.png"
       pageH={1180}
-      w={980}
-      h={760}
-      style={{ position: "absolute", right: 80, top: 160 }}
+      w={UI.w}
+      h={UI.h}
+      style={{ position: "absolute", left: UI.x, top: UI.y }}
       cam={[
-        { f: 0, cx: 960, cy: 420, zoom: 0.72 },
-        { f: 90, cx: 980, cy: 470, zoom: 1.35 },
-        { f: 140, cx: 980, cy: 480, zoom: 1.42 },
+        { f: 0, cx: 960, cy: 540, zoom: 0.92 },
+        { f: 70, cx: 960, cy: 470, zoom: 1.85 },
+        { f: 140, cx: 960, cy: 480, zoom: 1.85 },
       ]}
-      tilt={[{ f: 0, ry: -10, rx: 4 }, { f: 140, ry: -2, rx: 0 }]}
     />
-  </Paper>
+  </UiScene>
 );
 
 /** 8b. Фокусный момент: большое число соответствия ТЗ. */
 export const AiScore: React.FC = () => {
-  const frame = useCurrentFrame();
-  const bar = interpolate(frame, [10, 60], [0, 0.92], { ...clamp, easing: EASE.inOut });
+  const frame = useT();
+  const bar = interpolate(frame, [20, 70], [0, 0.92], { ...clamp, easing: EASE.inOut });
   return (
     <Graphite field={1}>
       <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
@@ -140,7 +117,7 @@ export const AiScore: React.FC = () => {
           оценка ИИ · соответствие ТЗ
         </Mono>
         <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 300, lineHeight: 1, color: C.gInk, letterSpacing: "-0.05em", marginTop: 12 }}>
-          <Counter to={92} delay={10} dur={50} suffix="%" />
+          <Counter to={92} delay={20} dur={50} suffix="%" />
         </div>
         <div style={{ width: 900, height: 14, borderRadius: 7, background: "oklch(30% 0.03 262)", overflow: "hidden", marginTop: 28 }}>
           <div style={{ width: "100%", height: "100%", background: C.accent2, transformOrigin: "left", transform: `scaleX(${bar})` }} />
@@ -155,35 +132,29 @@ export const AiScore: React.FC = () => {
   );
 };
 
-/** 9. Средства коммуникации: чат, уведомления, обсуждения. */
+/** 9. Средства коммуникации: переписка крупно, поверх — открытые уведомления. */
 export const Communication: React.FC = () => (
-  <Paper>
-    <TextCol width={700}>
-      <Kinetic text="Чат, уведомления и обсуждения" size={80} />
-      <Lead delay={18}>Сообщения приходят мгновенно по WebSocket. О новых решениях, сроках и итогах платформа сообщает сама.</Lead>
-    </TextCol>
+  <UiScene title="Чат, уведомления и обсуждения" note="сообщения приходят по WebSocket">
     <Shot
       src="shots/chat.png"
       pageH={1080}
-      w={980}
-      h={660}
-      style={{ position: "absolute", right: 140, top: 100 }}
+      w={UI.w}
+      h={UI.h}
+      style={{ position: "absolute", left: UI.x, top: UI.y }}
       cam={[
-        { f: 0, cx: 1100, cy: 420, zoom: 0.72 },
-        { f: 140, cx: 1180, cy: 460, zoom: 0.9 },
+        { f: 0, cx: 960, cy: 560, zoom: 1.24 },
+        { f: 140, cx: 960, cy: 540, zoom: 1.26 },
       ]}
-      tilt={[{ f: 0, ry: -10 }, { f: 140, ry: -4 }]}
     />
     <Shot
       src="shots/bell.png"
       pageH={1080}
-      w={560}
-      h={380}
-      enter={46}
+      w={720}
+      h={480}
+      enter={50}
       radius={14}
-      style={{ position: "absolute", right: 70, top: 640 }}
-      cam={[{ f: 0, cx: 1500, cy: 170, zoom: 1.1 }, { f: 140, cx: 1500, cy: 180, zoom: 1.16 }]}
-      tilt={[{ f: 0, ry: 8, rz: -2 }, { f: 140, ry: 4, rz: -1 }]}
+      style={{ position: "absolute", right: 110, bottom: 70 }}
+      cam={[{ f: 0, cx: 1146, cy: 232, zoom: 1.14 }, { f: 140, cx: 1146, cy: 232, zoom: 1.16 }]}
     />
-  </Paper>
+  </UiScene>
 );
