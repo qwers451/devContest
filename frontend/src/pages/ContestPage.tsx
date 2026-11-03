@@ -15,10 +15,11 @@ const statusConfig = {
 };
 
 const ContestPage = () => {
-    const { contest, user } = useContext(Context);
+    const { contest, user, chat } = useContext(Context);
     const { number } = useParams();
     const [currentContest, setCurrentContest] = useState(null);
     const [error, setError] = useState(null);
+    const [chatError, setChatError] = useState('');
     const [editingStages, setEditingStages] = useState(false);
     const [draftStages, setDraftStages] = useState([]);
     const [savingStages, setSavingStages] = useState(false);
@@ -564,6 +565,22 @@ const ContestPage = () => {
                                 Отправить решение
                             </button>
                         )}
+                        {(isFreelancer && currentContest.status === 'active') && (
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const conv = await chat.openWith(currentContest.id);
+                                        navigate(`/messages/${conv.id}`);
+                                    } catch {
+                                        setChatError('Не удалось открыть диалог с заказчиком');
+                                    }
+                                }}
+                                className="flex-1 sm:flex-none min-h-[44px] inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-md border border-gray-700 text-gray-200 hover:bg-gray-700 font-semibold text-[13px] transition-colors focus-visible:ring-2 focus-visible:ring-violet-500 focus:outline-none"
+                            >
+                                Задать вопрос заказчику
+                            </button>
+                        )}
+                        {chatError && <span className="self-center text-[12px] text-red-400">{chatError}</span>}
                         {(isAdmin || isOwner) && (
                             <>
                                 {isOwner && currentContest.status === 'draft' && (

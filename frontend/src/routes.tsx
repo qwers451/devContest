@@ -18,6 +18,7 @@ import {
     PAYMENT_CHECKOUT_ROUTE,
     PAYMENT_CALLBACK_ROUTE,
     WALLET_ROUTE,
+    MESSAGES_ROUTE,
 } from "./utils/consts.js";
 import Auth from "./pages/Auth";
 import Contests from "./pages/Contests";
@@ -36,6 +37,7 @@ import ProfilePage from "./pages/ProfilePage";
 import PaymentCheckoutPage from "./pages/PaymentCheckoutPage";
 import PaymentCallbackPage from "./pages/PaymentCallbackPage";
 import WalletPage from "./pages/WalletPage";
+import ChatPage from "./pages/ChatPage";
 
 export const authRoutes = [
     {
@@ -97,6 +99,14 @@ export const authRoutes = [
     {
         path: WALLET_ROUTE,
         element: <WalletPage />
+    },
+    {
+        path: MESSAGES_ROUTE,
+        element: <ChatPage />
+    },
+    {
+        path: MESSAGES_ROUTE + '/:conversationId',
+        element: <ChatPage />
     },
 ]
 

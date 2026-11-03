@@ -19,6 +19,7 @@ import {
     PAYMENT_CHECKOUT_ROUTE,
     PAYMENT_CALLBACK_ROUTE,
     WALLET_ROUTE,
+    MESSAGES_ROUTE,
 } from "./utils/consts.js";
 
 const Auth = lazy(() => import('./pages/Auth'));
@@ -38,6 +39,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const PaymentCheckoutPage = lazy(() => import('./pages/PaymentCheckoutPage'));
 const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'));
 const WalletPage = lazy(() => import('./pages/WalletPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
 
 export const authRoutes = [
     {
@@ -99,6 +101,14 @@ export const authRoutes = [
     {
         path: WALLET_ROUTE,
         element: <WalletPage />
+    },
+    {
+        path: MESSAGES_ROUTE,
+        element: <ChatPage />
+    },
+    {
+        path: MESSAGES_ROUTE + '/:conversationId',
+        element: <ChatPage />
     },
 ]
 

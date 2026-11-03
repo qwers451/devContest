@@ -9,6 +9,8 @@
 import type { AxiosAdapter, AxiosRequestConfig, AxiosResponse } from "axios";
 
 import type {
+  ChatMessage,
+  Conversation as ChatConversation,
   Contest,
   ContestStage,
   ContestType,
@@ -240,6 +242,99 @@ const statistics: Statistics = {
   ],
 };
 
+// ── Чат ─────────────────────────────────────────────────────────────────────
+// Текущий демо-пользователь — users[0] (заказчик orbit_studio, id 1).
+const minutesAgo = (m: number) => new Date(now - m * 60000).toISOString();
+
+const chatMessages: ChatMessage[] = [
+  { id: 1, conversation_id: 1, sender_id: 2, text: "Здравствуйте! Посмотрела ТЗ, есть пара вопросов по макетам.", created_at: iso(-1), read_at: iso(-1) },
+  { id: 2, conversation_id: 1, sender_id: 1, text: "Добрый день! Слушаю, что именно вас интересует?", created_at: iso(-1), read_at: iso(-1) },
+  { id: 3, conversation_id: 1, sender_id: 2, text: "Нужны ли адаптивные версии для планшетов или достаточно десктопа и мобильных?", created_at: minutesAgo(190), read_at: minutesAgo(180) },
+  { id: 4, conversation_id: 1, sender_id: 1, text: "Планшеты тоже нужны, но в приоритете десктоп и телефон.", created_at: minutesAgo(170), read_at: minutesAgo(160) },
+  { id: 5, conversation_id: 1, sender_id: 2, text: "Поняла, отправлю решение до дедлайна. Спасибо!", created_at: minutesAgo(25), read_at: null },
+  { id: 6, conversation_id: 2, sender_id: 1, text: "Николай, ваше решение выглядит интересно. Сможете добавить тёмную тему?", created_at: minutesAgo(300), read_at: minutesAgo(290) },
+  { id: 7, conversation_id: 2, sender_id: 3, text: "Да, конечно. Добавлю в течение пары дней.", created_at: minutesAgo(280), read_at: minutesAgo(270) },
+];
+
+const chatConversation = (id: number, contestIdx: number, otherId: number): ChatConversation => {
+  const c = contests[contestIdx];
+  const other = users.find((u) => u.id === otherId)!;
+  const msgs = chatMessages.filter((m) => m.conversation_id === id);
+  const last = msgs[msgs.length - 1];
+  return {
+    id,
+    contest_id: c.id,
+    customer_id: 1,
+    executor_id: otherId,
+    created_at: iso(-3),
+    last_message_at: last?.created_at ?? null,
+    contest_title: c.title,
+    contest_number: c.number,
+    other_user_id: otherId,
+    other_user_login: other.login,
+    last_message: last
+      ? { id: last.id, sender_id: last.sender_id, text: last.text.slice(0, 120), created_at: last.created_at }
+      : null,
+    unread_count: msgs.filter((m) => m.sender_id !== 1 && !m.read_at).length,
+  };
+};
+
+const chatConversationSpecs: [number, number, number][] = [
+  [1, 0, 2],
+  [2, 1, 3],
+];
+
+/** Маршруты /chat/*; undefined — не чат-запрос. */
+function chatRoute(path: string, method: string, body: unknown): unknown {
+  if (!path.startsWith("/chat")) return undefined;
+  if (path === "/chat/conversations" && method === "post") {
+    const { contest_id } = (body ?? {}) as { contest_id?: number };
+    const idx = Math.max(0, contests.findIndex((c) => c.id === contest_id));
+    const spec = chatConversationSpecs.find((s) => s[1] === idx) ?? chatConversationSpecs[0];
+    return chatConversation(...spec);
+  }
+  if (path === "/chat/conversations") {
+    return chatConversationSpecs
+      .map((s) => chatConversation(...s))
+      .sort((a, b) => (b.last_message_at ?? "").localeCompare(a.last_message_at ?? ""));
+  }
+  if (path === "/chat/unread-count") {
+    return {
+      unread_count: chatConversationSpecs.reduce((n, s) => n + chatConversation(...s).unread_count, 0),
+    };
+  }
+  let m = path.match(/^\/chat\/conversations\/(\d+)\/messages$/);
+  if (m) {
+    const id = Number(m[1]);
+    if (method === "post") {
+      const { text } = (body ?? {}) as { text?: string };
+      const msg: ChatMessage = {
+        id: chatMessages.reduce((mx, x) => Math.max(mx, x.id), 0) + 1,
+        conversation_id: id,
+        sender_id: 1,
+        text: String(text ?? "").trim(),
+        created_at: new Date().toISOString(),
+        read_at: null,
+      };
+      chatMessages.push(msg);
+      return msg;
+    }
+    return chatMessages.filter((x) => x.conversation_id === id);
+  }
+  m = path.match(/^\/chat\/conversations\/(\d+)\/read$/);
+  if (m) {
+    let marked = 0;
+    chatMessages.forEach((x) => {
+      if (x.conversation_id === Number(m![1]) && x.sender_id !== 1 && !x.read_at) {
+        x.read_at = new Date().toISOString();
+        marked += 1;
+      }
+    });
+    return { marked };
+  }
+  return [];
+}
+
 /** Таблица маршрутов: первое совпадение отдаёт ответ. */
 const routes: [RegExp, (match: RegExpMatchArray) => unknown][] = [
   [/^\/contests$/, () => ({ items: contests, total: contests.length, page: 1, pages: 1 })],
@@ -288,7 +383,16 @@ function resolve(url: string): unknown {
 }
 
 export const demoAdapter: AxiosAdapter = async (config: AxiosRequestConfig) => {
-  const data = resolve(config.url ?? "/");
+  const path = (config.url ?? "/").split("?")[0].replace(/\/+$/, "") || "/";
+  let body: unknown = config.data;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      /* не JSON */
+    }
+  }
+  const data = chatRoute(path, (config.method ?? "get").toLowerCase(), body) ?? resolve(config.url ?? "/");
   // Небольшая задержка, чтобы состояния загрузки выглядели естественно.
   await new Promise((resolveDelay) => setTimeout(resolveDelay, 60));
   return {

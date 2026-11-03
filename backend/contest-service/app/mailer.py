@@ -199,5 +199,5 @@ async def notify_chat_message(
         f"Новое сообщение от {login}",
         [f"Вам написал(а) {login}{title_part}:", f"«{preview}»"],
         "Открыть чат",
-        "/chat",
+        f"/messages/{conversation_id}",
     )

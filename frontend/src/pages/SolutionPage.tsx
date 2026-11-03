@@ -549,12 +549,13 @@ const StatusHistorySection = ({ statusLog, getStatus }) => {
 };
 
 const SolutionPage = () => {
-  const { solution, contest, user, payment } = useContext(Context);
+  const { solution, contest, user, payment, chat } = useContext(Context);
   const { number } = useParams();
   const [currentSolution, setCurrentSolution] = useState(null);
   const [currentContest, setCurrentContest] = useState(null);
   const [freelancer, setFreelancer] = useState(null);
   const [error, setError] = useState(null);
+  const [chatError, setChatError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
@@ -744,6 +745,16 @@ const SolutionPage = () => {
   const winnerConfirmMessage = hasMilestones
     ? `Конкурс завершится. ${allMilestonesPaid ? "Все поэтапные выплаты уже произведены." : `Оставшиеся средства (${currentContest.prizepool} руб.) будут выплачены исполнителю.`} Действие необратимо.`
     : `Вы уверены, что хотите выбрать это решение победителем? Конкурс завершится, а приз (${currentContest.prizepool} руб.) будет начислен исполнителю. Действие необратимо.`;
+
+  const handleWriteToExecutor = async () => {
+    try {
+      const conv = await chat.openWith(currentContest.id, currentSolution.executor_id);
+      navigate(`/messages/${conv.id}`);
+    } catch (e) {
+      console.error("Не удалось открыть диалог:", e);
+      setChatError("Не удалось открыть диалог с исполнителем");
+    }
+  };
 
   const handleDelete = async () => {
     try {
@@ -1030,6 +1041,14 @@ const SolutionPage = () => {
                       Удалить
                     </button>
                   </>
+                )}
+                {isEmployer && isContestOwner && (
+                  <button onClick={handleWriteToExecutor} className={btnSecondary}>
+                    Написать исполнителю
+                  </button>
+                )}
+                {chatError && (
+                  <span className="self-center text-[12px] text-red-400">{chatError}</span>
                 )}
                 {isEmployer && (
                   <>

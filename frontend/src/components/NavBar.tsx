@@ -12,10 +12,11 @@ import {
   CREATE_CONTEST_ROUTE,
   PROFILE_ROUTE,
   WALLET_ROUTE,
+  MESSAGES_ROUTE,
 } from "../utils/consts.js";
 
 const NavBar = observer(() => {
-  const { user, payment } = useContext(Context);
+  const { user, payment, chat } = useContext(Context);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -25,7 +26,18 @@ const NavBar = observer(() => {
     }
   }, [user.isAuth]);
 
+  // Один WebSocket чата на пользователя: открываем после входа, закрываем при выходе.
+  const myId = (user.user as { id?: number })?.id;
+  useEffect(() => {
+    if (user.isAuth && myId) {
+      chat.connect(myId);
+    } else {
+      chat.disconnect();
+    }
+  }, [user.isAuth, myId]);
+
   const logOut = () => {
+    chat.disconnect();
     user.setUser({});
     user.setIsAuth(false);
     localStorage.removeItem("token");
@@ -48,6 +60,17 @@ const NavBar = observer(() => {
       <>
         <NavLink to={CONTESTS_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
           Конкурсы
+        </NavLink>
+        <NavLink to={MESSAGES_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
+          Сообщения
+          {chat.unreadTotal > 0 && (
+            <span
+              className="ml-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-600 px-1 text-[10px] font-semibold text-white"
+              aria-label={`Непрочитанных: ${chat.unreadTotal}`}
+            >
+              {chat.unreadTotal > 99 ? "99+" : chat.unreadTotal}
+            </span>
+          )}
         </NavLink>
         {role === "executor" && (
           <NavLink to={MY_SOLUTIONS_ROUTE} className={linkClass} onClick={() => setOpen(false)}>
