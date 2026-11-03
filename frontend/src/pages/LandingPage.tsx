@@ -1,286 +1,346 @@
-import { useContext } from "react";
+import { useContext, useEffect, useRef, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { observer } from "mobx-react-lite";
-import {
-  BsArrowRight,
-  BsBell,
-  BsBriefcase,
-  BsChatDots,
-  BsCodeSlash,
-  BsRobot,
-  BsShieldCheck,
-  BsStarFill,
-  BsTrophy,
-} from "react-icons/bs";
 import { Context } from "../context";
-import { CONTESTS_ROUTE, LEADERBOARD_ROUTE, REGISTRATION_ROUTE } from "../utils/consts.js";
+import {
+  ABOUT_ROUTE,
+  CONTESTS_ROUTE,
+  LANDING_ROUTE,
+  LEADERBOARD_ROUTE,
+  LOGIN_ROUTE,
+  REGISTRATION_ROUTE,
+} from "../utils/consts.js";
 import { FASIE_SUPPORT_TEXT } from "./AboutPage";
+import AsciiField from "./landing/AsciiField";
+import "./landing/landing.css";
 
 // Стартовая страница: описание продукта для тех, кто пришёл впервые.
-// Рабочая часть платформы начинается со списка конкурсов (CONTESTS_ROUTE).
+// Свои шапка и подвал (общие NavBar и Footer на этом маршруте скрыты),
+// стили изолированы в .hm, чтобы не задевать тёмную тему приложения.
 
-const features = [
+const path = [
   {
-    icon: BsTrophy,
-    title: "Конкурсы с призовыми местами",
-    text: "Заказчик публикует ТЗ, бюджет и распределение призов. Платит только за лучшие решения.",
+    title: "ТЗ",
+    text: "Заказчик описывает задачу, срок и делит призовой фонд по местам.",
+    value: "места: 60 / 30 / 10 %",
   },
   {
-    icon: BsRobot,
-    title: "ИИ-проверка по ТЗ",
-    text: "Каждое решение автоматически сверяется с требованиями — заказчик сразу видит, что выполнено.",
+    title: "Резерв фонда",
+    text: "Конкурс открывается, только когда призовой фонд зарезервирован.",
+    value: "escrow: held",
   },
   {
-    icon: BsShieldCheck,
-    title: "Кошелёк и эскроу",
-    text: "Призовой фонд резервируется при запуске конкурса и выплачивается победителям после итогов.",
+    title: "Решения",
+    text: "Исполнители присылают работы до дедлайна и задают вопросы в обсуждении.",
+    value: "status: active",
   },
   {
-    icon: BsStarFill,
-    title: "Рейтинг исполнителей",
-    text: "Отзывы, оценки ИИ и призовые места складываются в публичный рейтинг и портфолио.",
+    title: "Анализ ИИ",
+    text: "Требования извлекаются из ТЗ, каждое решение сверяется с ними.",
+    value: "критерии ← ТЗ",
+    key: true,
   },
   {
-    icon: BsChatDots,
-    title: "Чат и обсуждения",
-    text: "Личные сообщения и обсуждение под каждым конкурсом — вопросы по ТЗ решаются в одном месте.",
-  },
-  {
-    icon: BsBell,
-    title: "Уведомления",
-    text: "Новые решения, дедлайны и итоги конкурсов приходят в центр уведомлений в реальном времени.",
+    title: "Выплата",
+    text: "Заказчик выбирает победителей, призы уходят на их кошельки.",
+    value: "release-award",
   },
 ];
 
-const steps = [
-  { title: "Опишите задачу", text: "Заказчик создаёт конкурс: ТЗ, сроки, призовой фонд и места." },
-  { title: "Получите решения", text: "Исполнители присылают работы, ИИ оценивает соответствие требованиям." },
-  { title: "Выберите лучших", text: "Заказчик выбирает победителей, призы уходят им на кошельки." },
+const prizes = [
+  { place: "1", share: "60%", prize: "108 000 ₽", net: "97 200 ₽" },
+  { place: "2", share: "30%", prize: "54 000 ₽", net: "48 600 ₽" },
+  { place: "3", share: "10%", prize: "18 000 ₽", net: "16 200 ₽" },
 ];
 
-const audiences = [
+const questions = [
   {
-    icon: BsBriefcase,
-    title: "Заказчикам",
-    points: [
-      "Несколько вариантов решения вместо одного",
-      "Оплата только за результат",
-      "Автоматическая первичная проверка по ТЗ",
-    ],
+    q: "Кто может создать конкурс?",
+    a: "Любой пользователь с ролью организатора. Роль выбирается при регистрации.",
   },
   {
-    icon: BsCodeSlash,
-    title: "Исполнителям",
-    points: [
-      "Реальные задачи и прозрачные призы",
-      "Рейтинг и портфолио из выигранных конкурсов",
-      "Гарантированная выплата через эскроу",
-    ],
+    q: "Как ИИ проверяет решение?",
+    a: "Из текста ТЗ извлекаются критерии. Каждое решение получает оценку по ним, а заказчик видит отчёт с баллом и нарушениями.",
+  },
+  {
+    q: "Когда исполнитель получает деньги?",
+    a: "Сразу после того, как заказчик подвёл итоги: приз переводится из резерва на кошелёк победителя.",
+  },
+  {
+    q: "Можно ли уточнить задачу у заказчика?",
+    a: "Да. У каждого конкурса есть обсуждение, а с заказчиком можно переписываться в личных сообщениях.",
   },
 ];
-
-const mockSolutions = [
-  { login: "kate_dev", score: 94, place: "🥇" },
-  { login: "a.petrov", score: 88, place: "🥈" },
-  { login: "neo_front", score: 81, place: "🥉" },
-];
-
-const HeroMock = () => (
-  <div className="relative">
-    <div className="absolute -inset-6 rounded-3xl bg-violet-600/20 blur-3xl" aria-hidden />
-    <div className="relative rounded-xl border border-gray-700 bg-gray-900/90 p-5 shadow-2xl">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-[11px] uppercase tracking-wider text-gray-500">Конкурс · Веб-разработка</div>
-          <div className="mt-1 text-[15px] font-semibold text-gray-100">Лендинг для IT-конференции</div>
-        </div>
-        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
-          Идёт
-        </span>
-      </div>
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        {[
-          ["120 000 ₽", "призовой фонд"],
-          ["14", "решений"],
-          ["2 д 6 ч", "до финиша"],
-        ].map(([v, l]) => (
-          <div key={l} className="rounded-lg border border-gray-700 bg-gray-800 px-2 py-2">
-            <div className="text-[14px] font-semibold tabular-nums text-gray-100">{v}</div>
-            <div className="text-[11px] text-gray-500">{l}</div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 space-y-2">
-        {mockSolutions.map((s) => (
-          <div key={s.login} className="flex items-center gap-3 rounded-lg bg-gray-800/60 px-3 py-2">
-            <span className="text-[16px]" aria-hidden>
-              {s.place}
-            </span>
-            <span className="w-24 truncate text-[13px] text-gray-200">{s.login}</span>
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-700">
-              <div className="h-full rounded-full bg-violet-500" style={{ width: `${s.score}%` }} />
-            </div>
-            <span className="w-14 text-right text-[12px] tabular-nums text-gray-400">ИИ {s.score}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-);
 
 const LandingPage = () => {
   const { user } = useContext(Context)!;
+  const mapRef = useRef<HTMLElement>(null);
+
+  // Соединители карты прорисовываются один раз, когда карта входит в экран.
+  // Взводим анимацию только если карта ещё ниже экрана: без JS и при reduced motion линии видны сразу.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (map.getBoundingClientRect().top < window.innerHeight * 0.8) return;
+    map.classList.add("is-armed");
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        map.classList.add("is-drawn");
+        io.disconnect();
+      },
+      { rootMargin: "0px 0px -25% 0px" },
+    );
+    io.observe(map);
+    return () => io.disconnect();
+  }, []);
+
+  const secondary = user.isAuth
+    ? { to: LEADERBOARD_ROUTE, label: "Рейтинг исполнителей" }
+    : { to: REGISTRATION_ROUTE, label: "Создать аккаунт" };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gray-950 text-gray-100">
-      {/* Hero */}
-      <section className="relative">
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(ellipse_at_top,rgba(94,106,210,0.25),transparent_60%)]"
-          aria-hidden
-        />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-14 sm:pt-20 lg:grid-cols-2">
-          <div className="animate-fade-in">
-            <a
-              href="#support"
-              className="inline-flex items-center gap-2 rounded-full border border-gray-700 bg-gray-900 px-3 py-1 text-[12px] text-gray-300 transition-colors hover:border-gray-600"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-              При поддержке Фонда содействия инновациям
+    <div className="hm" data-theme="cobalt">
+      <header className="hm-nav">
+        <div className="container">
+          <Link to={LANDING_ROUTE} className="hm-wordmark">
+            <img src="/logo.svg" alt="" width="22" height="22" />
+            devContest
+          </Link>
+          <nav className="hm-nav__links" aria-label="Основная навигация">
+            <Link to={LEADERBOARD_ROUTE} className="textlink">
+              Рейтинг
+            </Link>
+            <a href="#support" className="textlink">
+              Поддержка Фонда
             </a>
-            <h1 className="mt-5 text-[36px] font-semibold leading-[1.1] tracking-tight sm:text-[48px]">
-              Конкурсный фриланс
-              <br />
-              <span className="bg-gradient-to-r from-violet-300 to-violet-500 bg-clip-text text-transparent">
-                для разработчиков
-              </span>
-            </h1>
-            <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-gray-400">
-              devContest соединяет заказчиков и исполнителей через конкурсы: вы публикуете задачу, получаете
-              несколько готовых решений с ИИ-проверкой по ТЗ и платите только за лучшие.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                to={CONTESTS_ROUTE}
-                className="inline-flex h-11 items-center gap-2 rounded-md bg-violet-600 px-5 text-[14px] font-medium text-white transition-colors hover:bg-violet-500"
-              >
-                Смотреть конкурсы <BsArrowRight />
+            {user.isAuth ? (
+              <Link to={CONTESTS_ROUTE} className="key key--small">
+                К конкурсам
               </Link>
-              {user.isAuth ? (
-                <Link
-                  to={LEADERBOARD_ROUTE}
-                  className="inline-flex h-11 items-center rounded-md border border-gray-700 px-5 text-[14px] font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-900"
-                >
-                  Рейтинг исполнителей
+            ) : (
+              <Link to={LOGIN_ROUTE} className="key key--small">
+                Войти
+              </Link>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      <main>
+        <section className="hm-hero">
+          <AsciiField />
+          <div className="container hm-hero__grid">
+            <div className="hm-hero__text">
+              <h1>Конкурс вместо одного подрядчика</h1>
+              <p className="lead">
+                Опубликуйте ТЗ с призовым фондом и получите несколько решений, проверенных ИИ.
+              </p>
+              <div className="hm-hero__actions">
+                <Link to={CONTESTS_ROUTE} className="key key--primary">
+                  Смотреть конкурсы
                 </Link>
-              ) : (
-                <Link
-                  to={REGISTRATION_ROUTE}
-                  className="inline-flex h-11 items-center rounded-md border border-gray-700 px-5 text-[14px] font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-900"
-                >
-                  Создать аккаунт
+                <Link to={secondary.to} className="key">
+                  {secondary.label}
                 </Link>
-              )}
+              </div>
+              <p className="hm-hero__terms">Комиссия платформы 10%, удерживается из выплаты победителю.</p>
+            </div>
+            <figure className="shot">
+              <div className="shot__frame" data-slot="hero" data-kind="product">
+                <img
+                  src="/landing/screen-contest-ai-desktop.png"
+                  width="1732"
+                  height="1316"
+                  alt="Вкладка «Анализ ИИ» конкурса: два решения оценены, средний балл 83%, четыре критерия из ТЗ"
+                  fetchPriority="high"
+                />
+              </div>
+              <figcaption>Анализ ИИ на странице конкурса: критерии извлечены из ТЗ.</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section ref={mapRef} className="hm-map" aria-labelledby="map-title">
+          <div className="container">
+            <div className="hm-head">
+              <h2 id="map-title">Один путь от ТЗ до выплаты</h2>
+              <p className="lead">Деньги заказчика лежат в резерве, пока он не выберет победителей.</p>
+            </div>
+            <ol className="hm-map__path" aria-label="Путь конкурса">
+              {path.map((n, i) => (
+                <li
+                  key={n.title}
+                  className={n.key ? "hm-node hm-node--key" : "hm-node"}
+                  style={{ "--i": i } as CSSProperties}
+                >
+                  <h3>{n.title}</h3>
+                  <p>{n.text}</p>
+                  <span className="mono">{n.value}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="hm-map__aside">
+              <div className="hm-branch hm-branch--stages">
+                <h3>Этапы</h3>
+                <p>Большую задачу можно разбить на этапы, каждый оплачивается из резерва отдельно.</p>
+              </div>
+              <div className="hm-branch hm-branch--rating">
+                <h3>Рейтинг</h3>
+                <p>Места, отзывы заказчиков и оценки ИИ складываются в публичный рейтинг исполнителя.</p>
+              </div>
             </div>
           </div>
-          <div className="animate-fade-in [animation-delay:120ms]">
-            <HeroMock />
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Как это работает */}
-      <section className="border-t border-gray-700/60">
-        <div className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="text-[24px] font-semibold tracking-tight sm:text-[28px]">Как это работает</h2>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {steps.map((s, i) => (
-              <div key={s.title} className="rounded-lg border border-gray-700 bg-gray-900 p-5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600/20 text-[13px] font-semibold text-violet-300">
-                  {i + 1}
+        <section className="hm-showcase" aria-labelledby="list-title">
+          <div className="container">
+            <div className="hm-head">
+              <h2 id="list-title">Открытые задачи с призом и сроком</h2>
+              <p className="lead">Фильтры по типу, статусу, призовому фонду и дедлайну.</p>
+            </div>
+            <figure className="shot">
+              <div className="shot__frame" data-slot="contests" data-kind="product">
+                <img
+                  src="/landing/screen-contests-desktop.png"
+                  width="2880"
+                  height="1800"
+                  loading="lazy"
+                  alt="Список конкурсов: фильтры слева, карточки с призовым фондом, типом и сроком справа"
+                />
+              </div>
+            </figure>
+          </div>
+        </section>
+
+        <section className="hm-band" aria-labelledby="prize-title">
+          <div className="container hm-split">
+            <div className="hm-split__text">
+              <h2 id="prize-title">Фонд делится по местам</h2>
+              <p className="lead">Доли задаёт заказчик. Сумму на руки видно ещё до старта.</p>
+            </div>
+            <figure className="hm-table__wrap">
+              <table className="hm-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Место</th>
+                    <th scope="col">Доля</th>
+                    <th scope="col" className="r">
+                      Приз
+                    </th>
+                    <th scope="col" className="r">
+                      На руки
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {prizes.map((p) => (
+                    <tr key={p.place}>
+                      <td>{p.place}</td>
+                      <td>{p.share}</td>
+                      <td className="r mono">{p.prize}</td>
+                      <td className="r mono">{p.net}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <figcaption>Пример: конкурс «Личный кабинет для страхового брокера» с фондом 180 000 ₽.</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section className="hm-rating" aria-labelledby="rating-title">
+          <div className="container hm-split">
+            <figure className="shot">
+              <div className="shot__frame" data-slot="rating" data-kind="product">
+                <img
+                  src="/landing/screen-top-desktop.png"
+                  width="1796"
+                  height="906"
+                  loading="lazy"
+                  alt="Рейтинг исполнителей: место, уровень, число побед и сумма выплат"
+                />
+              </div>
+            </figure>
+            <div className="hm-split__text">
+              <h2 id="rating-title">Репутация, собранная из побед</h2>
+              <p className="lead">Победы, отзывы и оценки ИИ видны каждому заказчику.</p>
+              <div>
+                <Link to={LEADERBOARD_ROUTE} className="textlink">
+                  Открыть рейтинг
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="hm-faq" aria-labelledby="faq-title">
+          <div className="container hm-split">
+            <h2 id="faq-title">Частые вопросы</h2>
+            <dl className="hm-rows">
+              {questions.map(({ q, a }) => (
+                <div key={q}>
+                  <dt>{q}</dt>
+                  <dd>{a}</dd>
                 </div>
-                <div className="mt-4 text-[15px] font-semibold">{s.title}</div>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-gray-400">{s.text}</p>
-              </div>
-            ))}
+              ))}
+            </dl>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Возможности */}
-      <section className="border-t border-gray-700/60">
-        <div className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="text-[24px] font-semibold tracking-tight sm:text-[28px]">Всё для конкурса в одном месте</h2>
-          <p className="mt-2 max-w-2xl text-[14px] text-gray-400">
-            От публикации ТЗ до выплаты призов — без сторонних сервисов и ручных переводов.
-          </p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map(({ icon: Icon, title, text }) => (
-              <div
-                key={title}
-                className="rounded-lg border border-gray-700 bg-gray-900 p-5 transition-colors hover:border-gray-600"
-              >
-                <Icon className="h-5 w-5 text-violet-400" />
-                <div className="mt-3 text-[15px] font-semibold">{title}</div>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-gray-400">{text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Для кого */}
-      <section className="border-t border-gray-700/60">
-        <div className="mx-auto grid max-w-6xl gap-4 px-4 py-16 md:grid-cols-2">
-          {audiences.map(({ icon: Icon, title, points }) => (
-            <div key={title} className="rounded-lg border border-gray-700 bg-gray-900 p-6">
-              <div className="flex items-center gap-3">
-                <Icon className="h-5 w-5 text-violet-400" />
-                <h3 className="text-[18px] font-semibold">{title}</h3>
-              </div>
-              <ul className="mt-4 space-y-2">
-                {points.map((p) => (
-                  <li key={p} className="flex gap-2 text-[14px] text-gray-300">
-                    <span className="text-violet-400">—</span>
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Поддержка Фонда: логотип по требованию Фонда не является ссылкой */}
-      <section id="support" className="scroll-mt-16 border-t border-gray-700/60">
-        <div className="mx-auto max-w-6xl px-4 py-16">
-          <div className="flex flex-col items-center gap-8 rounded-xl border border-gray-700 bg-gray-900 p-8 text-center sm:flex-row sm:text-left">
+        <section id="support" className="hm-support" aria-label="Поддержка Фонда содействия инновациям">
+          <div className="container hm-support__grid">
             <img
-              src="/fasie-logo-white.png"
+              src="/fasie-logo.png"
               alt="Логотип Фонда содействия инновациям"
-              className="h-auto w-52 shrink-0 select-none"
+              className="hm-support__logo"
+              width="376"
+              height="211"
               draggable={false}
             />
-            <p className="text-[15px] leading-relaxed text-gray-200">{FASIE_SUPPORT_TEXT}</p>
+            <p className="hm-support__text">{FASIE_SUPPORT_TEXT}</p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Финальный призыв */}
-      <section className="border-t border-gray-700/60">
-        <div className="mx-auto max-w-6xl px-4 py-16 text-center">
-          <h2 className="text-[24px] font-semibold tracking-tight sm:text-[28px]">Готовы начать?</h2>
-          <p className="mx-auto mt-2 max-w-xl text-[14px] text-gray-400">
-            Посмотрите открытые конкурсы или опубликуйте свою задачу.
-          </p>
-          <Link
-            to={CONTESTS_ROUTE}
-            className="mt-6 inline-flex h-11 items-center gap-2 rounded-md bg-violet-600 px-6 text-[14px] font-medium text-white transition-colors hover:bg-violet-500"
-          >
-            Перейти к конкурсам <BsArrowRight />
-          </Link>
+        <section className="hm-close" aria-labelledby="close-title">
+          <div className="container">
+            <h2 id="close-title">Выберите задачу или опубликуйте свою</h2>
+            <div className="hm-close__actions">
+              <Link to={CONTESTS_ROUTE} className="key key--primary">
+                Смотреть конкурсы
+              </Link>
+              <Link to={secondary.to} className="key">
+                {secondary.label}
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="hm-footer">
+        <div className="container">
+          <div className="hm-footer__grid">
+            <div className="hm-footer__sign">
+              <Link to={LANDING_ROUTE} className="hm-wordmark">
+                devContest
+              </Link>
+              <p>Конкурсная платформа для разработчиков и заказчиков.</p>
+            </div>
+            <nav aria-label="Ссылки в подвале">
+              <Link to={CONTESTS_ROUTE} className="textlink">
+                Конкурсы
+              </Link>
+              <Link to={LEADERBOARD_ROUTE} className="textlink">
+                Рейтинг
+              </Link>
+              <Link to={ABOUT_ROUTE} className="textlink">
+                О проекте
+              </Link>
+            </nav>
+          </div>
+          <p className="hm-footer__legal">© {new Date().getFullYear()} devContest</p>
         </div>
-      </section>
+      </footer>
     </div>
   );
 };

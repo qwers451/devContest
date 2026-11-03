@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Context } from "../context";
 import { observer } from "mobx-react-lite";
 import { BsWallet2 } from "react-icons/bs";
@@ -21,6 +21,7 @@ import {
 const NavBar = observer(() => {
   const { user, payment, chat, notifications } = useContext(Context);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -118,6 +119,9 @@ const NavBar = observer(() => {
       </>
     );
   };
+
+  // У лендинга своя шапка; эффекты выше (чат, уведомления) продолжают работать.
+  if (pathname === LANDING_ROUTE) return null;
 
   return (
     <nav className="sticky top-0 z-40 border-b border-gray-700 bg-gray-950/80 backdrop-blur-xl">
