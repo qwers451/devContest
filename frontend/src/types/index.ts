@@ -176,6 +176,7 @@ import type ContestStore from "../store/ContestStore";
 import type SolutionStore from "../store/SolutionStore";
 import type PaymentStore from "../store/PaymentStore";
 import type ChatStore from "../store/ChatStore";
+import type NotificationStore from "../store/NotificationStore";
 
 export interface ChatMessage {
   id: number;
@@ -216,4 +217,5 @@ export interface StoreContext {
   solution: SolutionStore;
   payment: PaymentStore;
   chat: ChatStore;
+  notifications: NotificationStore;
 }

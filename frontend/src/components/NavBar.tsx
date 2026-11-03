@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { Context } from "../context";
 import { observer } from "mobx-react-lite";
 import { BsWallet2 } from "react-icons/bs";
+import NotificationBell from "./NotificationBell";
 import {
   CONTESTS_ROUTE,
   ADMIN_ROUTE,
@@ -16,7 +17,7 @@ import {
 } from "../utils/consts.js";
 
 const NavBar = observer(() => {
-  const { user, payment, chat } = useContext(Context);
+  const { user, payment, chat, notifications } = useContext(Context);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -36,7 +37,19 @@ const NavBar = observer(() => {
     }
   }, [user.isAuth, myId]);
 
+  // Центр уведомлений: опрос API + события чата, пока пользователь вошёл.
+  const myRole = user.user?.role;
+  useEffect(() => {
+    if (user.isAuth && myId && myRole) {
+      notifications.start(myId, myRole, chat);
+    } else {
+      notifications.stop();
+    }
+    return () => notifications.stop();
+  }, [user.isAuth, myId, myRole]);
+
   const logOut = () => {
+    notifications.stop();
     chat.disconnect();
     user.setUser({});
     user.setIsAuth(false);
@@ -115,6 +128,8 @@ const NavBar = observer(() => {
         <div className="hidden items-center gap-2 md:flex">
           {user.isAuth ? (
             <>
+              <NotificationBell />
+
               <NavLink
                 to={WALLET_ROUTE}
                 className="inline-flex h-7 items-center gap-1.5 rounded-md border border-gray-700 px-2.5 text-[13px] text-gray-300 transition-colors hover:border-gray-600 hover:text-gray-100 focus:outline-none"
@@ -153,8 +168,10 @@ const NavBar = observer(() => {
           )}
         </div>
 
+        <div className="flex items-center gap-1 md:hidden">
+        {user.isAuth && <NotificationBell />}
         <button
-          className="flex h-9 w-9 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 focus:outline-none md:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 focus:outline-none"
           onClick={() => setOpen((o) => !o)}
           aria-label={open ? "Закрыть меню" : "Открыть меню"}
           aria-expanded={open}
@@ -169,6 +186,7 @@ const NavBar = observer(() => {
             />
           </div>
         </button>
+        </div>
       </div>
 
       {open && (

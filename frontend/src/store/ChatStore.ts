@@ -12,6 +12,14 @@ const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
 export const CLOSE_UNAUTHORIZED = 4401;
 
+/** Слушатель входящих чужих сообщений (например, центр уведомлений). */
+export interface IncomingMessageInfo {
+  conversation: Conversation | null;
+  /** Беседа открыта прямо сейчас и вкладка видна — уведомлять не нужно. */
+  viewing: boolean;
+}
+export type IncomingMessageListener = (msg: ChatMessage, info: IncomingMessageInfo) => void;
+
 export type ChatConnection = "idle" | "connecting" | "open" | "closed" | "unauthorized";
 
 interface ChatEvent {
@@ -48,6 +56,7 @@ export default class ChatStore {
   private manualClose = false;
   private tempSeq = 0;
   private demoReplyIdx = 0;
+  private listeners: IncomingMessageListener[] = [];
 
   constructor() {
     makeAutoObservable(
@@ -57,6 +66,7 @@ export default class ChatStore {
         pingTimer: false,
         reconnectTimer: false,
         typingTimers: false,
+        listeners: false,
       } as never,
       { autoBind: true },
     );
@@ -194,6 +204,25 @@ export default class ChatStore {
     }, delay);
   }
 
+  /** Подписка на чужие входящие сообщения; возвращает функцию отписки. Новый сокет не открывается. */
+  onMessage(listener: IncomingMessageListener): () => void {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== listener);
+    };
+  }
+
+  private emitIncoming(msg: ChatMessage, conv: Conversation | null): void {
+    const viewing = this.activeConversationId === msg.conversation_id && this.isTabVisible();
+    this.listeners.forEach((l) => {
+      try {
+        l(msg, { conversation: conv, viewing });
+      } catch (e) {
+        console.error("Ошибка слушателя чата:", e);
+      }
+    });
+  }
+
   // ── Входящие события ───────────────────────────────────────────────────────
 
   handleEvent(ev: ChatEvent): void {
@@ -220,6 +249,8 @@ export default class ChatStore {
     const convId = msg.conversation_id;
     const mine = msg.sender_id === this.userId;
     const conv = this.conversations.find((c) => c.id === convId);
+
+    if (!mine) this.emitIncoming(msg, conv ?? null);
 
     if (!conv) {
       // Новая беседа, которой у нас ещё нет.
