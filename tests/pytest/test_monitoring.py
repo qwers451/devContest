@@ -22,7 +22,7 @@ async def test_monitoring_service_snapshot_and_permissions(
         assert response.status_code == 200, response.text
         assert response.json()["status"] == "ok"
 
-        response = await client.get(f"{GATEWAY_URL}/monitoring/docs")
+        response = await client.get(f"{GATEWAY_URL}/monitoring/health")
         assert response.status_code == 200, response.text
 
         response = await client.post(f"{MONITORING_URL}/monitoring/check-runs")

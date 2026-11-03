@@ -1,8 +1,11 @@
 import json
 import os
 import struct
+import subprocess
+import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zlib
 from datetime import datetime, timedelta, timezone
@@ -11,6 +14,7 @@ USER_API = os.getenv("SEED_USER_URL", "http://localhost:8001")
 CONTEST_API = os.getenv("SEED_CONTEST_URL", "http://localhost:8002")
 PAYMENT_API = os.getenv("SEED_PAYMENT_URL", "http://localhost:8004")
 INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "cafdgadhffdah")
+REPO_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def request(method, url, data=None, token=None, headers=None):
@@ -352,6 +356,13 @@ executor3_token = executor3_resp["access_token"] if executor3_resp else None
 executor3_id = executor3_resp["user"]["id"] if executor3_resp else None
 print(f"  executor3 → {'ок id=' + str(executor3_id) if executor3_id else 'ошибка'}")
 
+customer2_resp = register_or_login(
+    "customer2@devcontest.ru", "customer2", "test1234", "customer"
+)
+customer2_token = customer2_resp["access_token"] if customer2_resp else None
+customer2_id = customer2_resp["user"]["id"] if customer2_resp else None
+print(f"  customer2 → {'ок id=' + str(customer2_id) if customer2_id else 'ошибка'}")
+
 # ── Пополнение кошельков ────────────────────────────────────────────────────
 
 print("\n=== Пополнение кошельков ===")
@@ -359,7 +370,8 @@ print("\n=== Пополнение кошельков ===")
 if customer_id and customer_token:
     balance = get_wallet_balance(customer_token)
     if balance is not None and balance < 80000:
-        topup_wallet_internal(customer_id, 80000, "customer1")
+        # Хватает на исходные конкурсы и на «историю» ниже (завершённые + активные)
+        topup_wallet_internal(customer_id, 350000, "customer1")
     bal = get_wallet_balance(customer_token)
     print(f"  customer1 → баланс: {bal} ₽")
 
@@ -383,6 +395,13 @@ if executor3_id and executor3_token:
         topup_wallet_internal(executor3_id, 3000, "executor3")
     bal = get_wallet_balance(executor3_token)
     print(f"  executor3 → баланс: {bal} ₽")
+
+if customer2_id and customer2_token:
+    balance = get_wallet_balance(customer2_token)
+    if balance is not None and balance < 20000:
+        topup_wallet_internal(customer2_id, 120000, "customer2")
+    bal = get_wallet_balance(customer2_token)
+    print(f"  customer2 → баланс: {bal} ₽")
 
 if admin_id and admin_token:
     balance = get_wallet_balance(admin_token)
@@ -515,8 +534,18 @@ print("\n=== Создание конкурсов ===")
 
 c1 = c2 = c3 = c4 = None
 
+# Конкурсы не идемпотентны по природе (каждый POST создаёт новый), поэтому повторный
+# запуск seed.py на уже засеянной базе пропускает все конкурсы/решения/историю.
+_, _found = get(
+    f"{CONTEST_API}/contests?limit=1&search="
+    + urllib.parse.quote("Разработка логотипа для IT-стартапа")
+)
+ALREADY_SEEDED = bool(isinstance(_found, dict) and _found.get("items"))
+
 if not customer_token:
     print("  пропуск — нет токена заказчика")
+elif ALREADY_SEEDED:
+    print("  конкурсы уже созданы — пропуск (для чистой базы: scripts/reset-demo.sh)")
 else:
     now = datetime.now(timezone.utc)
 
@@ -1333,11 +1362,443 @@ if s6 and customer_token:
     # Flask Shop: отклонить
     change_status(s6["id"], 5, customer_token, "отклонена")
 
+# ── История платформы для демо ──────────────────────────────────────────────
+# Решения можно создать только в активном конкурсе до ends_at, поэтому всё создаётся
+# через API в корректном порядке (оплата → решения → отзывы → призовые места), а потом
+# единственная функция backdate_history() переписывает временные метки напрямую в БД.
+
+print("\n=== История платформы (завершённые/активные/отменённый конкурсы, чат) ===")
+
+DB_CONTEST = ("contest-db", "contest_svc", "contest_db")
+DB_PAYMENT = ("payment-db", "payment_svc", "payment_db")
+DB_USER = ("user-db", "user_svc", "user_db")
+
+# Баллы ИИ-оценки по исполнителям (чтобы рейтинг отличался не только отзывами)
+AI_RANGE = {"executor1": (88, 96), "executor2": (72, 83), "executor3": (52, 61)}
+
+TOKENS = {
+    "customer1": customer_token,
+    "customer2": customer2_token,
+    "executor1": executor_token,
+    "executor2": executor2_token,
+    "executor3": executor3_token,
+}
+
+
+def run_sql(db, sql):
+    """Выполняет SQL в контейнере БД (docker compose exec -T <db> psql)."""
+    service, user, name = db
+    proc = subprocess.run(
+        ["docker", "compose", "exec", "-T", service, "psql", "-U", user, "-d", name,
+         "-v", "ON_ERROR_STOP=1", "-q"],
+        input=sql.encode("utf-8"),
+        capture_output=True,
+        cwd=REPO_DIR,
+    )
+    if proc.returncode != 0:
+        print(f"    SQL ({service}) не выполнен: {proc.stderr.decode('utf-8', 'replace').strip()}")
+        return False
+    return True
+
+
+def iso(dt):
+    return dt.isoformat()
+
+
+def patch_internal(url):
+    req = urllib.request.Request(
+        url, method="PATCH", headers={"X-Internal-Secret": INTERNAL_SECRET}
+    )
+    try:
+        urllib.request.urlopen(req).read()
+    except urllib.error.HTTPError as e:
+        print(f"    PATCH {url} → {e.code}")
+
+
+def new_contest(owner, spec):
+    """Создаёт и оплачивает (активирует) конкурс от имени заказчика."""
+    token = TOKENS[owner]
+    status, c = post(
+        f"{CONTEST_API}/contests",
+        {
+            "title": spec["title"],
+            "annotation": spec["annotation"],
+            "description": spec["description"],
+            "tz_text": spec["tz_text"],
+            "prizepool": spec["prize"],
+            "ends_at": iso(datetime.now(timezone.utc) + timedelta(hours=spec.get("ends_in_hours", 24 * 30))),
+            "type_id": type_ids.get(spec["type"]),
+            "prize_distribution": spec["distribution"],
+        },
+        token,
+    )
+    if status != 201:
+        print(f"  {spec['title']} → ошибка {status} {c}")
+        return None
+    if spec.get("cancel"):
+        patch_internal(f"{CONTEST_API}/contests/{c['id']}/cancel-internal")
+        print(f"  {spec['title']} → id={c['id']} (отменён)")
+        return c
+    if not activate_contest(c["id"], spec["prize"], token):
+        return None
+    print(f"  {spec['title']} → id={c['id']} {spec['distribution']} {spec['prize']} ₽")
+    return c
+
+
+def set_ai_score(submission_id, executor_login, seed_idx):
+    lo, hi = AI_RANGE[executor_login]
+    score = lo + (seed_idx * 3) % (hi - lo + 1)
+    req = urllib.request.Request(
+        f"{CONTEST_API}/submissions/{submission_id}/ai-score?score={score}&critical_issues=false",
+        method="PATCH",
+        headers={"X-Internal-Secret": INTERNAL_SECRET},
+    )
+    try:
+        urllib.request.urlopen(req).read()
+    except urllib.error.HTTPError as e:
+        print(f"    ai-score {submission_id} → {e.code}")
+
+
+def make_submissions(contest, owner, entries):
+    """entries: (executor, title, description, review_score, review_text, place|None)."""
+    made = []
+    for idx, (ex, title, descr, score, comment, place) in enumerate(entries):
+        status, sub = post(
+            f"{CONTEST_API}/submissions",
+            {"contest_id": contest["id"], "title": title, "annotation": title, "description": descr},
+            TOKENS[ex],
+        )
+        if status != 201:
+            print(f"    решение «{title}» ({ex}) → ошибка {status} {sub}")
+            continue
+        set_ai_score(sub["id"], ex, contest["id"] + idx)
+        if score is not None:
+            add_review(sub["id"], TOKENS[owner], score, comment, ex)
+        made.append((sub, place))
+    return made
+
+
+def award_places(contest, owner, made):
+    awards = [{"submission_id": s["id"], "place": p} for s, p in made if p]
+    if not awards:
+        return False
+    status, resp = post(
+        f"{CONTEST_API}/contests/{contest['id']}/awards", {"awards": awards}, TOKENS[owner]
+    )
+    if status == 200:
+        print(f"    призовые места ({len(awards)}) выплачены → конкурс {contest['id']}")
+        return True
+    print(f"    призовые места → ошибка {status} {resp}")
+    return False
+
+
+def backdate_history(plan, chat_plan, user_ages):
+    """ИЗОЛИРОВАННАЯ функция: правит временные метки напрямую в БД ради реалистичной истории.
+
+    plan: [{id, created_ago (дни), done_after (дни до победителя, None — не завершён)}]
+    """
+    now = datetime.now(timezone.utc)
+    for item in plan:
+        cid = item["id"]
+        created = now - timedelta(days=item["created_ago"], hours=cid % 7)
+        if item.get("done_after") is not None:
+            selected = created + timedelta(days=item["done_after"], hours=3 + cid % 5)
+            ends = created + timedelta(days=item["done_after"] - 2)
+            sub_window_end = ends
+        else:
+            selected = None
+            ends = None
+            sub_window_end = now
+        c = f"'{iso(created)}'"
+        s = f"'{iso(selected)}'" if selected else "NULL"
+        ends_sql = f", ends_at = '{iso(ends)}'" if ends else ""
+        win_end = f"'{iso(sub_window_end)}'::timestamptz"
+        sub_ts = (
+            f"{c}::timestamptz + (LEAST({win_end}, now()) - {c}::timestamptz)"
+            " * (0.15 + 0.12 * (id % 5))"
+        )
+        rev_ts = (
+            "LEAST((SELECT created_at FROM submissions s WHERE s.id = reviews.submission_id)"
+            " + interval '1 day' + (id % 6) * interval '2 hours', now() - interval '1 hour')"
+        )
+        sql = f"""
+UPDATE contests SET created_at = {c}{ends_sql} WHERE id = {cid};
+UPDATE submissions SET created_at = {sub_ts}, updated_at = {sub_ts} WHERE contest_id = {cid};
+UPDATE reviews SET created_at = {rev_ts}, updated_at = {rev_ts}
+  WHERE submission_id IN (SELECT id FROM submissions WHERE contest_id = {cid});
+UPDATE submission_status_logs SET changed_at = LEAST(
+    (SELECT created_at FROM submissions s WHERE s.id = submission_status_logs.submission_id) + interval '2 days',
+    now() - interval '1 hour')
+  WHERE submission_id IN (SELECT id FROM submissions WHERE contest_id = {cid});
+"""
+        if selected:
+            sql += f"""
+UPDATE winners SET selected_at = {s} WHERE contest_id = {cid};
+UPDATE contest_awards SET created_at = {s} WHERE contest_id = {cid};
+UPDATE submissions SET updated_at = {s}
+  WHERE id IN (SELECT submission_id FROM contest_awards WHERE contest_id = {cid});
+"""
+        run_sql(DB_CONTEST, sql)
+
+        paid = f"'{iso(created + timedelta(minutes=5))}'::timestamptz"
+        later = f"COALESCE({s}::timestamptz, {paid})"
+        run_sql(
+            DB_PAYMENT,
+            f"""
+UPDATE payments SET created_at = {c}, paid_at = {paid}, updated_at = {later} WHERE contest_id = {cid};
+UPDATE escrow_accounts SET released_at = {s} WHERE contest_id = {cid} AND released_at IS NOT NULL;
+UPDATE award_releases SET released_at = {s}
+  WHERE escrow_id IN (SELECT id FROM escrow_accounts WHERE contest_id = {cid});
+UPDATE transactions SET created_at = CASE WHEN type = 'hold' THEN {paid} ELSE {later} END
+  WHERE payment_id IN (SELECT id FROM payments WHERE contest_id = {cid});
+UPDATE payouts SET created_at = {later}, paid_at = {later} WHERE contest_id = {cid};
+UPDATE wallet_transactions SET created_at = CASE WHEN tx_type = 'contest_payment' THEN {paid} ELSE {later} END
+  WHERE reference_id = {cid} AND tx_type IN ('contest_payment', 'income');
+""",
+        )
+
+    # Пополнения кошельков — ещё до первого конкурса
+    run_sql(
+        DB_PAYMENT,
+        "UPDATE wallet_transactions SET created_at = now() - interval '185 days' WHERE tx_type = 'topup';",
+    )
+
+    # Чат: сообщения растянуты на последние дни, прочитанные «прочитаны» вскоре после отправки
+    for conv in chat_plan:
+        for msg_id, minutes_ago in conv["messages"]:
+            read_ago = max(minutes_ago - 25, 1)
+            run_sql(
+                DB_CONTEST,
+                f"UPDATE chat_messages SET created_at = now() - interval '{minutes_ago} minutes', "
+                f"read_at = CASE WHEN read_at IS NULL THEN NULL ELSE now() - interval '{read_ago} minutes' END "
+                f"WHERE id = {msg_id};",
+            )
+        first = max(m for _, m in conv["messages"])
+        last = min(m for _, m in conv["messages"])
+        run_sql(
+            DB_CONTEST,
+            f"UPDATE conversations SET created_at = now() - interval '{first} minutes', "
+            f"last_message_at = now() - interval '{last} minutes' WHERE id = {conv['id']};",
+        )
+
+    # Пользователи зарегистрированы давно (новичок executor3 — недавно)
+    for login, days in user_ages.items():
+        run_sql(
+            DB_USER,
+            f"UPDATE users SET created_at = now() - interval '{days} days' WHERE login = '{login}';",
+        )
+
+
+history_plan = []
+
+if ALREADY_SEEDED:
+    print("  пропуск — история уже создана")
+elif not (
+    customer_token and customer2_token and executor_token and executor2_token and executor3_token
+):
+    print("  пропуск — нет токенов пользователей")
+else:
+    # Исходные 4 конкурса «чуть старше» сегодняшнего дня
+    for cdata, ago in ((c1, 12), (c2, 7), (c3, 9), (c4, 4)):
+        if cdata:
+            history_plan.append({"id": cdata["id"], "created_ago": ago, "done_after": None})
+
+    TZ_DEFAULT = (
+        "Требования:\n1. Выполнить задачу в соответствии с описанием.\n"
+        "2. Передать исходные файлы и готовый результат.\n"
+        "3. Работа должна быть оригинальной.\n\nКритические требования:\n- Оригинальность обязательна"
+    )
+
+    FINISHED = [
+        dict(owner="customer1", created_ago=168, done_after=21,
+             spec=dict(title="Логотип для кофейни «Зерно»", type="Логотип", prize=12000, distribution=[100],
+                       annotation="Фирменный знак для сети небольших кофеен",
+                       description="Кофейня в центре города ищет логотип: тёплый, уютный, узнаваемый на стаканах и вывеске.",
+                       tz_text=TZ_DEFAULT),
+             subs=[
+                 ("executor1", "Зерно в форме чашки", "Знак из кофейного зерна, образующего силуэт чашки. SVG и PNG, версии для светлого и тёмного фона.", 9.5, "Очень удачная идея и аккуратное исполнение. Знак отлично смотрится на стакане.", 1),
+                 ("executor2", "Минималистичная чашка с паром", "Линейный логотип: чашка и пар в виде зерна. Две цветовые версии.", 7.0, "Чисто и аккуратно, но чуть менее запоминается, чем лидер.", None),
+             ]),
+        dict(owner="customer1", created_ago=141, done_after=27,
+             spec=dict(title="Лендинг для онлайн-школы Python", type="Веб-разработка", prize=30000, distribution=[60, 30, 10],
+                       annotation="Адаптивный лендинг с формой записи на курс",
+                       description="Нужен лендинг школы программирования: преимущества, программа, отзывы, форма заявки.",
+                       tz_text=TZ_DEFAULT),
+             subs=[
+                 ("executor1", "Лендинг «PyStart»: React + Tailwind", "Адаптивная вёрстка, анимации появления, форма заявки с валидацией, Lighthouse 96.", 9.0, "Быстрый, аккуратный, всё по ТЗ. Форма и мобильная версия сделаны на отлично.", 1),
+                 ("executor2", "Лендинг на Next.js", "SSR, блок отзывов, FAQ, форма с отправкой в CRM. Мобильная версия.", 8.0, "Хорошая работа, не хватило деталей в анимациях.", 2),
+                 ("executor3", "Простой одностраничный сайт", "Вёрстка на HTML/CSS без фреймворков, базовая адаптивность.", 6.0, "Рабочий вариант, но дизайн достаточно шаблонный.", 3),
+             ]),
+        dict(owner="customer1", created_ago=112, done_after=15,
+             spec=dict(title="Статья о микросервисах для блога", type="Статья", prize=6000, distribution=[100],
+                       annotation="Экспертный материал для корпоративного блога",
+                       description="Нужна практическая статья о переходе с монолита на микросервисы: ошибки, подходы, примеры.",
+                       tz_text=TZ_DEFAULT),
+             subs=[
+                 ("executor2", "Микросервисы без боли: как мы разрезали монолит", "Статья на 3800 слов: границы сервисов, транзакции, наблюдаемость, 6 источников.", 9.0, "Живо, понятно, с практическими примерами. Рекомендую к публикации.", 1),
+                 ("executor1", "Монолит или микросервисы: чек-лист решения", "Статья на 2900 слов с чек-листом и схемами.", 8.5, "Полезно и структурно, но объём меньше, чем хотелось.", None),
+             ]),
+        dict(owner="customer1", created_ago=84, done_after=19,
+             spec=dict(title="Баннеры для распродажи электроники", type="Баннер", prize=15000, distribution=[100],
+                       annotation="Комплект баннеров для рекламной кампании",
+                       description="Распродажа электроники: нужны статичные баннеры основных размеров с акцентом на скидку.",
+                       tz_text=TZ_DEFAULT),
+             subs=[
+                 ("executor1", "Комплект «Чёрная пятница»", "Баннеры 728x90, 300x250, 160x600 в брендовых цветах, крупный CTA.", 9.5, "Отличная работа: акцент на скидке, читаемо, цвета соответствуют бренду.", 1),
+                 ("executor2", "Баннеры «Техно-скидки»", "Три размера, градиентный фон, анимированный CTA.", 7.5, "Хорошо, но текст скидки можно сделать крупнее.", None),
+             ]),
+        dict(owner="customer2", created_ago=52, done_after=22,
+             spec=dict(title="Иконки для приложения фитнес-трекера", type="Иконка", prize=9000, distribution=[100],
+                       annotation="Набор из 24 иконок в едином стиле",
+                       description="Нужен набор иконок для мобильного приложения: тренировки, питание, сон, достижения.",
+                       tz_text=TZ_DEFAULT),
+             subs=[
+                 ("executor2", "Набор «FitLine» (24 иконки)", "Единый линейный стиль, сетка 24px, SVG и PNG, активные и неактивные состояния.", 8.5, "Единый стиль выдержан, иконки читаются даже в маленьком размере.", 1),
+                 ("executor1", "Набор иконок «Pulse»", "20 иконок в плоском стиле, цветовые акценты по категориям.", 8.0, "Хорошо, но 4 иконки из 24 не хватает.", None),
+             ]),
+        dict(owner="customer2", created_ago=31, done_after=12,
+             spec=dict(title="Фирменный стиль юридической фирмы", type="Логотип", prize=20000, distribution=[100],
+                       annotation="Логотип и базовые элементы фирменного стиля",
+                       description="Юридическая фирма запускает бренд: нужен строгий, но современный логотип и палитра.",
+                       tz_text=TZ_DEFAULT),
+             subs=[
+                 ("executor1", "Логотип «Правовой центр»", "Знак из буквы П и весов, строгая палитра, брендбук в PDF.", 9.5, "Именно то, что искали: солидно, современно. Брендбук — приятный бонус.", 1),
+                 ("executor2", "Логотип «Лекс»", "Монограмма L, два варианта палитры.", 7.0, "Неплохо, но выглядит слегка обезличенно.", None),
+             ]),
+    ]
+
+    ACTIVE = [
+        dict(owner="customer1", created_ago=6, ends_in_hours=24 * 12,
+             spec=dict(title="Иконки для приложения доставки еды", type="Иконка", prize=18000, distribution=[50, 30, 20],
+                       annotation="Набор иконок и иллюстраций для мобильного приложения",
+                       description="Приложению доставки нужны иконки категорий меню и иллюстрации для пустых экранов.",
+                       tz_text=TZ_DEFAULT),
+             subs=[
+                 ("executor1", "Набор «Вкусно»: 30 иконок", "Объёмные иконки категорий, единая палитра, экспорт в SVG.", 8.5, "Яркие и аккуратные, продолжаем сравнение.", None),
+                 ("executor2", "Иконки «Delivery Line»", "Линейные иконки с акцентным цветом, 28 штук.", 7.5, "Хорошо читаются, но стиль скромный.", None),
+                 ("executor3", "Иконки «Food Pack»", "Набор из 18 простых иконок категорий меню в плоском стиле.", 6.0, "Аккуратно, но стиль шаблонный.", None),
+             ]),
+        dict(owner="customer1", created_ago=9, ends_in_hours=24 * 3,
+             spec=dict(title="Страница 404 для SaaS-сервиса", type="Веб-разработка", prize=5000, distribution=[100],
+                       annotation="Дружелюбная страница ошибки с анимацией",
+                       description="Нужна страница 404 с иллюстрацией и юмором, в стиле нашего продукта.",
+                       tz_text=TZ_DEFAULT),
+             subs=[("executor2", "404: космонавт потерялся", "Анимированная SVG-иллюстрация, поиск по сайту, кнопка «На главную».", 7.5, "Милый вариант, ждём ещё идеи.", None)]),
+        dict(owner="customer2", created_ago=2, ends_in_hours=24 * 27,
+             spec=dict(title="Telegram-бот для записи клиентов", type="Веб-разработка", prize=28000, distribution=[60, 30, 10],
+                       annotation="Бот для записи на услуги салона красоты",
+                       description="Бот должен показывать свободные слоты, принимать записи и отправлять напоминания.",
+                       tz_text=TZ_DEFAULT),
+             subs=[]),
+        # Заканчивается меньше чем через сутки — триггерит напоминание о дедлайне
+        dict(owner="customer1", created_ago=13, ends_in_hours=20,
+             spec=dict(title="Слоган для фитнес-клуба", type="Статья", prize=3000, distribution=[100],
+                       annotation="Короткий запоминающийся слоган",
+                       description="Фитнес-клубу нужен слоган для вывески и рекламы: коротко, энергично, без банальностей.",
+                       tz_text=TZ_DEFAULT),
+             subs=[
+                 ("executor1", "«Сильнее каждый день»", "Пять вариантов слогана и обоснование: ритм, ассоциации, адаптация для вывески.", None, "", None),
+                 ("executor2", "«Твой ритм — твоя сила»", "Три слогана с вариантами для наружной рекламы и соцсетей.", None, "", None),
+             ]),
+    ]
+
+    CANCELLED = dict(owner="customer2", created_ago=45,
+                     spec=dict(title="Мобильная игра для детей (отменён заказчиком)", type="Веб-разработка", prize=40000,
+                               distribution=[100], annotation="Развивающая игра для детей 5–7 лет",
+                               description="Проект приостановлен заказчиком до уточнения бюджета.",
+                               tz_text=TZ_DEFAULT, cancel=True))
+
+    print("\n  -- Завершённые конкурсы --")
+    for item in FINISHED:
+        c = new_contest(item["owner"], item["spec"])
+        if not c:
+            continue
+        made = make_submissions(c, item["owner"], item["subs"])
+        if award_places(c, item["owner"], made):
+            history_plan.append(
+                {"id": c["id"], "created_ago": item["created_ago"], "done_after": item["done_after"]}
+            )
+
+    print("\n  -- Активные конкурсы --")
+    for item in ACTIVE:
+        item["spec"]["ends_in_hours"] = item["ends_in_hours"]
+        c = new_contest(item["owner"], item["spec"])
+        if not c:
+            continue
+        make_submissions(c, item["owner"], item["subs"])
+        history_plan.append({"id": c["id"], "created_ago": item["created_ago"], "done_after": None})
+
+    print("\n  -- Отменённый конкурс --")
+    c = new_contest(CANCELLED["owner"], CANCELLED["spec"])
+    if c:
+        history_plan.append({"id": c["id"], "created_ago": CANCELLED["created_ago"], "done_after": None})
+
+    # ── Чат: заказчик ↔ исполнители в первом конкурсе (логотип) ─────────────
+    print("\n  -- Переписки --")
+
+    def chat_dialog(contest, owner_key, other_key, other_id, script, read_before):
+        """script: [(c|e, текст)]; перед сообщением с индексом read_before заказчик читает беседу."""
+        status, conv = post(
+            f"{CONTEST_API}/chat/conversations",
+            {"contest_id": contest["id"], "executor_id": other_id},
+            TOKENS[owner_key],
+        )
+        if status != 200:
+            print(f"    беседа {other_key} → ошибка {status} {conv}")
+            return None
+        ids = []
+        for i, (who, text) in enumerate(script):
+            if i == read_before:
+                post(f"{CONTEST_API}/chat/conversations/{conv['id']}/read", None, TOKENS[owner_key])
+            token = TOKENS[owner_key] if who == "c" else TOKENS[other_key]
+            status, msg = post(
+                f"{CONTEST_API}/chat/conversations/{conv['id']}/messages", {"text": text}, token
+            )
+            if status == 201:
+                ids.append(msg["id"])
+        post(f"{CONTEST_API}/chat/conversations/{conv['id']}/read", None, TOKENS[other_key])
+        print(f"    {owner_key} ↔ {other_key}: {len(ids)} сообщений")
+        return conv["id"], ids
+
+    chat_plan = []
+    if c1:
+        d1 = chat_dialog(c1, "customer1", "executor1", executor_id, [
+            ("e", "Добрый день! Выложил первый вариант логотипа. Подскажите, нужен ли отдельный вариант для тёмного фона?"),
+            ("c", "Здравствуйте! Да, обязательно: сайт у нас в тёмной теме, логотип должен читаться на обоих фонах."),
+            ("e", "Понял, добавлю монохромную и светлую версии. Шрифт оставляю Montserrat, подойдёт?"),
+            ("c", "Montserrat подходит. И ещё: можно чуть увеличить иконку относительно текста?"),
+            ("e", "Конечно, сделаю иконку на 15% крупнее и пришлю обновлённый SVG."),
+            ("c", "Отлично, жду. Цвет #1A73E8 нам очень нравится, оставьте его."),
+            ("e", "Готово! Загрузил обновлённую версию в решение, проверьте, пожалуйста. Если всё устраивает, добавлю PNG во всех размерах."),
+        ], read_before=6)
+        d2 = chat_dialog(c1, "customer1", "executor2", executor2_id, [
+            ("c", "Здравствуйте! Ваш градиентный логотип выглядит интересно. Скажите, он нормально печатается в один цвет?"),
+            ("e", "Добрый день! Да, подготовлю одноцветную версию для печати и штампа, пришлю сегодня."),
+            ("c", "Хорошо. А на тёмном фоне символ читается? Мне показалось, что нижняя часть теряется."),
+            ("e", "Вы правы, нижняя часть теряется. Усилю контраст и посветлю градиент для тёмного фона."),
+            ("e", "Выложил две версии: для светлого и тёмного фона, плюс одноцветную. Посмотрите, пожалуйста."),
+            ("e", "И если нужно, могу сделать анимированный вариант для сайта, без доплаты."),
+        ], read_before=4)
+        # Минуты назад (от старых к новым); непрочитанные заказчиком — самые свежие
+        for d, offs in ((d1, [2900, 2870, 1500, 1460, 380, 350, 40]), (d2, [1300, 1270, 640, 600, 95, 80])):
+            if d:
+                chat_plan.append({"id": d[0], "messages": list(zip(d[1], offs))})
+
+    print("\n  -- Правка временных меток (история 1–6 месяцев) --")
+    backdate_history(
+        history_plan,
+        chat_plan,
+        {"admin": 190, "customer1": 186, "executor1": 178, "executor2": 150, "customer2": 125, "executor3": 24},
+    )
+    print("  ок")
+
+
 # ── Итог ────────────────────────────────────────────────────────────────────
 
 print("\n=== Готово! Учётные данные ===")
 print("  admin     / admin123   (кошелёк: 10 000 ₽)")
-print("  customer1 / test1234   (кошелёк: ~80 000 ₽ минус оплата конкурсов)")
+print("  customer1 / test1234   (кошелёк пополнен на 350 000 ₽, минус оплата конкурсов)")
+print("  customer2 / test1234   (второй заказчик)")
 print("  executor1 / test1234   (кошелёк: 5 000 ₽)")
 print("  executor2 / test1234   (кошелёк: 3 000 ₽)")
 print("  executor3 / test1234   (кошелёк: 3 000 ₽)")

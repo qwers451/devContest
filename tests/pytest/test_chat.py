@@ -7,6 +7,7 @@
 import asyncio
 import base64
 import json
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -259,25 +260,76 @@ async def test_reading_does_not_mark_own_messages(customer_token, executor_token
 # ── Список бесед ─────────────────────────────────────────────────────────────
 
 
+@pytest_asyncio.fixture
+async def own_chat(customer_token, executor_token, admin_token, contest_type_id):
+    """Собственный конкурс + решение + беседа: тест не зависит от общих фикстур
+    (другие модули переименовывают общий конкурс)."""
+    import datetime
+
+    import pytz
+
+    async with httpx.AsyncClient() as c:
+        ends_at = (datetime.datetime.now(pytz.utc) + datetime.timedelta(days=10)).isoformat()
+        r = await c.post(
+            f"{CONTEST_URL}/contests",
+            json={
+                "title": f"Chat own contest {uuid4().hex[:8]}",
+                "annotation": "A" * 30,
+                "description": "D" * 100,
+                "tz_text": "tz",
+                "prizepool": 1000,
+                "ends_at": ends_at,
+                "type_id": contest_type_id,
+            },
+            headers=auth_headers(customer_token),
+        )
+        assert r.status_code == 201, r.text
+        own = r.json()
+        try:
+            await c.patch(
+                f"{CONTEST_URL}/contests/{own['id']}/activate-internal",
+                headers={"x-internal-secret": INTERNAL_SECRET},
+            )
+            r = await c.post(
+                f"{CONTEST_URL}/submissions",
+                json={
+                    "contest_id": own["id"],
+                    "title": "Own submission",
+                    "annotation": "A" * 30,
+                    "description": "D" * 100,
+                },
+                headers=auth_headers(executor_token),
+            )
+            assert r.status_code == 201, r.text
+            r = await open_conv(customer_token, own["id"], user_id_of(executor_token))
+            assert r.status_code == 200, r.text
+            yield own, r.json()
+        finally:
+            await c.delete(
+                f"{CONTEST_URL}/contests/{own['id']}", headers=auth_headers(admin_token)
+            )
+
+
 async def test_conversations_list_shows_other_login_last_message_and_contest(
-    customer_token, executor_token, contest, conv
+    customer_token, executor_token, own_chat
 ):
-    await send(executor_token, conv["id"], "Последнее сообщение для превью")
+    own_contest, own_conv = own_chat
+    await send(executor_token, own_conv["id"], "Последнее сообщение для превью")
 
     async with httpx.AsyncClient() as c:
         exec_login = (await c.get(f"{USER_URL}/users/{user_id_of(executor_token)}")).json()["login"]
         cust_login = (await c.get(f"{USER_URL}/users/{user_id_of(customer_token)}")).json()["login"]
 
     cust_list = await get_json(customer_token, "/chat/conversations")
-    item = next(x for x in cust_list if x["id"] == conv["id"])
+    item = next(x for x in cust_list if x["id"] == own_conv["id"])
     assert item["other_user_login"] == exec_login
     assert item["last_message"]["text"] == "Последнее сообщение для превью"
     assert item["last_message"]["sender_id"] == user_id_of(executor_token)
-    assert item["contest_title"] == contest["title"]
-    assert item["contest_number"] == contest["number"]
+    assert item["contest_title"] == own_contest["title"]
+    assert item["contest_number"] == own_contest["number"]
 
     exec_list = await get_json(executor_token, "/chat/conversations")
-    item = next(x for x in exec_list if x["id"] == conv["id"])
+    item = next(x for x in exec_list if x["id"] == own_conv["id"])
     assert item["other_user_login"] == cust_login
 
 
